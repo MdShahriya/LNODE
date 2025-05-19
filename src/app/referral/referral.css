@@ -1,0 +1,235 @@
+.referral-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.referral-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  color: #0D7CE9;
+}
+
+.connect-wallet-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  margin: 2rem 0;
+}
+
+.connect-wallet-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #0D7CE9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.connect-wallet-button:hover {
+  background-color: #15CFF1;
+}
+
+.referral-info {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.referral-info h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.referral-link-container {
+  display: flex;
+  margin-bottom: 1rem;
+}
+
+.referral-link-input {
+  flex-grow: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px 0 0 4px;
+  font-size: 1rem;
+  background-color: #f5f5f5;
+}
+
+.copy-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #0D7CE9;
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.copy-button:hover {
+  background-color: #15CFF1;
+}
+
+.referral-description {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.invite-form-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.invite-form-container h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.invite-form {
+  display: flex;
+  gap: 1rem;
+}
+
+.email-input {
+  flex-grow: 1;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.email-input:focus {
+  outline: none;
+  border-color: #0D7CE9;
+  box-shadow: 0 0 0 2px rgba(13, 124, 233, 0.2);
+}
+
+.invite-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #0D7CE9;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.invite-button:hover {
+  background-color: #15CFF1;
+}
+
+.referrals-list-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.referrals-list-container h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.no-referrals {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.referrals-list {
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.referral-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #eee;
+}
+
+.referral-item {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+}
+
+.referral-item:last-child {
+  border-bottom: none;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.status.pending {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.status.joined {
+  background-color: #28a745;
+  color: white;
+}
+
+.simulate-button {
+  padding: 0.4rem 0.8rem;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.simulate-button:hover {
+  background-color: #5a6268;
+}
+
+@media (max-width: 768px) {
+  .invite-form {
+    flex-direction: column;
+  }
+  
+  .referral-header,
+  .referral-item {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  
+  .referral-header span:nth-child(3),
+  .referral-header span:nth-child(4),
+  .referral-item span:nth-child(3),
+  .referral-item span:nth-child(4) {
+    grid-column: span 1;
+  }
+}
