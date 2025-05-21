@@ -1,60 +1,49 @@
+// context/index.tsx
 'use client'
 
-import { wagmiadapter, projectId } from "../config"
-import { createAppKit } from "@reown/appkit"
-import { bsc } from "@reown/appkit/networks"
+import { wagmiAdapter, projectId } from '@/config'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createAppKit } from '@reown/appkit/react' 
+import { mainnet, bsc } from '@reown/appkit/networks'
+import React, { type ReactNode } from 'react'
+import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import {type ReactNode} from "react"
-import { cookieToInitialState, WagmiProvider, type Config } from "wagmi"
-
+// Set up queryClient
 const queryClient = new QueryClient()
+
 if (!projectId) {
-    throw new Error('Project ID is not defined! ❌');
+  throw new Error('Project ID is not defined')
 }
 
+// Set up metadata
 const metadata = {
-    name: "TOPAY quiz",
-    description: "TOPAY quiz - Wallet Connect",
-    url: "https://dashboard.topayfoundation.com",
-    icons: ["https://www.topayfoundation.com/images/Logo.webp"]
+  name: 'TOPAY Node | Dashboard',
+  description: '',
+  url: 'https://node.topayfoundation.com', // origin must match your domain & subdomain
+  icons: ['https://node.topayfoundation.com/logo.png']
 }
 
 // Create the modal
 export const modal = createAppKit({
-    adapters: [wagmiadapter],
-    projectId,
-    networks: [bsc],
-    defaultNetwork: bsc,
-    metadata: metadata,
-    termsConditionsUrl: "",
-    privacyPolicyUrl: "",
-    features: {
-      analytics: true,
-      email: false,
-      socials: [],
-      swaps: false,
-      send: false,
-      emailShowWallets: false,
-      legalCheckbox: true
-  },
-  themeVariables: {
-    "--w3m-color-mix": "#15CFF1",
-    "--w3m-accent": "#0D7CE9",
-    "--w3m-color-mix-strength": 40,  
-    }
-  })
+  adapters: [wagmiAdapter],
+  projectId,
+  networks: [mainnet, bsc],
+  defaultNetwork: mainnet,
+  metadata: metadata,
+  features: {
+    analytics: true, // Optional - defaults to your Cloud configuration
+  }
+})
 
-console.log(metadata, modal);
+function ContextProvider({ children, cookies }: { children: ReactNode; cookies: string | null }) {
+  const initialState = cookieToInitialState(wagmiAdapter.wagmiConfig as Config, cookies)
 
-function walletprovider({ children, cookies }: { children: ReactNode; cookies: string | null}) {
-    const initialstate = cookieToInitialState(wagmiadapter.wagmiConfig as Config, cookies)
-
-    return (
-        <WagmiProvider config={wagmiadapter.wagmiConfig as Config} initialState={initialstate}>
-            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-        </WagmiProvider>
-    )
+  return (
+    <WagmiProvider config={wagmiAdapter.wagmiConfig as Config} initialState={initialState}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </WagmiProvider>
+  )
 }
 
-export default walletprovider
+export default ContextProvider
+    

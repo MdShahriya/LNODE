@@ -1,210 +1,81 @@
 .header {
-  background-color: #1a1a2e;
-  color: white;
-  padding: 1rem 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.header-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo-container {
-  display: flex;
-  align-items: center;
-}
-
-.logo-container a {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  color: white;
-}
-
-.logo {
-  height: 40px;
-  margin-right: 0.5rem;
-}
-
-.logo-text {
-  font-size: 1.5rem;
-  font-weight: bold;
-  background: linear-gradient(90deg, #15CFF1, #0D7CE9);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.nav-container {
-  display: flex;
-  align-items: center;
-}
-
-.nav-list {
-  display: flex;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.nav-item {
-  margin: 0 1rem;
-}
-
-.nav-item a {
-  color: #e0e0e0;
-  text-decoration: none;
-  font-weight: 500;
-  padding: 0.5rem 0;
-  transition: color 0.3s ease;
-  position: relative;
-}
-
-.nav-item a:hover,
-.nav-item a.active {
-  color: #15CFF1;
-}
-
-.nav-item a.active::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, #15CFF1, #0D7CE9);
-}
-
-.wallet-container {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.wallet-info {
-  display: flex;
-  align-items: center;
-}
-
-.wallet-address {
-  font-size: 0.9rem;
-  color: #666;
-  margin-left: 10px;
-}
-
-appkit-button {
-  --w3m-accent-color: #0D7CE9;
-  --w3m-accent-fill-color: white;
-  --w3m-button-border-radius: 4px;
-  --w3m-button-height: 36px;
-}
-
-.mobile-menu-toggle {
-  display: none;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.5rem;
-}
-
-.menu-icon {
-  display: block;
-  width: 25px;
-  height: 3px;
-  background-color: white;
-  position: relative;
-  transition: background-color 0.3s ease;
-}
-
-.menu-icon::before,
-.menu-icon::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-color: white;
-  transition: all 0.3s ease;
-}
-
-.menu-icon::before {
-  top: -8px;
-}
-
-.menu-icon::after {
-  bottom: -8px;
-}
-
-/* Mobile styles */
-@media (max-width: 768px) {
-  .header-container {
-    padding: 0.5rem 1rem;
-  }
-  
-  .nav-container {
-    position: fixed;
-    top: 60px;
-    left: 0;
-    width: 100%;
-    height: 0;
     background-color: white;
-    overflow: hidden;
-    transition: height 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    z-index: 100;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
   
-  .nav-container.mobile-open {
-    height: calc(100vh - 60px);
-    overflow-y: auto;
+  .header__nav {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 1rem;
   }
   
-  .main-nav {
-    flex-direction: column;
-    padding: 1rem;
+  .header__container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 4rem;
   }
   
-  .nav-list {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .nav-item {
-    margin: 0.5rem 0;
-  }
-  
-  .wallet-container {
-    margin: 1rem 0;
-    width: 100%;
-    justify-content: center;
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .wallet-info {
-    flex-direction: column;
+  .header__left {
+    display: flex;
     align-items: center;
   }
   
-  .wallet-address {
-    margin-left: 0;
-    margin-bottom: 0.5rem;
-    text-align: center;
+  .header__logo-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
   }
   
-  appkit-button {
-    width: 100%;
-    max-width: 200px;
+  .header__logo-image {
+    height: 2.5rem;
+    width: auto;
   }
   
-  .mobile-menu-toggle {
-    display: block;
+  .header__logo-text {
+    margin-left: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #1f2937; /* gray-900 */
   }
-}
+  
+  .header__nav-links {
+    margin-left: 2.5rem;
+    display: none;
+  }
+  
+  @media (min-width: 768px) {
+    .header__nav-links {
+      display: block;
+    }
+  }
+  
+  .header__nav-list {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .header__nav-item {
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    color: #6b7280; /* gray-500 */
+    text-decoration: none;
+  }
+  
+  .header__nav-item:hover {
+    color: #1f2937; /* gray-900 */
+  }
+  
+  .header__nav-item.active {
+    background-color: #f3f4f6; /* gray-100 */
+    color: #1f2937; /* gray-900 */
+  }
+  
+  .header__right {
+    display: flex;
+    align-items: center;
+  }
+  
+  

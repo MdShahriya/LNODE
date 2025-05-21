@@ -1,85 +1,61 @@
 'use client'
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname } from 'next/navigation';
-import { useAccount } from 'wagmi';
-import './Header.css';
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
+import { useAccount } from 'wagmi'
+import './Header.css'
 
-const Header: React.FC = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isConnected } = useAccount(); // Use wagmi's useAccount hook
-  const pathname = usePathname();
+const navigation = [
+  { name: 'Dashboard', href: '/dashboard' },
+  { name: 'Tasks', href: '/dashboard/tasks' },
+  { name: 'Achievements', href: '/dashboard/achievements' },
+  { name: 'Leaderboard', href: '/dashboard/leaderboard' },
+  { name: 'Referral', href: '/dashboard/referral' },
+]
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
+export default function Header() {
+  const pathname = usePathname()
+  const { isConnected } = useAccount()
 
   return (
     <header className="header">
-      <div className="header-container">
-        <div className="logo-container">
-          <Link href="/">
-            <div style={{ position: 'relative', width: '40px', height: '40px', display: 'inline-block' }}>
-              <Image 
-                src="/logo.png" 
-                alt="TOPAY Logo" 
-                className="logo" 
-                fill
-                sizes="40px"
-                priority
+      <nav className="header__nav" aria-label="Top">
+        <div className="header__container">
+          <div className="header__left">
+            <Link href="/" className="header__logo-link">
+              <Image
+                src="/logo.svg"
+                alt="TOPAY Logo"
+                width={40}
+                height={40}
+                className="header__logo-image"
               />
+              <span className="header__logo-text">TOPAY NODE</span>
+            </Link>
+            <div className="header__nav-links">
+              <div className="header__nav-list">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`header__nav-item ${pathname === item.href ? 'active' : ''}`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
             </div>
-            <span className="logo-text">TOPAY</span>
-          </Link>
-        </div>
-
-        <div className={`nav-container ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-          <nav className="main-nav">
-            <ul className="nav-list">
-              <li className="nav-item">
-                <Link href="/" className={pathname === '/' ? 'active' : ''}>
-                  Dashboard
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link href="/task" className={pathname === '/task' ? 'active' : ''}>
-                  Tasks
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link href="/referral" className={pathname === '/referral' ? 'active' : ''}>
-                  Referrals
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link href="/airdrop" className={pathname === '/airdrop' ? 'active' : ''}>
-                  Airdrops
-                </Link>
-              </li>
-              <li className="nav-item">
-                <Link href="/profile" className={pathname === '/profile' ? 'active' : ''}>
-                  Profile
-                </Link>
-              </li>
-            </ul>
-          </nav>
-
-          <div className="wallet-container">
-            {/* Using isConnected to conditionally render a different class if needed */}
-            <div className={`wallet-button-wrapper ${isConnected ? 'connected' : ''}`}>
-              <appkit-button balance='hide' namespace='eip155'/>
+          </div>
+          <div className="header__right">
+            <div className="header__wallet-button">
+              {isConnected
+                ? <appkit-button balance='hide' />
+                : <appkit-connect-button />}
             </div>
           </div>
         </div>
-
-        <button className="mobile-menu-toggle" onClick={toggleMobileMenu}>
-          <span className="menu-icon"></span>
-        </button>
-      </div>
+      </nav>
     </header>
-  );
-};
-
-export default Header;
+  )
+}
