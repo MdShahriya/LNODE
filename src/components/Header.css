@@ -1,81 +1,75 @@
 .header {
-    background-color: white;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
-  
-  .header__nav {
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 0 1rem;
-  }
-  
-  .header__container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 4rem;
-  }
-  
-  .header__left {
-    display: flex;
-    align-items: center;
-  }
-  
-  .header__logo-link {
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-  }
-  
-  .header__logo-image {
-    height: 2.5rem;
-    width: auto;
-  }
-  
-  .header__logo-text {
-    margin-left: 0.75rem;
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: #1f2937; /* gray-900 */
-  }
-  
-  .header__nav-links {
-    margin-left: 2.5rem;
-    display: none;
-  }
-  
-  @media (min-width: 768px) {
-    .header__nav-links {
-      display: block;
-    }
-  }
-  
-  .header__nav-list {
-    display: flex;
-    gap: 1rem;
-  }
-  
-  .header__nav-item {
-    font-size: 0.875rem;
-    font-weight: 500;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.375rem;
-    color: #6b7280; /* gray-500 */
-    text-decoration: none;
-  }
-  
-  .header__nav-item:hover {
-    color: #1f2937; /* gray-900 */
-  }
-  
-  .header__nav-item.active {
-    background-color: #f3f4f6; /* gray-100 */
-    color: #1f2937; /* gray-900 */
-  }
-  
-  .header__right {
-    display: flex;
-    align-items: center;
-  }
-  
-  
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 0;
+}
+
+.header__nav {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.header__container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header__left {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.header__logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  gap: 0.5rem;
+}
+
+.header__logo-image {
+  border-radius: 0.375rem;
+}
+
+.header__logo-text {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #111827;
+}
+
+.header__links {
+  display: flex;
+  gap: 1rem;
+}
+
+.header__link {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-decoration: none;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.header__link:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.header__link.active {
+  color: #111827;
+  font-weight: 600;
+  background-color: #e5e7eb;
+}
+
+.header__right {
+  display: flex;
+  align-items: center;
+}
+
+.header__wallet {
+  display: flex;
+  align-items: center;
+}

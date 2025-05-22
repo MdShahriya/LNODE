@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import "./layout.css"
 import { headers } from "next/headers"; // added
 import ContextProvider from '@/context'
-import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
@@ -24,7 +23,6 @@ export default async function RootLayout({
     <html lang="en">
       <body>
         <ContextProvider cookies={cookies}>
-          <Header />
           <main>{children}</main>
           <Footer />
         </ContextProvider>

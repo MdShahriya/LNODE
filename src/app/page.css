@@ -1,51 +1,66 @@
-/* Styles for the landing page */
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.landing-main {
+  padding: 4rem 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+  text-align: center;
 }
 
-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 2rem;
+.landing-hero {
+  margin-bottom: 4rem;
 }
 
-h1 {
+.landing-title {
   font-size: 2.5rem;
-  font-weight: bold;
+  font-weight: 700;
+  margin-bottom: 1rem;
 }
 
-p {
-  margin-top: 1rem;
+.landing-description {
   font-size: 1.125rem;
+  color: #4b5563;
+  margin-bottom: 2rem;
 }
 
-button {
-  margin-top: 1.5rem;
+.cta-button {
   padding: 0.75rem 2rem;
-  background-color: #3b82f6;
-  color: white;
-  border-radius: 9999px;
+  background-color: #1d4ed8;
+  color: #fff;
   border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
-button:hover {
+.cta-button:hover {
   background-color: #2563eb;
 }
 
-ul {
-  margin-top: 1rem;
-  list-style-type: none;
-  padding: 0;
+.landing-features,
+.landing-benefits,
+.landing-how-it-works,
+.landing-cta {
+  margin-top: 4rem;
 }
 
-li {
-  margin: 0.5rem 0;
+.features-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.features-list,
+.how-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 600px;
+  text-align: left;
+}
+
+.features-list li,
+.how-list li {
+  font-size: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
 }

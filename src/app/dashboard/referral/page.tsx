@@ -2,7 +2,6 @@
 
 import { useAccount } from 'wagmi'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import "./referral.css"
 
 interface ReferralStats {
@@ -21,7 +20,6 @@ interface ReferralHistory {
 
 export default function ReferralProgram() {
   const { isConnected } = useAccount()
-  const router = useRouter()
   const [stats] = useState<ReferralStats>({
     totalReferrals: 5,
     activeReferrals: 3,
@@ -45,41 +43,39 @@ export default function ReferralProgram() {
   ])
 
   useEffect(() => {
-    if (!isConnected) {
-      router.push('/')
-    }
-  }, [isConnected, router])
+    if (!isConnected) return
+  }, [isConnected])
 
   const copyReferralCode = () => {
     navigator.clipboard.writeText(stats.referralCode)
   }
 
   return (
-    <div className="min-h-screen p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <h1 className="text-3xl font-bold">Referral Program</h1>
+    <div className="referral">
+      <div className="referral__container">
+        <h1 className="referral__title">Referral Program</h1>
 
-        {/* Referral Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold">Total Referrals</h3>
-            <p className="text-3xl font-bold">{stats.totalReferrals}</p>
+        {/* Stats */}
+        <div className="referral__stats-grid">
+          <div className="referral__stat-card">
+            <h3 className="referral__stat-title">Total Referrals</h3>
+            <p className="referral__stat-value">{stats.totalReferrals}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold">Active Referrals</h3>
-            <p className="text-3xl font-bold">{stats.activeReferrals}</p>
+          <div className="referral__stat-card">
+            <h3 className="referral__stat-title">Active Referrals</h3>
+            <p className="referral__stat-value">{stats.activeReferrals}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold">Points Earned</h3>
-            <p className="text-3xl font-bold">{stats.pointsEarned}</p>
+          <div className="referral__stat-card">
+            <h3 className="referral__stat-title">Points Earned</h3>
+            <p className="referral__stat-value">{stats.pointsEarned}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold">Your Referral Code</h3>
-            <div className="flex items-center space-x-2 mt-2">
-              <code className="text-xl bg-gray-100 px-3 py-1 rounded">{stats.referralCode}</code>
+          <div className="referral__stat-card">
+            <h3 className="referral__stat-title">Your Referral Code</h3>
+            <div className="referral__code-group">
+              <code className="referral__code">{stats.referralCode}</code>
               <button
                 onClick={copyReferralCode}
-                className="p-2 hover:bg-gray-100 rounded transition-colors"
+                className="referral__copy-btn"
                 title="Copy referral code"
               >
                 📋
@@ -88,31 +84,29 @@ export default function ReferralProgram() {
           </div>
         </div>
 
-        {/* Referral History */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <h2 className="text-xl font-bold p-6 border-b">Referral History</h2>
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
+        {/* History */}
+        <div className="referral__history">
+          <h2 className="referral__history-title">Referral History</h2>
+          <table className="referral__history-table">
+            <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Points</th>
+                <th>Address</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Points</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody>
               {history.map((entry, index) => (
                 <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.address}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.date}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      entry.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
+                  <td>{entry.address}</td>
+                  <td>{entry.date}</td>
+                  <td>
+                    <span className={`referral__status referral__status--${entry.status}`}>
                       {entry.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.pointsEarned}</td>
+                  <td>{entry.pointsEarned}</td>
                 </tr>
               ))}
             </tbody>

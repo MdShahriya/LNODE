@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import './Header.css'
+import "./Header.css"
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
@@ -23,9 +23,9 @@ export default function Header() {
       <nav className="header__nav" aria-label="Top">
         <div className="header__container">
           <div className="header__left">
-            <Link href="/" className="header__logo-link">
+            <Link href="/dashboard" className="header__logo">
               <Image
-                src="/logo.svg"
+                src="/logo.png"
                 alt="TOPAY Logo"
                 width={40}
                 height={40}
@@ -33,22 +33,22 @@ export default function Header() {
               />
               <span className="header__logo-text">TOPAY NODE</span>
             </Link>
-            <div className="header__nav-links">
-              <div className="header__nav-list">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`header__nav-item ${pathname === item.href ? 'active' : ''}`}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
+
+            <div className="header__links">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`header__link ${pathname === item.href ? 'active' : ''}`}
+                >
+                  {item.name}
+                </Link>
+              ))}
             </div>
           </div>
+
           <div className="header__right">
-            <div className="header__wallet-button">
+            <div className="header__wallet">
               {isConnected
                 ? <appkit-button balance='hide' />
                 : <appkit-connect-button />}

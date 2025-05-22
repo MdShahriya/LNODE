@@ -4,7 +4,7 @@
 import { wagmiAdapter, projectId } from '@/config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createAppKit } from '@reown/appkit/react' 
-import { mainnet, bsc } from '@reown/appkit/networks'
+import { bsc } from '@reown/appkit/networks'
 import React, { type ReactNode } from 'react'
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
 
@@ -27,11 +27,24 @@ const metadata = {
 export const modal = createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks: [mainnet, bsc],
-  defaultNetwork: mainnet,
+  networks: [bsc],
+  defaultNetwork: bsc,
   metadata: metadata,
+  termsConditionsUrl: "",
+  privacyPolicyUrl: "",
   features: {
-    analytics: true, // Optional - defaults to your Cloud configuration
+    analytics: true,
+    email: false,
+    socials: [],
+    swaps: false,
+    send: false,
+    emailShowWallets: false,
+    legalCheckbox: true
+},
+themeVariables: {
+  "--w3m-color-mix": "#15CFF1",
+  "--w3m-accent": "#0D7CE9",
+  "--w3m-color-mix-strength": 40,  
   }
 })
 

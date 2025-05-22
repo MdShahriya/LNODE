@@ -1,163 +1,97 @@
-.achievements-container {
-  max-width: 80rem;
+.achievements {
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: #f9fafb;
+}
+
+.achievements__container {
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 2rem 1rem;
 }
 
-.achievements-header {
-  margin-bottom: 2rem;
-}
-
-.achievements-title {
+.achievements__title {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #111827;
-}
-
-.achievements-subtitle {
-  margin-top: 0.5rem;
-  color: #6b7280;
-  font-size: 1rem;
-}
-
-.achievements-progress {
-  background-color: white;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
 }
 
-.progress-stats {
+.achievements__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1.5rem;
-  margin-top: 1rem;
 }
 
-.progress-item {
-  text-align: center;
+@media (min-width: 768px) {
+  .achievements__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.progress-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.progress-label {
-  margin-top: 0.5rem;
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-.achievements-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+@media (min-width: 1024px) {
+  .achievements__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .achievement-card {
-  background-color: white;
+  background-color: #ffffff;
   border-radius: 0.5rem;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
 }
 
-.achievement-card:hover {
-  transform: translateY(-2px);
-}
-
-.achievement-icon {
-  width: 3rem;
-  height: 3rem;
-  margin-bottom: 1rem;
-  border-radius: 0.5rem;
+.achievement-card__header {
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.achievement-locked {
-  background-color: #f3f4f6;
-  color: #9ca3af;
-}
-
-.achievement-unlocked {
-  background-color: #dbeafe;
-  color: #3b82f6;
-}
-
-.achievement-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 0.5rem;
-}
-
-.achievement-description {
-  color: #6b7280;
-  font-size: 0.875rem;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 1rem;
 }
 
-.achievement-progress {
-  margin-top: 1rem;
+.achievement-card__title {
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
-.progress-bar {
-  height: 0.5rem;
-  background-color: #f3f4f6;
+.achievement-card__reward {
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+.achievement-card__description {
+  color: #4b5563;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.achievement-card__progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+  color: #6b7280;
+}
+
+.achievement-card__progress-bar {
+  background-color: #e5e7eb;
+  height: 0.625rem;
   border-radius: 9999px;
   overflow: hidden;
 }
 
-.progress-fill {
+.achievement-card__progress-fill {
   height: 100%;
-  background-color: #3b82f6;
   border-radius: 9999px;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease-in-out;
 }
 
-.progress-text {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  color: #6b7280;
+.achievement-card__progress-fill.in-progress {
+  background-color: #3b82f6;
 }
 
-.achievement-reward {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.reward-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.reward-value {
-  font-size: 0.875rem;
-  color: #059669;
-  font-weight: 500;
-}
-
-@media (max-width: 640px) {
-  .achievements-container {
-    padding: 1rem;
-  }
-  
-  .achievements-title {
-    font-size: 1.5rem;
-  }
-  
-  .achievement-card {
-    padding: 1rem;
-  }
+.achievement-card__progress-fill.completed {
+  background-color: #10b981;
 }

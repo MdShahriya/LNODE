@@ -2,8 +2,7 @@
 
 import { useAccount } from 'wagmi'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import "./achievements.css"
+import './achievements.css'
 
 interface Achievement {
   id: string
@@ -17,25 +16,8 @@ interface Achievement {
 
 export default function Achievements() {
   const { isConnected } = useAccount()
-  const router = useRouter()
 
-  const updateAchievementProgress = (id: string, newProgress: number) => {
-    setAchievements(prevAchievements => {
-      return prevAchievements.map(achievement => {
-        if (achievement.id === id) {
-          const updated = {
-            ...achievement,
-            progress: Math.min(newProgress, achievement.target),
-            completed: newProgress >= achievement.target
-          }
-          return updated
-        }
-        return achievement
-      })
-    })
-  }
-
-  const [achievements, setAchievements] = useState<Achievement[]>([
+  const [achievements] = useState<Achievement[]>([
     {
       id: '1',
       title: 'Node Master',
@@ -66,40 +48,36 @@ export default function Achievements() {
   ])
 
   useEffect(() => {
-    if (!isConnected) {
-      router.push('/')
-    }
-  }, [isConnected, router])
+    if (!isConnected) return
+  }, [isConnected])
 
   return (
-    <div className="min-h-screen p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Achievements</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {achievements.map(achievement => {
+    <div className="achievements">
+      <div className="achievements__container">
+        <h1 className="achievements__title">Achievements</h1>
+
+        <div className="achievements__grid">
+          {achievements.map((achievement) => {
             const progressPercentage = (achievement.progress / achievement.target) * 100
-            
+
             return (
-              <div key={achievement.id} className="bg-white rounded-lg shadow p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-semibold">{achievement.title}</h3>
-                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                    {achievement.reward} pts
-                  </span>
+              <div key={achievement.id} className="achievement-card">
+                <div className="achievement-card__header">
+                  <h3 className="achievement-card__title">{achievement.title}</h3>
+                  <span className="achievement-card__reward">{achievement.reward} pts</span>
                 </div>
-                
-                <p className="text-gray-600 mb-4">{achievement.description}</p>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
+
+                <p className="achievement-card__description">{achievement.description}</p>
+
+                <div className="achievement-card__progress">
+                  <div className="achievement-card__progress-info">
                     <span>{achievement.progress} / {achievement.target}</span>
                     <span>{progressPercentage.toFixed(0)}%</span>
                   </div>
-                  
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+
+                  <div className="achievement-card__progress-bar">
                     <div
-                      className={`h-2.5 rounded-full ${achievement.completed ? 'bg-green-500' : 'bg-blue-500'}`}
+                      className={`achievement-card__progress-fill ${achievement.completed ? 'completed' : 'in-progress'}`}
                       style={{ width: `${progressPercentage}%` }}
                     />
                   </div>
