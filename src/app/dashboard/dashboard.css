@@ -55,35 +55,32 @@
   display: block;
 }
 
-.node-control-card {
+.node-control {
   background-color: white;
   border-radius: 1rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   padding: 2rem;
   text-align: center;
+  margin-top: 2rem;
 }
 
-.node-control-title {
+.control-title {
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 1rem;
 }
 
-.node-status {
-  font-size: 1.125rem;
-  font-weight: 500;
-  margin-bottom: 1.5rem;
-}
-
-.node-status.running {
+.status-running {
   color: #10b981;
+  font-weight: 500;
 }
 
-.node-status.stopped {
+.status-stopped {
   color: #ef4444;
+  font-weight: 500;
 }
 
-.node-toggle-button {
+.control-button {
   padding: 0.75rem 2rem;
   font-size: 1rem;
   border: none;
@@ -92,20 +89,55 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s;
+  margin: 1rem 0;
 }
 
-.node-toggle-button.start {
+.start-button {
   background-color: #10b981;
 }
 
-.node-toggle-button.start:hover {
+.start-button:hover {
   background-color: #059669;
 }
 
-.node-toggle-button.stop {
+.stop-button {
   background-color: #ef4444;
 }
 
-.node-toggle-button.stop:hover {
+.stop-button:hover {
   background-color: #dc2626;
+}
+
+.control-info {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.stats-elapsed,
+.stats-update {
+  display: block;
+  color: #10b981;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.points-incrementing {
+  color: #4caf50;
+  font-size: 0.8em;
+  margin-left: 5px;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
 }

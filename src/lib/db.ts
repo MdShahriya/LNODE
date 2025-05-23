@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.NEXT_MONGODB_URI || 'mongodb://localhost:27017/topay-dashboard';
+const MONGODB_URI = process.env.NEXT_MONGO_URI || '';
 
 // Get the MongooseCache type from global declaration
 type MongooseCache = {
@@ -8,10 +8,11 @@ type MongooseCache = {
   promise: Promise<{ conn: typeof mongoose; promise: Promise<unknown> | null }> | null;
 };
 
-let cached: MongooseCache = global.mongoose;
+// Access the mongoose property from the properly typed global object
+let cached: MongooseCache = (global as unknown as { mongoose: MongooseCache }).mongoose;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = (global as unknown as { mongoose: MongooseCache }).mongoose = { conn: null, promise: null };
 }
 
 async function connectDB(): Promise<typeof mongoose> {

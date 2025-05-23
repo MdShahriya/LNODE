@@ -14,7 +14,7 @@ const navigation = {
   ],
   social: [
     { name: 'Twitter', href: 'https://twitter.com/topayfoundation', icon: faTwitter },
-    { name: 'GitHub', href: 'https://github.com/topayfoundation', icon: faGithub },
+    { name: 'GitHub', href: 'https://github.com/topay-foundation', icon: faGithub },
     { name: 'Discord', href: 'https://discord.com/invite/uZNAzSJYgW', icon: faDiscord },
   ],
 }

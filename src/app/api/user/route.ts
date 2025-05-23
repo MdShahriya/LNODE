@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
         walletAddress: walletAddress.toLowerCase(),
         points: 0,
         tasksCompleted: 0,
-        uptime: 0
+        uptime: 0,
+        nodeStatus: false
       });
       return NextResponse.json({ user, created: true }, { status: 201 });
     }

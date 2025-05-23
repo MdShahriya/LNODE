@@ -5,6 +5,8 @@ export interface IUser extends Document {
   points: number;
   tasksCompleted: number;
   uptime: number;
+  nodeStatus: boolean;
+  nodeStartTime: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +30,14 @@ const UserSchema: Schema = new Schema(
     uptime: {
       type: Number,
       default: 0,
+    },
+    nodeStatus: {
+      type: Boolean,
+      default: false,
+    },
+    nodeStartTime: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true }

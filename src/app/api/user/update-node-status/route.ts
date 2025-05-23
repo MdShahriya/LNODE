@@ -24,11 +24,35 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // If node is being turned on, increment uptime slightly to simulate activity
-    // In a real application, you would have a more sophisticated way to track uptime
+    // Update node status
+    user.nodeStatus = isRunning;
+    
     if (isRunning) {
-      user.uptime += 1;
-      user.points += 10; // Award some points for starting the node
+      // If node is being turned on, store the current time as the start time
+      user.nodeStartTime = new Date();
+    } else if (user.nodeStartTime) {
+      // If node is being turned off and we have a start time, calculate uptime and points
+      const now = new Date();
+      const startTime = new Date(user.nodeStartTime);
+      
+      // Calculate elapsed time in minutes and hours
+      const elapsedMilliseconds = now.getTime() - startTime.getTime();
+      const elapsedMinutes = elapsedMilliseconds / (1000 * 60);
+      const elapsedHours = elapsedMilliseconds / (1000 * 60 * 60);
+      
+      // Calculate points at 30 points per minute (1800 per hour)
+      const pointsEarned = elapsedMinutes * 30;
+      
+      // Update user points
+      user.points += pointsEarned;
+      
+      // Update uptime (in hours)
+      user.uptime += Math.floor(elapsedHours);
+      
+      // Reset the start time
+      user.nodeStartTime = null;
+      
+      console.log(`User ${user.walletAddress} earned ${pointsEarned.toFixed(3)} points for ${elapsedMinutes.toFixed(2)} minutes of uptime`);
     }
     
     await user.save();
