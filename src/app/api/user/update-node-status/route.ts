@@ -35,10 +35,11 @@ export async function POST(request: NextRequest) {
       const now = new Date();
       const startTime = new Date(user.nodeStartTime);
       
-      // Calculate elapsed time in minutes and hours
+      // Calculate elapsed time in seconds, minutes and hours (for different purposes)
       const elapsedMilliseconds = now.getTime() - startTime.getTime();
-      const elapsedMinutes = elapsedMilliseconds / (1000 * 60);
-      const elapsedHours = elapsedMilliseconds / (1000 * 60 * 60);
+      const elapsedSeconds = Math.floor(elapsedMilliseconds / 1000);
+      const elapsedMinutes = elapsedSeconds / 60;
+      const elapsedHours = elapsedSeconds / 3600;
       
       // Calculate points at 30 points per minute (1800 per hour)
       const pointsEarned = elapsedMinutes * 30;
@@ -46,13 +47,13 @@ export async function POST(request: NextRequest) {
       // Update user points
       user.points += pointsEarned;
       
-      // Update uptime (in hours)
-      user.uptime += Math.floor(elapsedHours);
+      // Update uptime (now in seconds)
+      user.uptime += elapsedSeconds;
       
       // Reset the start time
       user.nodeStartTime = null;
       
-      console.log(`User ${user.walletAddress} earned ${pointsEarned.toFixed(3)} points for ${elapsedMinutes.toFixed(2)} minutes of uptime`);
+      console.log(`User ${user.walletAddress} earned ${pointsEarned.toFixed(3)} points for ${elapsedMinutes.toFixed(2)} minutes (${elapsedSeconds} seconds) of uptime`);
     }
     
     await user.save();

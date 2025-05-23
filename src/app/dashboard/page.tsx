@@ -63,7 +63,7 @@ export default function Dashboard() {
             setUser(data.user)
             setIsNodeRunning(data.user.nodeStatus)
             setNodeStats({
-              uptime: data.user.uptime,
+              uptime: secondsToHours(data.user.uptime),
               points: data.user.points,
               tasksCompleted: data.user.tasksCompleted
             })
@@ -79,10 +79,10 @@ export default function Dashboard() {
           setUser(data.user)
           setIsNodeRunning(data.user.nodeStatus)
           setNodeStats({
-            uptime: data.user.uptime,
-            points: data.user.points,
-            tasksCompleted: data.user.tasksCompleted
-          })
+              uptime: secondsToHours(data.user.uptime),
+              points: data.user.points,
+              tasksCompleted: data.user.tasksCompleted
+            })
           
           // If node is running, set the start time from server
           if (data.user.nodeStatus && data.user.nodeStartTime) {
@@ -153,7 +153,15 @@ export default function Dashboard() {
             const data = await response.json();
             // Update local state with server data
             if (data.user && data.user.nodeStartTime) {
-              setStartTime(new Date(data.user.nodeStartTime).getTime());
+              const serverStartTime = new Date(data.user.nodeStartTime).getTime();
+              setStartTime(serverStartTime);
+              
+              // Cache start time in localStorage
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('startTime', serverStartTime.toString());
+                localStorage.setItem('localPoints', '0');
+                localStorage.setItem('secondsElapsed', '0');
+              }
             }
             setLocalPoints(0);
             setSecondsElapsed(0);
@@ -184,11 +192,18 @@ export default function Dashboard() {
             setSecondsElapsed(0);
             setIsNodeRunning(false);
             
+            // Clear localStorage cache
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('localPoints');
+              localStorage.removeItem('secondsElapsed');
+              localStorage.removeItem('startTime');
+            }
+            
             // Update user data with the latest from server
             if (data.user) {
               setUser(data.user);
               setNodeStats({
-                uptime: data.user.uptime,
+                uptime: secondsToHours(data.user.uptime),
                 points: data.user.points,
                 tasksCompleted: data.user.tasksCompleted
               });
@@ -212,6 +227,33 @@ export default function Dashboard() {
   
 
   
+  // Initialize state from localStorage if available
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Retrieve cached local points if available
+      const cachedLocalPoints = localStorage.getItem('localPoints');
+      const cachedStartTime = localStorage.getItem('startTime');
+      const cachedSecondsElapsed = localStorage.getItem('secondsElapsed');
+      
+      if (cachedLocalPoints) {
+        setLocalPoints(parseFloat(cachedLocalPoints));
+      }
+      
+      if (cachedSecondsElapsed) {
+        setSecondsElapsed(parseInt(cachedSecondsElapsed, 10));
+      }
+      
+      // Only set startTime from localStorage if we don't have a server value yet
+      if (cachedStartTime && !startTime) {
+        setStartTime(parseInt(cachedStartTime, 10));
+      }
+    }
+  }, [startTime]);
+
+  // Memoized conversion functions
+  const secondsToHours = (seconds: number) => Math.floor(seconds / 3600);
+  const secondsToMinutes = (seconds: number) => seconds / 60;
+
   // Effect to handle UI updates for running node (display only, no database updates)
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -222,21 +264,33 @@ export default function Dashboard() {
       timer = setInterval(() => {
         const now = Date.now();
         const elapsedSeconds = Math.floor((now - startTime) / 1000);
-        const elapsedMinutes = elapsedSeconds / 60; // Minutes for points calculation
-        const elapsedHours = elapsedSeconds / 3600; // Hours for uptime display
         
-        // Calculate potential points at 30 points per minute (1800 per hour)
+        // Use memoized conversion functions
+        const elapsedMinutes = secondsToMinutes(elapsedSeconds);
         const potentialPoints = elapsedMinutes * 30;
         
         setSecondsElapsed(elapsedSeconds);
         setLocalPoints(potentialPoints);
         
+        // Cache values in localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('localPoints', potentialPoints.toString());
+          localStorage.setItem('secondsElapsed', elapsedSeconds.toString());
+          localStorage.setItem('startTime', startTime.toString());
+        }
+        
         // Update displayed stats (for UI only, not saved to database until stop)
-        setNodeStats(prev => ({
-          ...prev,
-          points: user.points + potentialPoints,
-          uptime: user.uptime + Math.floor(elapsedHours) // Only count full hours for uptime display
-        }));
+        setNodeStats(prev => {
+          // Use memoized conversion for both uptime values
+          const uptimeHours = secondsToHours(user.uptime);
+          const additionalHours = secondsToHours(elapsedSeconds);
+          
+          return {
+            ...prev,
+            points: user.points + potentialPoints,
+            uptime: uptimeHours + additionalHours
+          };
+        });
       }, 10000); // Update every 10 seconds for smoother UI
 
       // Heartbeat to keep node status active in backend
@@ -254,6 +308,10 @@ export default function Dashboard() {
                 const serverStartTime = new Date(userData.user.nodeStartTime).getTime();
                 if (serverStartTime !== startTime) {
                   setStartTime(serverStartTime);
+                  // Update localStorage with new start time
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem('startTime', serverStartTime.toString());
+                  }
                 }
               }
             } else {
@@ -262,11 +320,19 @@ export default function Dashboard() {
               setStartTime(null);
               setLocalPoints(0);
               setSecondsElapsed(0);
+              
+              // Clear localStorage cache
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('localPoints');
+                localStorage.removeItem('secondsElapsed');
+                localStorage.removeItem('startTime');
+              }
+              
               setNodeStats({
-                uptime: userData.user.uptime,
-                points: userData.user.points,
-                tasksCompleted: userData.user.tasksCompleted
-              });
+              uptime: secondsToHours(userData.user.uptime),
+              points: userData.user.points,
+              tasksCompleted: userData.user.tasksCompleted
+            });
             }
           }
         } catch (error) {
@@ -296,65 +362,84 @@ export default function Dashboard() {
         .then(data => {
           if (data.user.nodeStatus && data.user.nodeStartTime) {
             // Update local state with server data
-            setStartTime(new Date(data.user.nodeStartTime).getTime());
+            const serverStartTime = new Date(data.user.nodeStartTime).getTime();
+            setStartTime(serverStartTime);
             setIsNodeRunning(true);
-            setUser(data.user);
+            
+            // Cache values in localStorage
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('startTime', serverStartTime.toString());
+              // Initialize with zeros, will be updated in the next UI update cycle
+              localStorage.setItem('localPoints', '0');
+              localStorage.setItem('secondsElapsed', '0');
+            }
+            
+            // Convert uptime from seconds to hours for display
+            setNodeStats({
+              uptime: secondsToHours(data.user.uptime),
+              points: data.user.points,
+              tasksCompleted: data.user.tasksCompleted
+            });
           } else if (!data.user.nodeStatus) {
             // Node is not running on server, update local state
             setIsNodeRunning(false);
+            setStartTime(null);
+            
+            // Clear localStorage cache
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('localPoints');
+              localStorage.removeItem('secondsElapsed');
+              localStorage.removeItem('startTime');
+            }
+            
+            // Convert uptime from seconds to hours for display
+            setNodeStats({
+              uptime: secondsToHours(data.user.uptime),
+              points: data.user.points,
+              tasksCompleted: data.user.tasksCompleted
+            });
           }
         })
         .catch(error => {
-          console.error('Error fetching user data on load:', error);
+          console.error('Error checking node status:', error);
         });
     }
   }, [user, startTime, address]);
 
-  // Format elapsed time
-  const formatElapsedTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m`;
-  };
-
   return (
     <main className="dashboard-page">
       <div className="dashboard-container">
-        <h1 className="dashboard-heading">Node Operator Dashboard</h1>
-        <p className="dashboard-subheading">Monitor your node&apos;s performance and manage uptime in real-time.</p>
-
         {!isConnected ? (
-          <div className="alert-message">
-            <p>Please connect your wallet to access your dashboard.</p>
-          </div>
+          <p>Please connect your wallet to continue.</p>
         ) : loading ? (
-          <div className="loading-container">
-            <p>Loading your node data...</p>
+          <div className="stats-grid">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="stats-card stats-loading">
+                <h3 className="stats-title">Loading...</h3>
+                <p className="stats-value loading">0</p>
+                <span className="stats-label">&nbsp;</span>
+              </div>
+            ))}
           </div>
         ) : (
           <>
-            {/* User Welcome Message */}
-            {user && (
-              <div className="user-welcome">
-                <p>Welcome, <span className="wallet-address">{user.walletAddress.substring(0, 6)}...{user.walletAddress.substring(user.walletAddress.length - 4)}</span></p>
-              </div>
-            )}
-
-            {/* Node Stats */}
+            <h1 className="dashboard-heading">Node Dashboard</h1>
+            <p className="dashboard-subheading">Monitor your node&apos;s performance and earnings</p>
+            
             <div className="stats-grid">
               <div className="stats-card">
                 <h3 className="stats-title">Total Uptime</h3>
-                <p className="stats-value">{nodeStats.uptime}h 0m</p>
-                <span className="stats-label">Tracked uptime while node is active</span>
+                <p className="stats-value">{nodeStats.uptime} hours</p>
+                <span className="stats-label">Time your node has been active</span>
                 {isNodeRunning && (
-                  <span className="stats-elapsed">Current session: {formatElapsedTime(secondsElapsed)}</span>
+                  <span className="stats-update">Time: {secondsToHours(secondsElapsed)} hours {Math.floor((secondsElapsed % 3600) / 60)} minutes</span>
                 )}
               </div>
               
               <div className="stats-card">
                 <h3 className="stats-title">Points Earned</h3>
                 <p className="stats-value">{nodeStats.points.toFixed(3)}</p>
-                <span className="stats-label">Points will save after stoping Node</span>
+                <span className="stats-label">Points will add after current Uptime ends.</span>
                 {isNodeRunning && (
                   <span className="stats-update">Points: {localPoints.toFixed(3)}</span>
                 )}

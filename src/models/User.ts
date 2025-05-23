@@ -4,7 +4,7 @@ export interface IUser extends Document {
   walletAddress: string;
   points: number;
   tasksCompleted: number;
-  uptime: number;
+  uptime: number; // Now stored in seconds
   nodeStatus: boolean;
   nodeStartTime: Date | null;
   createdAt: Date;
@@ -30,6 +30,7 @@ const UserSchema: Schema = new Schema(
     uptime: {
       type: Number,
       default: 0,
+      description: 'Total uptime in seconds',
     },
     nodeStatus: {
       type: Boolean,
