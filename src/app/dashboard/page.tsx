@@ -439,7 +439,7 @@ export default function Dashboard() {
               <div className="stats-card">
                 <h3 className="stats-title">Points Earned</h3>
                 <p className="stats-value">{nodeStats.points.toFixed(3)}</p>
-                <span className="stats-label">Points will add after current Uptime ends.</span>
+                <span className="stats-label">Earn 30 points per minute (1800 per hour)</span>
                 {isNodeRunning && (
                   <span className="stats-update">Points: {localPoints.toFixed(3)}</span>
                 )}

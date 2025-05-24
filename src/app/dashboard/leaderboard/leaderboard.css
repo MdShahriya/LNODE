@@ -82,3 +82,26 @@
   color: #111827;
   font-weight: 500;
 }
+
+.leaderboard__loading,
+.leaderboard__error,
+.leaderboard__empty {
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #6b7280;
+}
+
+.leaderboard__error {
+  color: #ef4444;
+}
+
+.leaderboard__row--current {
+  background-color: #eff6ff;
+}
+
+.leaderboard__row--current:hover {
+  background-color: #dbeafe;
+}

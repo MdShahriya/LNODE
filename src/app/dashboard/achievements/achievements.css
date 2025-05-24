@@ -95,3 +95,20 @@
 .achievement-card__progress-fill.completed {
   background-color: #10b981;
 }
+
+
+.achievements__loading,
+.achievements__error,
+.achievements__empty {
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: #6b7280;
+  grid-column: 1 / -1;
+}
+
+.achievements__error {
+  color: #ef4444;
+}

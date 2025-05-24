@@ -5,16 +5,17 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAccount } from 'wagmi'
 import "./Header.css"
+import React from 'react'
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Tasks', href: '/dashboard/tasks' },
-  { name: 'Achievements', href: '/dashboard/achievements' },
-  { name: 'Leaderboard', href: '/dashboard/leaderboard' },
-  { name: 'Referral', href: '/dashboard/referral' },
+const adminNavigation = [
+  { name: 'Dashboard', href: '/admin' },
+  { name: 'Tasks', href: '/admin/tasks' },
+  { name: 'Achievements', href: '/admin/achievements' },
+  { name: 'Users', href: '/admin/usersmanagment' },
+  { name: 'Opinion Fund', href: '/admin/opinionfund' },
 ]
 
-export default function Header() {
+export default function AdminHeader() {
   const pathname = usePathname()
   const { isConnected } = useAccount()
 
@@ -23,7 +24,7 @@ export default function Header() {
       <nav className="header__nav" aria-label="Top">
         <div className="header__container">
           <div className="header__left">
-            <Link href="/dashboard" className="header__logo">
+            <Link href="/admin" className="header__logo">
               <Image
                 src="/logo.png"
                 alt="TOPAY Logo"
@@ -31,11 +32,11 @@ export default function Header() {
                 height={40}
                 className="header__logo-image"
               />
-              <span className="header__logo-text">TOPAY NODE</span>
+              <span className="header__logo-text">TOPAY ADMIN</span>
             </Link>
 
             <div className="header__links">
-              {navigation.map((item) => (
+              {adminNavigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -53,6 +54,9 @@ export default function Header() {
                 ? <appkit-button balance='hide' />
                 : <appkit-connect-button />}
             </div>
+            <Link href="/dashboard" className="header__link">
+              Switch to User View
+            </Link>
           </div>
         </div>
       </nav>
