@@ -7,6 +7,10 @@ export interface IUser extends Document {
   uptime: number; // Now stored in seconds
   nodeStatus: boolean;
   nodeStartTime: Date | null;
+  referralCode?: string;
+  referredBy?: mongoose.Types.ObjectId;
+  referralPointsEarned?: number;
+  isActive?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +43,24 @@ const UserSchema: Schema = new Schema(
     nodeStartTime: {
       type: Date,
       default: null,
+    },
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    referredBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    referralPointsEarned: {
+      type: Number,
+      default: 0,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   { timestamps: true }

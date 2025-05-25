@@ -3,7 +3,6 @@ import connectDB from '@/lib/db';
 import Task from '@/models/Task';
 import User from '@/models/User';
 import UserTask from '@/models/UserTask';
-import mongoose from 'mongoose';
 
 // GET /api/tasks - Get all tasks for a user
 export async function GET(request: NextRequest) {
@@ -40,7 +39,8 @@ export async function GET(request: NextRequest) {
         description: task.description,
         rewards: task.rewards,
         requirements: task.requirements,
-        status: userTask ? userTask.status : 'available'
+        status: userTask ? userTask.status : 'available',
+        taskUrl: task.taskUrl
       };
     });
     

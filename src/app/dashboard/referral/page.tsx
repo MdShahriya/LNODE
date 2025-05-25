@@ -1,7 +1,8 @@
 'use client'
 
 import { useAccount } from 'wagmi'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { toast } from 'react-hot-toast'
 import "./referral.css"
 
 interface ReferralStats {
@@ -9,6 +10,7 @@ interface ReferralStats {
   activeReferrals: number
   pointsEarned: number
   referralCode: string
+  referralLink: string
 }
 
 interface ReferralHistory {
@@ -19,35 +21,119 @@ interface ReferralHistory {
 }
 
 export default function ReferralProgram() {
-  const { isConnected } = useAccount()
-  const [stats] = useState<ReferralStats>({
-    totalReferrals: 5,
-    activeReferrals: 3,
-    pointsEarned: 750,
-    referralCode: 'TOPAY123'
+  const { address, isConnected } = useAccount()
+  const [stats, setStats] = useState<ReferralStats>({
+    totalReferrals: 0,
+    activeReferrals: 0,
+    pointsEarned: 0,
+    referralCode: '',
+    referralLink: ''
   })
+  const [history, setHistory] = useState<ReferralHistory[]>([])
+  const [loading, setLoading] = useState(false)
+  const [applying, setApplying] = useState(false)
+  const [referralLinkInput, setReferralLinkInput] = useState('')
 
-  const [history] = useState<ReferralHistory[]>([
-    {
-      address: '0x1234...5678',
-      date: '2024-03-15',
-      status: 'active',
-      pointsEarned: 250
-    },
-    {
-      address: '0x8765...4321',
-      date: '2024-03-14',
-      status: 'pending',
-      pointsEarned: 0
+  const fetchReferralData = useCallback(async () => {
+    if (!address || !isConnected) return
+    
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/referral?walletAddress=${address}`)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch referral data')
+      }
+      
+      const data = await response.json()
+      setStats(data.stats)
+      setHistory(data.history)
+    } catch (error) {
+      console.error('Error fetching referral data:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch referral data')
+    } finally {
+      setLoading(false)
     }
-  ])
+  }, [address, isConnected])
+
+  const applyReferralLink = async () => {
+    if (!address || !isConnected || !referralLinkInput.trim()) return
+    
+    try {
+      setApplying(true)
+      
+      // Extract referral code from URL
+      let referralCode = ''
+      const input = referralLinkInput.trim()
+      
+      if (input.includes('/referral/')) {
+        // Extract code from URL like: https://domain.com/referral/TOPAYABC123
+        const parts = input.split('/referral/')
+        if (parts.length > 1) {
+          referralCode = parts[1].split('?')[0] // Remove query params if any
+        }
+      } else {
+        // Assume it's just the code
+        referralCode = input
+      }
+      
+      if (!referralCode) {
+        throw new Error('Invalid referral link format')
+      }
+      
+      const response = await fetch('/api/referral', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: address,
+          referralCode: referralCode
+        }),
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to apply referral link')
+      }
+      
+      toast.success(`Referral link applied! ${data.pointsAwarded} points awarded to referrer.`)
+      setReferralLinkInput('')
+      fetchReferralData() // Refresh data
+    } catch (error) {
+      console.error('Error applying referral link:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to apply referral link')
+    } finally {
+      setApplying(false)
+    }
+  }
 
   useEffect(() => {
-    if (!isConnected) return
-  }, [isConnected])
+    if (isConnected && address) {
+      fetchReferralData()
+    }
+  }, [isConnected, address, fetchReferralData])
 
-  const copyReferralCode = () => {
-    navigator.clipboard.writeText(stats.referralCode)
+  const copyReferralLink = () => {
+    if (stats.referralLink) {
+      navigator.clipboard.writeText(stats.referralLink)
+      toast.success('Referral link copied to clipboard!')
+    }
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="referral">
+        <div className="referral__container">
+          <h1 className="referral__title">Referral Program</h1>
+          <div className="referral__message">
+            Please connect your wallet to view your referral data.
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -55,8 +141,37 @@ export default function ReferralProgram() {
       <div className="referral__container">
         <h1 className="referral__title">Referral Program</h1>
 
-        {/* Stats */}
-        <div className="referral__stats-grid">
+        {/* Apply Referral Link Section */}
+        <div className="referral__apply-section">
+          <h2 className="referral__section-title">Apply Referral Link</h2>
+          <div className="referral__apply-form">
+            <input
+              type="text"
+              value={referralLinkInput}
+              onChange={(e) => setReferralLinkInput(e.target.value)}
+              placeholder="Enter referral link or code"
+              className="referral__input"
+              disabled={applying}
+            />
+            <button
+              onClick={applyReferralLink}
+              disabled={applying || !referralLinkInput.trim()}
+              className="referral__apply-btn"
+            >
+              {applying ? 'Applying...' : 'Apply Link'}
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="referral__loading">
+            <div className="referral__loading-spinner"></div>
+            <p>Loading referral data...</p>
+          </div>
+        ) : (
+          <>
+            {/* Stats */}
+            <div className="referral__stats-grid">
           <div className="referral__stat-card">
             <h3 className="referral__stat-title">Total Referrals</h3>
             <p className="referral__stat-value">{stats.totalReferrals}</p>
@@ -70,48 +185,60 @@ export default function ReferralProgram() {
             <p className="referral__stat-value">{stats.pointsEarned}</p>
           </div>
           <div className="referral__stat-card">
-            <h3 className="referral__stat-title">Your Referral Code</h3>
+            <h3 className="referral__stat-title">Your Referral Link</h3>
             <div className="referral__code-group">
-              <code className="referral__code">{stats.referralCode}</code>
-              <button
-                onClick={copyReferralCode}
-                className="referral__copy-btn"
-                title="Copy referral code"
-              >
-                📋
-              </button>
+              <code className="referral__code">
+                {stats.referralLink || 'Generating...'}
+              </code>
+              {stats.referralLink && (
+                <button
+                  onClick={copyReferralLink}
+                  className="referral__copy-btn"
+                  title="Copy referral link"
+                >
+                  📋
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* History */}
-        <div className="referral__history">
-          <h2 className="referral__history-title">Referral History</h2>
-          <table className="referral__history-table">
-            <thead>
-              <tr>
-                <th>Address</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Points</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((entry, index) => (
-                <tr key={index}>
-                  <td>{entry.address}</td>
-                  <td>{entry.date}</td>
-                  <td>
-                    <span className={`referral__status referral__status--${entry.status}`}>
-                      {entry.status}
-                    </span>
-                  </td>
-                  <td>{entry.pointsEarned}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            {/* History */}
+            <div className="referral__history">
+              <h2 className="referral__history-title">Referral History</h2>
+              {history.length === 0 ? (
+                <div className="referral__empty-message">
+                  No referrals yet. Share your referral link to start earning!
+                </div>
+              ) : (
+                <table className="referral__history-table">
+                  <thead>
+                    <tr>
+                      <th>Address</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((entry, index) => (
+                      <tr key={index}>
+                        <td>{entry.address}</td>
+                        <td>{entry.date}</td>
+                        <td>
+                          <span className={`referral__status referral__status--${entry.status}`}>
+                            {entry.status}
+                          </span>
+                        </td>
+                        <td>{entry.pointsEarned}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

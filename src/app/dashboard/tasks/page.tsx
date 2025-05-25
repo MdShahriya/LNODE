@@ -208,7 +208,7 @@ export default function TaskCenter() {
                     disabled={updating === task.id}
                     className="task-card__button task-card__button--in-progress"
                   >
-                    {updating === task.id ? 'Completing...' : 'Complete Task'}
+                    {updating === task.id ? 'Completing...' : 'Verify'}
                   </button>
                 ) : (
                   <button
