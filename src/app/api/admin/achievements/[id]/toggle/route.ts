@@ -3,7 +3,7 @@ import connectDB from '@/lib/db';
 import Achievement from '@/models/Achievement';
 
 // PUT /api/admin/achievements/[id]/toggle - Toggle achievement active status
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     await connectDB();
     
@@ -17,8 +17,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
     
     // Find and update achievement status
+    const { id } = await context.params;
     const achievement = await Achievement.findByIdAndUpdate(
-      params.id,
+      id,
       { isActive: data.isActive },
       { new: true }
     );

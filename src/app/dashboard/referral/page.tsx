@@ -74,8 +74,7 @@ export default function ReferralProgram() {
           referralCode = parts[1].split('?')[0] // Remove query params if any
         }
       } else {
-        // Assume it's just the code
-        referralCode = input
+        throw new Error('Please enter a valid referral link')
       }
       
       if (!referralCode) {
@@ -149,7 +148,7 @@ export default function ReferralProgram() {
               type="text"
               value={referralLinkInput}
               onChange={(e) => setReferralLinkInput(e.target.value)}
-              placeholder="Enter referral link or code"
+              placeholder="Enter referral link"
               className="referral__input"
               disabled={applying}
             />

@@ -18,7 +18,7 @@ export default function ReferralLandingPage() {
     }
   }, [params.code])
 
-  const applyReferralCode = async () => {
+  const applyReferralLink = async () => {
     if (!address || !isConnected || !referralCode) {
       toast.error('Please connect your wallet first')
       return
@@ -50,8 +50,8 @@ export default function ReferralLandingPage() {
         router.push('/dashboard')
       }, 2000)
     } catch (error) {
-      console.error('Error applying referral code:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to apply referral code')
+      console.error('Error applying referral link:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to apply referral link')
     } finally {
       setApplying(false)
     }
@@ -71,7 +71,7 @@ export default function ReferralLandingPage() {
 
         <div className="mb-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-900 mb-2">Referral Code:</h3>
+            <h3 className="font-semibold text-blue-900 mb-2">Referral Link:</h3>
             <code className="bg-blue-100 px-3 py-2 rounded text-blue-800 font-mono text-lg">
               {referralCode}
             </code>
@@ -81,7 +81,7 @@ export default function ReferralLandingPage() {
         {!isConnected ? (
           <div className="text-center">
             <p className="text-gray-600 mb-4">
-              Connect your wallet to apply this referral code and start earning rewards!
+              Connect your wallet to apply this referral link and start earning rewards!
             </p>
             <button
               onClick={goToDashboard}
@@ -99,11 +99,11 @@ export default function ReferralLandingPage() {
             </div>
             
             <button
-              onClick={applyReferralCode}
+              onClick={applyReferralLink}
               disabled={applying}
               className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
-              {applying ? 'Applying Referral...' : 'Apply Referral Code'}
+              {applying ? 'Applying Referral...' : 'Apply Referral Link'}
             </button>
             
             <button
@@ -117,8 +117,8 @@ export default function ReferralLandingPage() {
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-500">
-            By applying this referral code, you&apos;ll help your referrer earn bonus points!
-          </p>
+              By applying this referral link, you&apos;ll help your referrer earn bonus points!
+            </p>
         </div>
       </div>
     </div>
