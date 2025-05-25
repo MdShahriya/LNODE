@@ -14,6 +14,7 @@ interface Task {
   }
   requirements: string[]
   isActive: boolean
+  taskUrl?: string
 }
 
 export default function AdminTasksPage() {
@@ -29,6 +30,7 @@ export default function AdminTasksPage() {
     },
     requirements: [''],
     isActive: true,
+    taskUrl: ''
   })
 
   // Fetch all tasks
@@ -42,7 +44,28 @@ export default function AdminTasksPage() {
       }
       
       const data = await response.json()
-      setTasks(data.tasks)
+      // Map MongoDB _id to id for frontend use
+      const formattedTasks = data.tasks.map((task: {
+        _id: string;
+        title: string;
+        description: string;
+        rewards: {
+          points: number;
+          tokens?: number;
+        };
+        requirements: string[];
+        isActive: boolean;
+        taskUrl?: string;
+      }) => ({
+        id: task._id,
+        title: task.title,
+        description: task.description,
+        rewards: task.rewards,
+        requirements: task.requirements,
+        isActive: task.isActive,
+        taskUrl: task.taskUrl
+      }))
+      setTasks(formattedTasks)
     } catch (error) {
       console.error('Error fetching tasks:', error)
       toast.error('Failed to load tasks')
@@ -174,12 +197,21 @@ export default function AdminTasksPage() {
         method: 'DELETE',
       })
       
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to delete task')
+      // Parse the response before checking status
+      let data;
+      try {
+        data = await response.json()
+      } catch (e) {
+        // If JSON parsing fails, handle it gracefully
+        console.error('Error parsing response:', e)
+        data = {}
       }
       
-      toast.success('Task deleted successfully')
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete task')
+      }
+      
+      toast.success(data.message || 'Task deleted successfully')
       
       // Refresh tasks list
       fetchTasks()
@@ -308,6 +340,20 @@ export default function AdminTasksPage() {
             </div>
             
             <div className="form-group">
+              <label htmlFor="taskUrl">Task URL</label>
+              <input
+                type="url"
+                id="taskUrl"
+                name="taskUrl"
+                value={newTask.taskUrl || ''}
+                onChange={handleInputChange}
+                placeholder="https://example.com"
+                pattern="https?://.*"
+                title="Enter a valid URL starting with http:// or https://"
+              />
+            </div>
+            
+            <div className="form-group">
               <label htmlFor="isActive">Status</label>
               <div className="checkbox-group">
                 <input
@@ -363,6 +409,20 @@ export default function AdminTasksPage() {
                   </div>
                   
                   <p className="admin-task-card__description">{task.description}</p>
+                  
+                  {task.taskUrl && (
+                    <div className="admin-task-card__section">
+                      <h4 className="admin-task-card__section-heading">Task URL:</h4>
+                      <a 
+                        href={task.taskUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="admin-task-card__url"
+                      >
+                        {task.taskUrl}
+                      </a>
+                    </div>
+                  )}
                   
                   <div className="admin-task-card__section">
                     <h4 className="admin-task-card__section-heading">Rewards:</h4>

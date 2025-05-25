@@ -9,6 +9,7 @@ export interface ITask extends Document {
   };
   requirements: string[];
   isActive: boolean;
+  taskUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +40,17 @@ const TaskSchema: Schema = new Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    taskUrl: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: function(v: string | undefined) {
+          if (!v) return true; // Allow empty/undefined values
+          return /^https?:\/\/.+/.test(v); // Basic URL validation
+        },
+        message: 'Task URL must be a valid URL starting with http:// or https://'
+      }
     },
   },
   { timestamps: true }

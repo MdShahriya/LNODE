@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       },
       requirements: data.requirements || [],
       isActive: data.isActive !== undefined ? data.isActive : true,
+      taskUrl: data.taskUrl || undefined,
     });
     
     await task.save();
@@ -78,6 +79,7 @@ export async function PATCH(request: NextRequest) {
     }
     if (data.requirements !== undefined) task.requirements = data.requirements;
     if (data.isActive !== undefined) task.isActive = data.isActive;
+    if (data.taskUrl !== undefined) task.taskUrl = data.taskUrl || undefined;
     
     await task.save();
     
@@ -100,16 +102,21 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
     }
     
-    // Find and delete task
-    const result = await Task.findByIdAndDelete(taskId);
+    // Check if task exists before deletion
+    const task = await Task.findById(taskId);
     
-    if (!result) {
+    if (!task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
     
-    return NextResponse.json({ success: true });
+    // Delete the task
+    await Task.findByIdAndDelete(taskId);
+    
+    return NextResponse.json({ success: true, message: 'Task deleted successfully' });
   } catch (error) {
     console.error('Error deleting task:', error);
-    return NextResponse.json({ error: 'Failed to delete task' }, { status: 500 });
+    // Include more detailed error information if available
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete task';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

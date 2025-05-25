@@ -15,6 +15,7 @@ interface Task {
   }
   requirements: string[]
   status: 'available' | 'in_progress' | 'completed'
+  taskUrl?: string
 }
 
 export default function TaskCenter() {
@@ -22,32 +23,10 @@ export default function TaskCenter() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [updating, setUpdating] = useState<string | null>(null)
-
-  // Fetch tasks from API
-  const fetchTasks = useCallback(async () => {
-    if (!address || !isConnected) return
-    
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/tasks?walletAddress=${address}`)
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to fetch tasks')
-      }
-      
-      const data = await response.json()
-      setTasks(data.tasks || [])
-    } catch (error) {
-      console.error('Error fetching tasks:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to fetch tasks')
-    } finally {
-      setLoading(false)
-    }
-  }, [address, isConnected])
+  const [redirecting, setRedirecting] = useState(false)
 
   // Update task status
-  const updateTaskStatus = async (taskId: string, status: 'in_progress' | 'completed') => {
+  const updateTaskStatus = useCallback(async (taskId: string, status: 'in_progress' | 'completed') => {
     if (!address || !isConnected) return
     
     try {
@@ -82,22 +61,90 @@ export default function TaskCenter() {
       toast.error(error instanceof Error ? error.message : 'Failed to update task')
     } finally {
       setUpdating(null)
+      setRedirecting(false)
     }
-  }
+  }, [address, isConnected, tasks])
+
+  const startTask = useCallback(async (taskId: string, taskUrl?: string) => {
+    try {
+      if (taskUrl) {
+        setRedirecting(true)
+        // Update status to in_progress first
+        await updateTaskStatus(taskId, 'in_progress')
+        // Construct and validate the URL
+        let redirectUrl: URL
+        try {
+          redirectUrl = new URL(taskUrl)
+        } catch (error) {
+          console.error('Invalid URL:', error)
+          toast.error('Invalid task URL')
+          setRedirecting(false)
+          return
+        }
+        // Add parameters and redirect
+        redirectUrl.searchParams.set('taskId', taskId)
+        redirectUrl.searchParams.set('autoComplete', 'true')
+        const newWindow = window.open(redirectUrl.toString(), '_blank')
+        if (!newWindow) {
+          toast.error('Failed to open task URL. Please allow popups for this site.')
+          setRedirecting(false)
+          return
+        }
+      } else {
+        await updateTaskStatus(taskId, 'in_progress')
+      }
+    } catch (error) {
+      console.error('Error starting task:', error)
+      toast.error('Failed to start task')
+      setRedirecting(false)
+    }
+  }, [updateTaskStatus])
+  
+  const completeTask = useCallback((taskId: string) => {
+    updateTaskStatus(taskId, 'completed')
+  }, [updateTaskStatus])
+
+  // Fetch tasks from API
+  const fetchTasks = useCallback(async () => {
+    if (!address || !isConnected) return
+    
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/tasks?walletAddress=${address}`)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch tasks')
+      }
+      
+      const data = await response.json()
+      setTasks(data.tasks || [])
+    } catch (error) {
+      console.error('Error fetching tasks:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to fetch tasks')
+    } finally {
+      setLoading(false)
+    }
+  }, [address, isConnected])
+
+  // Auto-complete task after redirection
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const taskId = urlParams.get('taskId')
+    const autoComplete = urlParams.get('autoComplete')
+
+    if (taskId && autoComplete === 'true' && !redirecting) {
+      completeTask(taskId)
+      // Clear URL parameters
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [completeTask, redirecting])
 
   useEffect(() => {
     if (isConnected && address) {
       fetchTasks()
     }
   }, [isConnected, address, fetchTasks])
-
-  const startTask = (taskId: string) => {
-    updateTaskStatus(taskId, 'in_progress')
-  }
-  
-  const completeTask = (taskId: string) => {
-    updateTaskStatus(taskId, 'completed')
-  }
 
   return (
     <div className="task-center">
@@ -147,11 +194,13 @@ export default function TaskCenter() {
 
                 {task.status === 'available' ? (
                   <button
-                    onClick={() => startTask(task.id)}
-                    disabled={updating === task.id}
+                    onClick={() => startTask(task.id, task.taskUrl)}
+                    disabled={updating === task.id || redirecting}
                     className="task-card__button task-card__button--available"
                   >
-                    {updating === task.id ? 'Starting...' : 'Start Task'}
+                    {updating === task.id ? 'Starting...' : 
+                     redirecting ? 'Redirecting...' : 
+                     'Start Task'}
                   </button>
                 ) : task.status === 'in_progress' ? (
                   <button
