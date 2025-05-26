@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       const elapsedMinutes = elapsedSeconds / 60;
       
       // Calculate points at 30 points per minute (1800 per hour)
-      const pointsEarned = elapsedMinutes * 30;
+      const pointsEarned = elapsedMinutes * 12;
       
       // Update user points
       user.points += pointsEarned;

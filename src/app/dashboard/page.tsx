@@ -253,21 +253,105 @@ export default function Dashboard() {
   // Memoized conversion functions
   const secondsToHours = (seconds: number) => Math.floor(seconds / 3600);
   const secondsToMinutes = (seconds: number) => seconds / 60;
+  
+  // Constants
+  const MAX_NODE_RUNTIME_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
+  // State to track remaining time
+  const [remainingTime, setRemainingTime] = useState<string>('');
+
+  // Format remaining time
+  const formatRemainingTime = (seconds: number): string => {
+    if (seconds <= 0) return '0h 0m';
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    return `${hours}h ${minutes}m`;
+  };
+
+  // Format time for display
+  
   // Effect to handle UI updates for running node (display only, no database updates)
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     let statusTimer: NodeJS.Timeout | null = null;
+    let autoStopTimer: NodeJS.Timeout | null = null;
+    
+    // Function to automatically stop the node after 24 hours
+    const autoStopNode = async () => {
+      try {
+        // Update local state
+        setIsNodeRunning(false);
+        setRemainingTime('0h 0m');
+        setStartTime(null);
+        setLocalPoints(0);
+        setSecondsElapsed(0);
+        
+        // Clear localStorage items
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('startTime');
+          localStorage.removeItem('localPoints');
+          localStorage.removeItem('secondsElapsed');
+          localStorage.removeItem('isNodeRunning');
+        }
+        
+        // Update user data to reflect stopped node
+        if (user && address) {
+          // Call API to update node status in the database
+          await fetch('/api/user/update-node-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              walletAddress: address,
+              isRunning: false,
+              autoStopped: true // Indicate this was an automatic stop
+            }),
+          }).then(response => {
+            if (response.ok) {
+              return response.json();
+            }
+          }).then(data => {
+            if (data && data.user) {
+              setUser(data.user);
+              setNodeStats({
+                uptime: secondsToHours(data.user.uptime),
+                points: data.user.points,
+                tasksCompleted: data.user.tasksCompleted
+              });
+            }
+          });
+        }
+        
+        console.log('Node auto-stopped after 24 hours');
+      } catch (error) {
+        console.error('Error auto-stopping node:', error);
+      }
+    };
     
     if (isNodeRunning && user && startTime) {
       // Timer for UI updates only
       timer = setInterval(() => {
         const now = Date.now();
         const elapsedSeconds = Math.floor((now - startTime) / 1000);
+        const remainingSeconds = MAX_NODE_RUNTIME_SECONDS - elapsedSeconds;
+        
+        // Update remaining time display
+        setRemainingTime(formatRemainingTime(remainingSeconds));
+        
+        // Check if node has been running for more than 24 hours
+        if (elapsedSeconds >= MAX_NODE_RUNTIME_SECONDS) {
+          // Auto-stop the node after 24 hours
+          console.log('Node has been running for 24 hours - auto stopping');
+          autoStopNode();
+          return;
+        }
         
         // Use memoized conversion functions
         const elapsedMinutes = secondsToMinutes(elapsedSeconds);
-        const potentialPoints = elapsedMinutes * 30;
+        const potentialPoints = elapsedMinutes * 12;
         
         setSecondsElapsed(elapsedSeconds);
         setLocalPoints(potentialPoints);
@@ -291,8 +375,14 @@ export default function Dashboard() {
             uptime: uptimeHours + additionalHours
           };
         });
-      }, 10000); // Update every 10 seconds for smoother UI
+      }, 1000); // Update every second for smoother UI
 
+      // Set a timer to automatically stop the node after 24 hours
+      autoStopTimer = setTimeout(() => {
+        console.log('24-hour timer expired - auto stopping node');
+        autoStopNode();
+      }, Math.max(0, MAX_NODE_RUNTIME_SECONDS * 1000 - (Date.now() - startTime)));
+  
       // Heartbeat to keep node status active in backend
       statusTimer = setInterval(async () => {
         try {
@@ -348,8 +438,11 @@ export default function Dashboard() {
       if (statusTimer) {
         clearInterval(statusTimer);
       }
+      if (autoStopTimer) {
+        clearTimeout(autoStopTimer);
+      }
     };
-  }, [isNodeRunning, user, startTime, address]);
+  }, [isNodeRunning, user, startTime, address, MAX_NODE_RUNTIME_SECONDS]);
 
   // Check for existing node status on initial load
   useEffect(() => {
@@ -439,7 +532,7 @@ export default function Dashboard() {
               <div className="stats-card">
                 <h3 className="stats-title">Points Earned</h3>
                 <p className="stats-value">{nodeStats.points.toFixed(3)}</p>
-                <span className="stats-label">Earn 30 points per minute (1800 per hour)</span>
+                <span className="stats-label">Earn points by running NODE</span>
                 {isNodeRunning && (
                   <span className="stats-update">Points: {localPoints.toFixed(3)}</span>
                 )}
@@ -455,6 +548,12 @@ export default function Dashboard() {
             {/* Node Control */}
             <div className="node-control">
               <h3 className="control-title">Node Status: <span className={isNodeRunning ? "status-running" : "status-stopped"}>{isNodeRunning ? "Running" : "Stopped"}</span></h3>
+              {isNodeRunning && (
+                <div className="time-limit-info">
+                  <p>Time remaining: <span className="remaining-time">{remainingTime}</span></p>
+                  <p className="time-limit-note">Nodes automatically stop after 24 hours and must be manually restarted.</p>
+                </div>
+              )}
               <button 
                 className={`control-button ${isNodeRunning ? "stop-button" : "start-button"}`}
                 onClick={toggleNode}
@@ -470,4 +569,3 @@ export default function Dashboard() {
     </main>
   )
 }
-

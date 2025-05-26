@@ -2,15 +2,17 @@
 .dashboard-layout {
   display: flex;
   min-height: 100vh;
+  background-color: #15192b; /* Deep Blue background */
 }
 
 .dashboard-content {
   flex: 1;
   margin-left: 250px; /* Same as sidebar width */
   padding: 1.5rem;
-  background-color: #f9fafb;
+  background-color: #15192b; /* Deep Blue background */
   min-height: 100vh;
   transition: margin-left 0.3s ease;
+  color: #FFFFFF; /* White text for better contrast */
 }
 
 /* Mobile styles */

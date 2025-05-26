@@ -41,11 +41,34 @@ const Achievement = models.Achievement || model('Achievement', AchievementSchema
 
 // Initial achievements data
 const initialAchievements = [
+  
+  {
+    title: 'Daily Streak Starter',
+    description: 'Log in for 3 consecutive days',
+    reward: 1500,
+    target: 3,
+    isActive: true
+  },
+  
+  {
+    title: 'Daily Streak Starter',
+    description: 'Log in for 7 consecutive days',
+    reward: 3500,
+    target: 3,
+    isActive: true
+  },
   {
     title: 'Node Master',
     description: 'Maintain node uptime for 360000 seconds / 100 hours',
     reward: 5000,
     target: 360000, // 100 hours in seconds
+    isActive: true
+  },
+  {
+    title: 'First Task Complete',
+    description: 'Complete your first task',
+    reward: 1000,
+    target: 1,
     isActive: true
   },
   {
@@ -81,20 +104,6 @@ const initialAchievements = [
     description: 'Refer 25 new users',
     reward: 20000,
     target: 25,
-    isActive: true
-  },
-  {
-    title: 'First Task Complete',
-    description: 'Complete your first task',
-    reward: 1000,
-    target: 1,
-    isActive: true
-  },
-  {
-    title: 'Daily Streak Starter',
-    description: 'Log in for 3 consecutive days',
-    reward: 1500,
-    target: 3,
     isActive: true
   }
 ];

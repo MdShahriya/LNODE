@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import './usermanagment.css'
 
@@ -34,39 +34,42 @@ export default function AdminUsersManagement() {
   const usersPerPage = 10
 
   // Fetch users
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
-      setLoading(true)
-      // This would be replaced with an actual API call in a real implementation
-      // const response = await fetch('/api/admin/users')
-      // const data = await response.json()
-      // setUsers(data.users)
-      // setTotalPages(Math.ceil(data.total / usersPerPage))
+      setLoading(true);
       
-      // For now, we'll use mock data
-      setTimeout(() => {
-        const mockUsers: User[] = Array.from({ length: 25 }, (_, i) => ({
-          id: `user-${i + 1}`,
-          walletAddress: `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 10)}`,
-          points: Math.floor(Math.random() * 5000),
-          tasksCompleted: Math.floor(Math.random() * 20),
-          uptime: Math.floor(Math.random() * 1000000), // Random uptime in seconds
-          nodeStatus: Math.random() > 0.5,
-          nodeStartTime: Math.random() > 0.5 ? new Date().toISOString() : null,
-          createdAt: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString(),
-          updatedAt: new Date().toISOString()
-        }))
-        
-        setUsers(mockUsers)
-        setTotalPages(Math.ceil(mockUsers.length / usersPerPage))
-        setLoading(false)
-      }, 1000)
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: usersPerPage.toString(),
+        sortBy: sortBy,
+        sortOrder: sortOrder
+      });
+      
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+      
+      if (nodeFilter !== 'all') {
+        params.append('nodeFilter', nodeFilter);
+      }
+      
+      const response = await fetch(`/api/admin/users?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      
+      const data = await response.json();
+      setUsers(data.users);
+      setTotalPages(data.totalPages);
+      setLoading(false);
     } catch (error) {
-      console.error('Error fetching users:', error)
-      toast.error('Failed to load users')
-      setLoading(false)
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
+      setLoading(false);
     }
-  }
+  }, [currentPage, usersPerPage, sortBy, sortOrder, searchTerm, nodeFilter]);
 
   // Format uptime from seconds to readable format
   const formatUptime = (seconds: number): string => {
@@ -147,22 +150,24 @@ export default function AdminUsersManagement() {
     if (!selectedUser) return
     
     try {
-      // This would be replaced with an actual API call in a real implementation
-      // const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
-      //   method: 'PATCH',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(editFormData)
-      // })
-      // const updatedUser = await response.json()
+      const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editFormData)
+      })
       
-      // Mock update
-      const updatedUser = {
-        ...selectedUser,
-        points: editFormData.points,
-        updatedAt: new Date().toISOString()
+      if (!response.ok) {
+        throw new Error('Failed to update user')
       }
       
-      setUsers(users.map(user => user.id === selectedUser.id ? updatedUser : user))
+      const { user: updatedUser } = await response.json()
+      
+      setUsers(users.map(user => user.id === selectedUser.id ? {
+        ...user,
+        points: updatedUser.points,
+        updatedAt: updatedUser.updatedAt
+      } : user))
+      
       toast.success('User updated successfully')
       closeEditModal()
     } catch (error) {
@@ -176,12 +181,15 @@ export default function AdminUsersManagement() {
     if (!confirm('Are you sure you want to reset this user\'s node status?')) return
     
     try {
-      // This would be replaced with an actual API call in a real implementation
-      // await fetch(`/api/admin/users/${userId}/reset-node`, {
-      //   method: 'POST'
-      // })
+      const response = await fetch(`/api/admin/users/reset-node?userId=${userId}`, {
+        method: 'POST'
+      })
       
-      // Mock reset
+      if (!response.ok) {
+        throw new Error('Failed to reset node status')
+      }
+      
+      // Update the user in the local state
       setUsers(users.map(user => {
         if (user.id === userId) {
           return {
@@ -200,6 +208,11 @@ export default function AdminUsersManagement() {
       toast.error('Failed to reset node status')
     }
   }
+
+  // Effect to fetch users when dependencies change
+  useEffect(() => {
+    fetchUsers()
+  }, [currentPage, sortBy, sortOrder, nodeFilter, searchTerm, fetchUsers])
 
   // Filter and sort users
   const filteredUsers = users
@@ -239,7 +252,7 @@ export default function AdminUsersManagement() {
 
   useEffect(() => {
     fetchUsers()
-  }, [])
+  }, [fetchUsers])
 
   useEffect(() => {
     // Update total pages when filtered users change

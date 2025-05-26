@@ -32,9 +32,9 @@ export async function GET(request: NextRequest) {
       await user.save();
     }
 
-    // Generate referral link
+    // Generate referral link with the new format: domain.com/dashboard/referer-address
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const referralLink = `${baseUrl}/referral/${user.referralCode}`;
+    const referralLink = `${baseUrl}/ref/${user.walletAddress}`;
 
     const stats = {
       totalReferrals: referredUsers.length,

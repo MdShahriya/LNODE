@@ -25,21 +25,15 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       setLoading(true)
-      // This would be replaced with an actual API call in a real implementation
-      // const response = await fetch('/api/admin/stats')
-      // const data = await response.json()
-      // setStats(data)
+      const response = await fetch('/api/admin/stats')
       
-      // For now, we'll use mock data
-      setTimeout(() => {
-        setStats({
-          totalUsers: 125,
-          activeTasks: 5,
-          completedTasks: 350,
-          totalPoints: 15000
-        })
-        setLoading(false)
-      }, 1000)
+      if (!response.ok) {
+        throw new Error('Failed to fetch admin statistics')
+      }
+      
+      const data = await response.json()
+      setStats(data)
+      setLoading(false)
     } catch (error) {
       console.error('Error fetching admin stats:', error)
       toast.error('Failed to load admin statistics')

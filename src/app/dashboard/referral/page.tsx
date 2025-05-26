@@ -31,8 +31,6 @@ export default function ReferralProgram() {
   })
   const [history, setHistory] = useState<ReferralHistory[]>([])
   const [loading, setLoading] = useState(false)
-  const [applying, setApplying] = useState(false)
-  const [referralLinkInput, setReferralLinkInput] = useState('')
 
   const fetchReferralData = useCallback(async () => {
     if (!address || !isConnected) return
@@ -57,57 +55,6 @@ export default function ReferralProgram() {
     }
   }, [address, isConnected])
 
-  const applyReferralLink = async () => {
-    if (!address || !isConnected || !referralLinkInput.trim()) return
-    
-    try {
-      setApplying(true)
-      
-      // Extract referral code from URL
-      let referralCode = ''
-      const input = referralLinkInput.trim()
-      
-      if (input.includes('/referral/')) {
-        // Extract code from URL like: https://domain.com/referral/TOPAYABC123
-        const parts = input.split('/referral/')
-        if (parts.length > 1) {
-          referralCode = parts[1].split('?')[0] // Remove query params if any
-        }
-      } else {
-        throw new Error('Please enter a valid referral link')
-      }
-      
-      if (!referralCode) {
-        throw new Error('Invalid referral link format')
-      }
-      
-      const response = await fetch('/api/referral', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          walletAddress: address,
-          referralCode: referralCode
-        }),
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to apply referral link')
-      }
-      
-      toast.success(`Referral link applied! ${data.pointsAwarded} points awarded to referrer.`)
-      setReferralLinkInput('')
-      fetchReferralData() // Refresh data
-    } catch (error) {
-      console.error('Error applying referral link:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to apply referral link')
-    } finally {
-      setApplying(false)
-    }
-  }
 
   useEffect(() => {
     if (isConnected && address) {
@@ -140,28 +87,6 @@ export default function ReferralProgram() {
       <div className="referral__container">
         <h1 className="referral__title">Referral Program</h1>
 
-        {/* Apply Referral Link Section */}
-        <div className="referral__apply-section">
-          <h2 className="referral__section-title">Apply Referral Link</h2>
-          <div className="referral__apply-form">
-            <input
-              type="text"
-              value={referralLinkInput}
-              onChange={(e) => setReferralLinkInput(e.target.value)}
-              placeholder="Enter referral link"
-              className="referral__input"
-              disabled={applying}
-            />
-            <button
-              onClick={applyReferralLink}
-              disabled={applying || !referralLinkInput.trim()}
-              className="referral__apply-btn"
-            >
-              {applying ? 'Applying...' : 'Apply Link'}
-            </button>
-          </div>
-        </div>
-
         {loading ? (
           <div className="referral__loading">
             <div className="referral__loading-spinner"></div>
@@ -171,36 +96,36 @@ export default function ReferralProgram() {
           <>
             {/* Stats */}
             <div className="referral__stats-grid">
-          <div className="referral__stat-card">
-            <h3 className="referral__stat-title">Total Referrals</h3>
-            <p className="referral__stat-value">{stats.totalReferrals}</p>
-          </div>
-          <div className="referral__stat-card">
-            <h3 className="referral__stat-title">Active Referrals</h3>
-            <p className="referral__stat-value">{stats.activeReferrals}</p>
-          </div>
-          <div className="referral__stat-card">
-            <h3 className="referral__stat-title">Points Earned</h3>
-            <p className="referral__stat-value">{stats.pointsEarned}</p>
-          </div>
-          <div className="referral__stat-card">
-            <h3 className="referral__stat-title">Your Referral Link</h3>
-            <div className="referral__code-group">
-              <code className="referral__code">
-                {stats.referralLink || 'Generating...'}
-              </code>
-              {stats.referralLink && (
-                <button
-                  onClick={copyReferralLink}
-                  className="referral__copy-btn"
-                  title="Copy referral link"
-                >
-                  📋
-                </button>
-              )}
+              <div className="referral__stat-card">
+                <h3 className="referral__stat-title">Total Referrals</h3>
+                <p className="referral__stat-value">{stats.totalReferrals}</p>
+              </div>
+              <div className="referral__stat-card">
+                <h3 className="referral__stat-title">Active Referrals</h3>
+                <p className="referral__stat-value">{stats.activeReferrals}</p>
+              </div>
+              <div className="referral__stat-card">
+                <h3 className="referral__stat-title">Points Earned</h3>
+                <p className="referral__stat-value">{stats.pointsEarned}</p>
+              </div>
+              <div className="referral__stat-card">
+                <h3 className="referral__stat-title">Your Referral Link</h3>
+                <div className="referral__code-group">
+                  <code className="referral__code">
+                    {stats.referralLink || 'Generating...'}
+                  </code>
+                  {stats.referralLink && (
+                    <button
+                      onClick={copyReferralLink}
+                      className="referral__copy-btn"
+                      title="Copy referral link"
+                    >
+                      📋
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
             {/* History */}
             <div className="referral__history">

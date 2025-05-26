@@ -2,15 +2,17 @@
 .admin-layout {
   display: flex;
   min-height: 100vh;
+  background-color: #15192b;
 }
 
 .admin-content {
   flex: 1;
   margin-left: 250px; /* Same as sidebar width */
   padding: 1.5rem;
-  background-color: #f9fafb;
+  background-color: #15192b;
   min-height: 100vh;
   transition: margin-left 0.3s ease;
+  color: #FFFFFF;
 }
 
 /* Mobile styles */

@@ -1,6 +1,8 @@
 .referral {
   min-height: 100vh;
   padding: 2rem;
+  background-color: #15192b; /* Deep Blue background */
+  color: #FFFFFF; /* White text */
 }
 
 .referral__container {
@@ -14,6 +16,8 @@
 .referral__title {
   font-size: 1.875rem;
   font-weight: 700;
+  color: #FFFFFF; /* White text */
+  text-shadow: 0 0 10px rgba(21, 207, 241, 0.3); /* Subtle glow */
 }
 
 .referral__stats-grid {
@@ -29,20 +33,24 @@
 }
 
 .referral__stat-card {
-  background-color: #ffffff;
+  background-color: #252833; /* Dark Blue */
   border-radius: 0.5rem;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-left: 4px solid #0D7CE9; /* Primary Blue accent */
 }
 
 .referral__stat-title {
   font-size: 1.125rem;
   font-weight: 600;
+  color: #FFFFFF; /* White text */
 }
 
 .referral__stat-value {
   font-size: 1.875rem;
   font-weight: 700;
+  color: #15CFF1; /* Secondary Blue */
+  text-shadow: 0 0 10px rgba(21, 207, 241, 0.3); /* Glow effect */
 }
 
 .referral__code-group {
@@ -54,7 +62,7 @@
 
 .referral__code {
   font-size: 1rem;
-  background-color: #f3f4f6;
+  background-color: rgba(13, 124, 233, 0.1); /* Subtle Primary Blue background */
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem;
   word-break: break-all;
@@ -63,27 +71,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #15CFF1; /* Secondary Blue */
+  border: 1px solid rgba(21, 207, 241, 0.3); /* Subtle Secondary Blue border */
 }
 
 .referral__copy-btn {
   padding: 0.5rem;
   border: none;
   border-radius: 0.375rem;
-  background-color: transparent;
+  background-color: #0D7CE9; /* Primary Blue */
+  background-image: linear-gradient(135deg, #0D7CE9, #15CFF1); /* Gradient effect */
+  color: white;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(13, 124, 233, 0.4); /* Subtle shadow */
 }
 
 .referral__copy-btn:hover {
-  background-color: #f3f4f6;
+  background-image: linear-gradient(135deg, #15CFF1, #0D7CE9); /* Reverse gradient on hover */
+  box-shadow: 0 0 15px rgba(13, 124, 233, 0.5); /* Glow effect */
+  transform: translateY(-1px); /* Subtle lift effect */
 }
 
 .referral__history {
-  background-color: #ffffff;
+  background-color: #252833; /* Dark Blue */
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   overflow: hidden;
+  border-top: 4px solid #0D7CE9; /* Primary Blue accent */
 }
 
 .referral__history-title {
@@ -103,20 +119,21 @@
   padding: 1rem 1.5rem;
   text-align: left;
   font-size: 0.875rem;
-  color: #4b5563;
+  color: #FFFFFF; /* White text */
   white-space: nowrap;
+  border-bottom: 1px solid rgba(21, 207, 241, 0.1); /* Very subtle Secondary Blue border */
 }
 
 .referral__history-table thead {
-  background-color: #f9fafb;
+  background-color: rgba(13, 124, 233, 0.1); /* Subtle Primary Blue background */
   text-transform: uppercase;
   font-weight: 600;
-  color: #6b7280;
+  color: #15CFF1; /* Secondary Blue */
   font-size: 0.75rem;
 }
 
 .referral__history-table tbody tr {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid rgba(21, 207, 241, 0.1); /* Very subtle Secondary Blue border */
 }
 
 .referral__status {
@@ -128,21 +145,24 @@
 }
 
 .referral__status--active {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: rgba(21, 207, 241, 0.2); /* Very subtle Secondary Blue background */
+  color: #15CFF1; /* Secondary Blue */
+  text-shadow: 0 0 5px rgba(21, 207, 241, 0.3); /* Subtle glow */
 }
 
 .referral__status--pending {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: rgba(255, 215, 0, 0.2); /* Very subtle gold background */
+  color: #FFD700; /* Gold */
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.3); /* Subtle glow */
 }
 
 /* Apply Referral Link Section */
 .referral__apply-section {
-  background-color: #ffffff;
+  background-color: #252833; /* Dark Blue */
   border-radius: 0.5rem;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-top: 4px solid #0D7CE9; /* Primary Blue accent */
 }
 
 .referral__section-title {
@@ -179,18 +199,22 @@
 
 .referral__apply-btn {
   padding: 0.75rem 1.5rem;
-  background-color: #3b82f6;
+  background-color: #0D7CE9; /* Primary Blue */
+  background-image: linear-gradient(135deg, #0D7CE9, #15CFF1); /* Gradient effect */
   color: white;
   border: none;
   border-radius: 0.375rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(13, 124, 233, 0.4); /* Subtle shadow */
 }
 
 .referral__apply-btn:hover:not(:disabled) {
-  background-color: #2563eb;
+  background-image: linear-gradient(135deg, #15CFF1, #0D7CE9); /* Reverse gradient on hover */
+  box-shadow: 0 0 15px rgba(13, 124, 233, 0.5); /* Glow effect */
+  transform: translateY(-1px); /* Subtle lift effect */
 }
 
 .referral__apply-btn:disabled {
@@ -205,19 +229,22 @@
   align-items: center;
   justify-content: center;
   padding: 3rem;
-  background-color: #ffffff;
+  background-color: #252833; /* Dark Blue */
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-top: 4px solid #0D7CE9; /* Primary Blue accent */
+  color: #FFFFFF; /* White text */
 }
 
 .referral__loading-spinner {
   width: 2rem;
   height: 2rem;
-  border: 3px solid #e5e7eb;
-  border-top: 3px solid #3b82f6;
+  border: 3px solid rgba(21, 207, 241, 0.1); /* Very subtle Secondary Blue border */
+  border-top: 3px solid #15CFF1; /* Secondary Blue */
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
+  box-shadow: 0 0 15px rgba(21, 207, 241, 0.3); /* Glow effect */
 }
 
 @keyframes spin {
@@ -226,30 +253,34 @@
 }
 
 .referral__loading p {
-  color: #6b7280;
+  color: #FFFFFF; /* White text */
   font-size: 1rem;
+  opacity: 0.8; /* Slightly transparent */
 }
 
 /* Empty State */
 .referral__empty-message {
   padding: 3rem;
   text-align: center;
-  color: #6b7280;
+  color: #FFFFFF; /* White text */
   font-size: 1rem;
-  background-color: #f9fafb;
+  background-color: #252833; /* Dark Blue */
   border-radius: 0.375rem;
   margin: 1rem;
+  opacity: 0.8; /* Slightly transparent */
+  border-top: 4px solid #0D7CE9; /* Primary Blue accent */
 }
 
 /* Wallet Connection Message */
 .referral__message {
   padding: 2rem;
   text-align: center;
-  color: #6b7280;
+  color: #FFFFFF; /* White text */
   font-size: 1.125rem;
-  background-color: #f9fafb;
+  background-color: #252833; /* Dark Blue */
   border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
+  border: 1px solid rgba(21, 207, 241, 0.3); /* Subtle Secondary Blue border */
+  opacity: 0.8; /* Slightly transparent */
 }
 
 /* Responsive Design */

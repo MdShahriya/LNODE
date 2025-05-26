@@ -1,7 +1,8 @@
 .dashboard-page {
   padding: 2rem;
-  background-color: #f9fafb;
+  background-color: #15192b; /* Deep Blue background */
   min-height: 100vh;
+  color: #FFFFFF; /* White text */
 }
 
 .dashboard-container {
@@ -16,9 +17,10 @@
 }
 
 .dashboard-subheading {
-  color: #6b7280;
+  color: #FFFFFF; /* White text */
   font-size: 1rem;
   margin-bottom: 2rem;
+  opacity: 0.8; /* Slightly transparent for visual hierarchy */
 }
 
 .stats-grid {
@@ -29,39 +31,44 @@
 }
 
 .stats-card {
-  background-color: white;
+  background-color: #252833; /* Dark Blue */
   border-radius: 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   padding: 1.5rem;
   text-align: left;
+  border-left: 4px solid #0D7CE9; /* Primary Blue accent */
 }
 
 .stats-title {
   font-size: 1rem;
-  color: #6b7280;
+  color: #FFFFFF; /* White text */
   margin-bottom: 0.25rem;
+  opacity: 0.8; /* Slightly transparent */
 }
 
 .stats-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #111827;
+  color: #15CFF1; /* Secondary Blue */
+  text-shadow: 0 0 10px rgba(21, 207, 241, 0.3); /* Glow effect */
 }
 
 .stats-label {
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: #FFFFFF; /* White text */
   margin-top: 0.5rem;
   display: block;
+  opacity: 0.7; /* Slightly transparent */
 }
 
 .node-control {
-  background-color: white;
+  background-color: #252833; /* Dark Blue */
   border-radius: 1rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   padding: 2rem;
   text-align: center;
   margin-top: 2rem;
+  border-top: 4px solid #0D7CE9; /* Primary Blue accent */
 }
 
 .control-title {
@@ -71,8 +78,9 @@
 }
 
 .status-running {
-  color: #10b981;
+  color: #15CFF1; /* Secondary Blue */
   font-weight: 500;
+  text-shadow: 0 0 8px rgba(21, 207, 241, 0.4); /* Glow effect */
 }
 
 .status-stopped {
@@ -93,41 +101,48 @@
 }
 
 .start-button {
-  background-color: #10b981;
+  background-color: #0D7CE9; /* Primary Blue */
+  background-image: linear-gradient(135deg, #0D7CE9, #15CFF1); /* Gradient effect */
 }
 
 .start-button:hover {
-  background-color: #059669;
+  background-image: linear-gradient(135deg, #15CFF1, #0D7CE9); /* Reverse gradient on hover */
+  box-shadow: 0 0 15px rgba(13, 124, 233, 0.5); /* Glow effect */
 }
 
 .stop-button {
-  background-color: #ef4444;
+  background-color: #333333; /* Dark Gray */
+  border: 2px solid #ef4444; /* Red border */
 }
 
 .stop-button:hover {
-  background-color: #dc2626;
+  background-color: #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); /* Glow effect */
 }
 
 .control-info {
-  color: #6b7280;
+  color: #FFFFFF; /* White text */
   font-size: 0.875rem;
   margin-top: 0.5rem;
+  opacity: 0.8; /* Slightly transparent */
 }
 
 .stats-elapsed,
 .stats-update {
   display: block;
-  color: #10b981;
+  color: #15CFF1; /* Secondary Blue */
   font-size: 0.875rem;
   margin-top: 0.5rem;
   font-weight: 500;
+  text-shadow: 0 0 5px rgba(21, 207, 241, 0.3); /* Subtle glow */
 }
 
 .points-incrementing {
-  color: #4caf50;
+  color: #15CFF1; /* Secondary Blue */
   font-size: 0.8em;
   margin-left: 5px;
   animation: pulse 1s infinite;
+  text-shadow: 0 0 8px rgba(21, 207, 241, 0.5); /* Glow effect */
 }
 
 @keyframes pulse {
@@ -144,7 +159,7 @@
 
 .stats-loading {
   animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  background-color: #f3f4f6;
+  background-color: #252833; /* Dark Blue */
 }
 
 @keyframes pulse {
@@ -169,7 +184,7 @@
   right: 0;
   bottom: 0;
   left: 0;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background: linear-gradient(90deg, #252833 25%, #333333 50%, #252833 75%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }

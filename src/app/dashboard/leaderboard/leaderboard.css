@@ -1,7 +1,8 @@
 .leaderboard {
   min-height: 100vh;
   padding: 2rem;
-  background-color: #f9fafb;
+  background-color: #15192b; /* Deep Blue background */
+  color: #FFFFFF; /* White text */
 }
 
 .leaderboard__container {
@@ -13,13 +14,16 @@
   font-size: 1.875rem;
   font-weight: 700;
   margin-bottom: 2rem;
+  color: #FFFFFF; /* White text */
+  text-shadow: 0 0 10px rgba(21, 207, 241, 0.3); /* Subtle glow */
 }
 
 .leaderboard__table-wrapper {
-  background-color: #ffffff;
+  background-color: #252833; /* Dark Blue */
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   overflow-x: auto;
+  border-top: 3px solid #0D7CE9; /* Primary Blue accent */
 }
 
 .leaderboard__table {
@@ -29,11 +33,11 @@
 }
 
 .leaderboard__table thead {
-  background-color: #f3f4f6;
+  background-color: rgba(13, 124, 233, 0.1); /* Subtle Primary Blue background */
   text-transform: uppercase;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6b7280;
+  color: #15CFF1; /* Secondary Blue */
 }
 
 .leaderboard__table th,
@@ -44,7 +48,7 @@
 }
 
 .leaderboard__row:hover {
-  background-color: #f9fafb;
+  background-color: rgba(13, 124, 233, 0.05); /* Very subtle Primary Blue background */
 }
 
 .leaderboard__rank {
@@ -58,44 +62,52 @@
 }
 
 .rank-1 {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: #FFD700; /* Gold */
+  color: #333333; /* Dark Gray */
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); /* Gold glow */
 }
 
 .rank-2 {
-  background-color: #e5e7eb;
-  color: #374151;
+  background-color: #C0C0C0; /* Silver */
+  color: #333333; /* Dark Gray */
+  box-shadow: 0 0 8px rgba(192, 192, 192, 0.5); /* Silver glow */
 }
 
 .rank-3 {
-  background-color: #ffedd5;
-  color: #9a3412;
+  background-color: #CD7F32; /* Bronze */
+  color: #333333; /* Dark Gray */
+  box-shadow: 0 0 8px rgba(205, 127, 50, 0.5); /* Bronze glow */
 }
 
 .leaderboard__address {
-  color: #6b7280;
+  color: #FFFFFF; /* White text */
+  opacity: 0.8; /* Slightly transparent */
 }
 
 .leaderboard__points,
 .leaderboard__tasks,
 .leaderboard__uptime {
-  color: #111827;
+  color: #15CFF1; /* Secondary Blue */
   font-weight: 500;
+  text-shadow: 0 0 5px rgba(21, 207, 241, 0.3); /* Subtle glow */
 }
 
 .leaderboard__loading,
 .leaderboard__error,
 .leaderboard__empty {
-  background-color: #ffffff;
+  background-color: #252833; /* Dark Blue */
   border-radius: 0.5rem;
   padding: 2rem;
   text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  color: #6b7280;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: #FFFFFF; /* White text */
+  opacity: 0.8; /* Slightly transparent */
+  border-top: 3px solid #0D7CE9; /* Primary Blue accent */
 }
 
 .leaderboard__error {
-  color: #ef4444;
+  color: #ef4444; /* Keep red for errors */
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.4); /* Red glow */
 }
 
 .leaderboard__row--current {
