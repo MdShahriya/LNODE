@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import { FaBars, FaTimes, FaHome, FaTasks, FaTrophy, FaUsers, FaMoneyBillWave } from 'react-icons/fa'
+import { FaBars, FaTimes, FaHome, FaTasks, FaTrophy, FaUsers, FaMoneyBillWave, FaShieldAlt, FaKey } from 'react-icons/fa'
+import { isAdmin, isValidBypassKey } from '@/lib/adminAuth'
 import './Sidebar.css' // Reusing the same CSS
 
 const adminNavigation = [
@@ -18,8 +19,13 @@ const adminNavigation = [
 
 export default function AdminSidebar() {
   const pathname = usePathname()
-  const { isConnected } = useAccount()
+  const searchParams = useSearchParams()
+  const { isConnected, address } = useAccount()
   const [isOpen, setIsOpen] = useState(false)
+  const [adminStatus, setAdminStatus] = useState({
+    isAdminWallet: false,
+    usingBypass: false
+  })
   
   // Close sidebar when clicking outside on mobile
   useEffect(() => {
@@ -46,6 +52,15 @@ export default function AdminSidebar() {
   useEffect(() => {
     setIsOpen(false)
   }, [pathname])
+  
+  // Check admin status
+  useEffect(() => {
+    const bypassKey = searchParams.get('adminKey')
+    setAdminStatus({
+      isAdminWallet: isAdmin(address),
+      usingBypass: isValidBypassKey(bypassKey)
+    })
+  }, [address, searchParams])
 
   return (
     <>
@@ -101,6 +116,18 @@ export default function AdminSidebar() {
         </nav>
         
         <div className="sidebar__footer">
+          <div className="sidebar__admin-status">
+            {adminStatus.isAdminWallet && (
+              <div className="sidebar__admin-badge">
+                <FaShieldAlt /> Admin Wallet
+              </div>
+            )}
+            {adminStatus.usingBypass && (
+              <div className="sidebar__bypass-badge">
+                <FaKey /> Using Bypass Key
+              </div>
+            )}
+          </div>
           <div className="sidebar__wallet">
             {isConnected
               ? <appkit-button balance='hide' />

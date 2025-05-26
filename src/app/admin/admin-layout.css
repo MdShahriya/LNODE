@@ -5,6 +5,48 @@
   background-color: #15192b;
 }
 
+.admin-layout--loading,
+.admin-layout--unauthorized {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #FFFFFF;
+}
+
+.admin-loading,
+.admin-unauthorized {
+  max-width: 500px;
+  padding: 2rem;
+  border-radius: 1rem;
+  background-color: #1a1e2e;
+  border: 1px solid rgba(21, 207, 241, 0.2);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+.admin-loading__spinner {
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(21, 207, 241, 0.3);
+  border-radius: 50%;
+  border-top-color: #15CFF1;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.admin-unauthorized h1 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+  background-clip: text;
+  color: transparent;
+}
+
 .admin-content {
   flex: 1;
   margin-left: 250px; /* Same as sidebar width */

@@ -22,33 +22,43 @@
   background-color: #252833; /* Dark Blue */
   border-radius: 0.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  overflow-x: auto;
-  border-top: 3px solid #0D7CE9; /* Primary Blue accent */
+  overflow: hidden;
+  border-top: 4px solid #0D7CE9; /* Primary Blue accent */
 }
 
 .leaderboard__table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.leaderboard__table thead {
-  background-color: rgba(13, 124, 233, 0.1); /* Subtle Primary Blue background */
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #15CFF1; /* Secondary Blue */
 }
 
 .leaderboard__table th,
 .leaderboard__table td {
   padding: 1rem 1.5rem;
   text-align: left;
-  white-space: nowrap;
+  font-size: 0.875rem;
+  color: #FFFFFF; /* White text */
+  border-bottom: 1px solid rgba(21, 207, 241, 0.1); /* Very subtle Secondary Blue border */
+}
+
+.leaderboard__table thead {
+  background-color: rgba(13, 124, 233, 0.1); /* Subtle Primary Blue background */
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #15CFF1; /* Secondary Blue */
+  font-size: 0.75rem;
+}
+
+.leaderboard__row {
+  transition: background-color 0.2s ease;
 }
 
 .leaderboard__row:hover {
-  background-color: rgba(13, 124, 233, 0.05); /* Very subtle Primary Blue background */
+  background-color: rgba(21, 207, 241, 0.05); /* Very subtle hover effect */
+}
+
+.leaderboard__row--current {
+  background-color: rgba(13, 124, 233, 0.15); /* Highlight current user */
+  border-left: 4px solid #0D7CE9; /* Primary Blue accent */
 }
 
 .leaderboard__rank {
@@ -57,39 +67,45 @@
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  border-radius: 9999px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
   font-weight: 600;
 }
 
+/* Special styling for top 3 ranks */
 .rank-1 {
-  background-color: #FFD700; /* Gold */
-  color: #333333; /* Dark Gray */
+  background: linear-gradient(135deg, #FFD700, #FFA500); /* Gold gradient */
+  color: #000000;
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); /* Gold glow */
 }
 
 .rank-2 {
-  background-color: #C0C0C0; /* Silver */
-  color: #333333; /* Dark Gray */
-  box-shadow: 0 0 8px rgba(192, 192, 192, 0.5); /* Silver glow */
+  background: linear-gradient(135deg, #C0C0C0, #A9A9A9); /* Silver gradient */
+  color: #000000;
+  box-shadow: 0 0 10px rgba(192, 192, 192, 0.5); /* Silver glow */
 }
 
 .rank-3 {
-  background-color: #CD7F32; /* Bronze */
-  color: #333333; /* Dark Gray */
-  box-shadow: 0 0 8px rgba(205, 127, 50, 0.5); /* Bronze glow */
+  background: linear-gradient(135deg, #CD7F32, #A0522D); /* Bronze gradient */
+  color: #000000;
+  box-shadow: 0 0 10px rgba(205, 127, 50, 0.5); /* Bronze glow */
 }
 
 .leaderboard__address {
-  color: #FFFFFF; /* White text */
-  opacity: 0.8; /* Slightly transparent */
+  font-family: monospace;
+  font-size: 0.875rem;
+  color: #15CFF1; /* Secondary Blue */
 }
 
-.leaderboard__points,
+.leaderboard__points {
+  font-weight: 600;
+  color: #15CFF1; /* Secondary Blue */
+}
+
 .leaderboard__tasks,
 .leaderboard__uptime {
-  color: #15CFF1; /* Secondary Blue */
-  font-weight: 500;
-  text-shadow: 0 0 5px rgba(21, 207, 241, 0.3); /* Subtle glow */
+  color: #FFFFFF;
+  opacity: 0.9;
 }
 
 .leaderboard__loading,
@@ -101,19 +117,25 @@
   text-align: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   color: #FFFFFF; /* White text */
-  opacity: 0.8; /* Slightly transparent */
-  border-top: 3px solid #0D7CE9; /* Primary Blue accent */
+  border-top: 4px solid #0D7CE9; /* Primary Blue accent */
 }
 
 .leaderboard__error {
-  color: #ef4444; /* Keep red for errors */
+  color: #ef4444; /* Red for errors */
   text-shadow: 0 0 8px rgba(239, 68, 68, 0.4); /* Red glow */
 }
 
-.leaderboard__row--current {
-  background-color: #eff6ff;
-}
-
-.leaderboard__row--current:hover {
-  background-color: #dbeafe;
+/* Responsive styles */
+@media (max-width: 768px) {
+  .leaderboard__table th,
+  .leaderboard__table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .leaderboard__rank {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 0.75rem;
+  }
 }
