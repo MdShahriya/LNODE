@@ -503,7 +503,10 @@ export default function Dashboard() {
     <main className="dashboard-page">
       <div className="dashboard-container">
         {!isConnected ? (
+          <div className="connect-wallet">
           <p>Please connect your wallet to continue.</p>
+          <appkit-connect-button />
+          </div>
         ) : loading ? (
           <div className="stats-grid">
             {[1, 2, 3].map((i) => (

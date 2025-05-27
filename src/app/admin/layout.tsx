@@ -1,58 +1,48 @@
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode } from 'react';
 import { useAccount } from 'wagmi';
-import { useRouter, useSearchParams } from 'next/navigation';
 import AdminSidebar from '@/components/AdminSidebar';
-import { getAdminStatus } from '@/lib/adminAuth';
 import './admin-layout.css';
 
+// List of authorized admin wallet addresses
+const ADMIN_ADDRESSES = [
+  '0x9841adF197F21fE9a299312da8EF2C47f83c4e89', // Replace with actual admin addresses
+  '0xeA79596784C7A93f64D51452337513Fd248C310d'
+].map(addr => addr.toLowerCase());
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const { address } = useAccount();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const bypassKey = searchParams.get('adminKey');
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { address, isConnecting } = useAccount();
 
-  useEffect(() => {
-    // Check if user is authorized to access admin section
-    const adminStatus = getAdminStatus(address, bypassKey);
-    setIsAuthorized(adminStatus);
-    setIsLoading(false);
-    
-    // Redirect to home if not authorized
-    if (!adminStatus && !isLoading) {
-      router.push('/');
-    }
-  }, [address, bypassKey, router, isLoading]);
+  // Check if the connected wallet is an authorized admin
+  console.log('Connected address:', address);
+  console.log('Admin addresses:', ADMIN_ADDRESSES);
+  const normalizedAddress = address?.toLowerCase();
+  const isAuthorizedAdmin = normalizedAddress && ADMIN_ADDRESSES.includes(normalizedAddress);
+  console.log('Is authorized:', isAuthorizedAdmin);
 
-  // Show loading state while checking authorization
-  if (isLoading) {
+  // Use useEffect for navigatio
+  // Show loading state while connecting
+  if (isConnecting) {
     return (
-      <div className="admin-layout admin-layout--loading">
-        <div className="admin-loading">
-          <div className="admin-loading__spinner"></div>
-          <p>Verifying admin access...</p>
-        </div>
+      <div className="admin-unauthorized">
+        <h1>Loading...</h1>
+        <p>Please wait while we verify your wallet...</p>
       </div>
     );
   }
 
-  // Show unauthorized message if not authorized (will redirect soon)
-  if (!isAuthorized) {
+  // Show unauthorized message if not connected or not admin
+  if (!address || !isAuthorizedAdmin) {
     return (
-      <div className="admin-layout admin-layout--unauthorized">
-        <div className="admin-unauthorized">
-          <h1>Unauthorized Access</h1>
-          <p>You do not have permission to access the admin section.</p>
-          <p>Redirecting to home page...</p>
-        </div>
+      <div className="admin-unauthorized">
+        <h1>Unauthorized Access</h1>
+        <p>Please connect with an authorized admin wallet to access this section.</p>
+        <appkit-button balance='hide'/>
       </div>
     );
   }
 
-  // Show admin layout if authorized
   return (
     <div className="admin-layout">
       <AdminSidebar />
