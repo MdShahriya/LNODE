@@ -11,7 +11,7 @@ const NodeNetworkBackground: React.FC = () => {
 
     let width: number, height: number;
     const maxDistance = 140;
-    const nodeCount = 50;
+    const nodeCount = 30;
 
     let nodes: Node[] = [];
 
