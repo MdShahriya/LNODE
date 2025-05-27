@@ -5,12 +5,13 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import { FaBars, FaTimes, FaHome, FaTasks, FaTrophy, FaChartLine, FaUserFriends } from 'react-icons/fa'
+import { FaBars, FaTimes, FaHome, FaTasks, FaTrophy, FaChartLine, FaUserFriends, FaCalendarCheck } from 'react-icons/fa'
 import './Sidebar.css'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: <FaHome /> },
   { name: 'Tasks', href: '/dashboard/tasks', icon: <FaTasks /> },
+  { name: 'Check-in', href: '/dashboard/check-in', icon: <FaCalendarCheck /> },
   { name: 'Achievements', href: '/dashboard/achievements', icon: <FaTrophy /> },
   { name: 'Leaderboard', href: '/dashboard/leaderboard', icon: <FaChartLine /> },
   { name: 'Referral', href: '/dashboard/referral', icon: <FaUserFriends /> },

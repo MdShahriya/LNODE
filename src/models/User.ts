@@ -11,6 +11,12 @@ export interface IUser extends Document {
   referredBy?: mongoose.Types.ObjectId;
   referralPointsEarned?: number;
   isActive?: boolean;
+  // Check-in related fields
+  lastCheckIn?: Date | null;
+  currentStreak?: number;
+  longestStreak?: number;
+  totalCheckIns?: number;
+  checkInPointsEarned?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +67,27 @@ const UserSchema: Schema = new Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    // Check-in related fields
+    lastCheckIn: {
+      type: Date,
+      default: null,
+    },
+    currentStreak: {
+      type: Number,
+      default: 0,
+    },
+    longestStreak: {
+      type: Number,
+      default: 0,
+    },
+    totalCheckIns: {
+      type: Number,
+      default: 0,
+    },
+    checkInPointsEarned: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }
