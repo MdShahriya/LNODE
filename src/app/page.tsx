@@ -1,12 +1,16 @@
 'use client'
 
-import React from 'react'
-import "./page.css"
-import Link from 'next/link'
+import React from "react";
+import Link from "next/link";
+import NodeNetworkBackground from "../components/NodeNetworkBackground"; // adjust path as needed
+import "./page.css";
 
-const LandingPage = () => {
+const LandingPage: React.FC = () => {
   return (
     <div>
+      {/* Animated background behind content */}
+      <NodeNetworkBackground />
+
       <main className="landing-main">
         {/* Hero Section */}
         <section className="landing-hero">
@@ -23,9 +27,9 @@ const LandingPage = () => {
         <section className="landing-benefits">
           <h2 className="features-title">Why Operate a TOPAY Node?</h2>
           <ul className="features-list">
-            <li>✅ Earn points and rewards for uptime and tasks</li>
-            <li>✅ Contribute to a secure, scalable payment network</li>
-            <li>✅ Unlock exclusive achievements and leaderboard status</li>
+            <li>Earn points and rewards based on uptime and task completion</li>
+            <li>Contribute to a secure and scalable payment network</li>
+            <li>Unlock exclusive achievements and improve leaderboard ranking</li>
           </ul>
         </section>
 
@@ -33,24 +37,26 @@ const LandingPage = () => {
         <section className="landing-how-it-works">
           <h2 className="features-title">How It Works</h2>
           <ol className="how-list">
-            <li>1. Connect your wallet and register your node</li>
-            <li>2. Keep your node online to maintain uptime</li>
-            <li>3. Complete tasks to earn additional points</li>
-            <li>4. Climb the leaderboard and redeem rewards</li>
+            <li>Connect your wallet and register your node</li>
+            <li>Keep your node online to maintain uptime</li>
+            <li>Complete tasks to earn additional points</li>
+            <li>Climb the leaderboard and redeem rewards</li>
           </ol>
         </section>
 
         {/* Call to Action */}
         <section className="landing-cta">
           <h2>Ready to Get Started?</h2>
-          <p>Join the TOPAY Node Operator community today and help build the decentralized payment infrastructure.</p>
+          <p>
+            Join the TOPAY Node Operator community and contribute to building a decentralized payment infrastructure.
+          </p>
           <Link href="/dashboard">
             <button className="cta-button">Access Node Dashboard</button>
           </Link>
         </section>
       </main>
     </div>
-  )
-}
+  );
+};
 
-export default LandingPage
+export default LandingPage;
