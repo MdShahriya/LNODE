@@ -107,6 +107,23 @@ export default function Dashboard() {
             setStartTime(new Date(data.user.nodeStartTime).getTime())
           }
         }
+        
+        // Store wallet address for extension access
+        if (address) {
+          localStorage.setItem('walletAddress', address)
+          // Notify extension API about wallet connection
+          try {
+            await fetch('/api/extension/wallet', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ walletAddress: address }),
+            })
+          } catch (error) {
+            console.log('Extension API not available:', error)
+          }
+        }
       } catch (error) {
         console.error('Error registering/fetching user:', error)
       } finally {

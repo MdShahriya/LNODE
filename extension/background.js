@@ -246,6 +246,62 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     updateState({ walletAddress: message.walletAddress });
     fetchUserData().then(() => sendResponse(state));
     return true; // Indicates we'll respond asynchronously
+  } else if (message.action === 'connectWallet') {
+    // Try to get wallet address from the dashboard API
+    chrome.tabs.query({active: true, currentWindow: true}, async (tabs) => {
+      if (tabs[0] && tabs[0].url && tabs[0].url.includes('/dashboard')) {
+        try {
+          // First try to get from localStorage via content script
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            function: () => localStorage.getItem('walletAddress')
+          });
+          
+          if (results && results[0] && results[0].result) {
+            const walletAddress = results[0].result;
+            
+            // Verify with API
+            try {
+              const apiResponse = await fetch(`http://localhost:3000/api/extension/wallet?walletAddress=${walletAddress}`);
+              if (apiResponse.ok) {
+                const apiData = await apiResponse.json();
+                if (apiData.success) {
+                  updateState({ walletAddress, isConnected: true });
+                  await fetchUserData();
+                  sendResponse({ success: true, data: state });
+                  return;
+                }
+              }
+            } catch (apiError) {
+              console.log('API verification failed, using localStorage value:', apiError);
+            }
+            
+            // Fallback to localStorage value
+            updateState({ walletAddress, isConnected: true });
+            await fetchUserData();
+            sendResponse({ success: true, data: state });
+          } else {
+            sendResponse({ success: false, error: 'No wallet connected. Please connect your wallet on the dashboard.' });
+          }
+        } catch (error) {
+          console.error('Error getting wallet:', error);
+          sendResponse({ success: false, error: 'Failed to connect wallet' });
+        }
+      } else {
+        sendResponse({ success: false, error: 'Please open the dashboard first' });
+      }
+    });
+    return true; // Indicates we'll respond asynchronously
+  } else if (message.type === 'walletChanged') {
+    // Handle wallet change notification from content script
+    if (message.walletAddress) {
+      updateState({ walletAddress: message.walletAddress, isConnected: true });
+      fetchUserData();
+    } else {
+      updateState({ walletAddress: null, isConnected: false });
+    }
+  } else if (message.type === 'contentScriptReady') {
+    console.log('Content script ready on:', message.url);
   }
 });
 

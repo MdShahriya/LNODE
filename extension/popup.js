@@ -12,9 +12,20 @@ function formatWalletAddress(address) {
   return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
 }
 
-// Connect wallet
-connectWalletButton.addEventListener('click', async () => {
+// Connect wallet handler
+async function connectWalletHandler() {
   try {
+    // Check if dashboard is open
+    const tabs = await chrome.tabs.query({active: true, currentWindow: true});
+    const isDashboardOpen = tabs[0] && tabs[0].url && tabs[0].url.includes('/dashboard');
+    
+    if (!isDashboardOpen) {
+      // Open dashboard in new tab
+      await chrome.tabs.create({ url: 'http://localhost:3000/dashboard' });
+      notConnectedSection.innerHTML = '<p>Please connect your wallet on the dashboard page</p>';
+      return;
+    }
+    
     // Request wallet connection from background script
     const response = await chrome.runtime.sendMessage({ action: 'connectWallet' });
     
@@ -22,11 +33,20 @@ connectWalletButton.addEventListener('click', async () => {
       updateUI(response.data);
     } else {
       console.error('Error connecting wallet:', response.error);
+      notConnectedSection.innerHTML = `<p>${response.error}</p><button class="button primary-button" id="connect-wallet">Connect Wallet</button>`;
+      // Re-attach event listener to new button
+      document.getElementById('connect-wallet').addEventListener('click', connectWalletHandler);
     }
   } catch (error) {
     console.error('Error communicating with background script:', error);
+    notConnectedSection.innerHTML = '<p>Failed to connect wallet. Please try again.</p><button class="button primary-button" id="connect-wallet">Connect Wallet</button>';
+    // Re-attach event listener to new button
+    document.getElementById('connect-wallet').addEventListener('click', connectWalletHandler);
   }
-});
+}
+
+// Attach connect wallet handler
+connectWalletButton.addEventListener('click', connectWalletHandler);
 
 // Toggle node status
 toggleNodeButton.addEventListener('click', async () => {
