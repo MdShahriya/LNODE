@@ -4,6 +4,7 @@ import { useAccount, useSignMessage } from 'wagmi'
 import { useEffect, useState } from 'react'
 import './dashboard.css'
 import React from 'react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface NodeStats {
   uptime: number
@@ -22,6 +23,19 @@ interface User {
   updatedAt: string
 }
 
+// Sample data for charts - in a real implementation, this would come from API
+const generateSampleData = (days = 7) => {
+  return Array.from({ length: days }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (days - i - 1));
+    return {
+      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      points: Math.floor(Math.random() * 500) + 100,
+      uptime: Math.floor(Math.random() * 8) + 1,
+    };
+  });
+};
+
 export default function Dashboard() {
   const { address, isConnected } = useAccount()
   const [nodeStats, setNodeStats] = useState<NodeStats>({
@@ -38,6 +52,10 @@ export default function Dashboard() {
   const [secondsElapsed, setSecondsElapsed] = useState(0)
   // Add a state to track if we're currently processing a signature
   const [isProcessingSignature, setIsProcessingSignature] = useState(false)
+  // Sample data for charts
+  const [activityData, setActivityData] = useState(generateSampleData())
+  // State to toggle between different chart views
+  const [activeChart, setActiveChart] = useState('points')
 
   useEffect(() => {
     if (!isConnected || !address) return
@@ -101,7 +119,68 @@ export default function Dashboard() {
 
   const { data: signMessageData, isPending: isSignLoading, signMessage, reset: resetSignMessage } = useSignMessage()
 
+  // Update activity data when node stats change
+  useEffect(() => {
+    if (user && nodeStats) {
+      const currentDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const lastEntry = activityData[activityData.length - 1];
 
+      // Only update if the date or values have changed
+      if (!lastEntry || lastEntry.date !== currentDate || 
+          lastEntry.points !== nodeStats.points || 
+          lastEntry.uptime !== nodeStats.uptime) {
+        const newActivityData = [
+          ...activityData.slice(1),
+          {
+            date: currentDate,
+            points: nodeStats.points,
+            uptime: nodeStats.uptime
+          }
+        ];
+        setActivityData(newActivityData);
+      }
+    }
+  }, [nodeStats, user, isNodeRunning, activityData]); // Remove activityData from dependencies
+
+  // Function to render the active chart
+  const renderActiveChart = () => {
+    switch(activeChart) {
+      case 'points':
+        return (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={activityData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <XAxis dataKey="date" stroke="#fff" />
+              <YAxis stroke="#fff" />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#252833', border: 'none', borderRadius: '8px' }} 
+                labelStyle={{ color: '#fff' }}
+              />
+              <Legend />
+              <Line type="monotone" dataKey="points" stroke="#0D7CE9" strokeWidth={2} activeDot={{ r: 8 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        );
+      case 'uptime':
+        return (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={activityData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <XAxis dataKey="date" stroke="#fff" />
+              <YAxis stroke="#fff" />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#252833', border: 'none', borderRadius: '8px' }} 
+                labelStyle={{ color: '#fff' }}
+              />
+              <Legend />
+              <Bar dataKey="uptime" fill="#15CFF1" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      default:
+        return null;
+    }
+  };
 
   const toggleNode = async () => {
     // Prevent multiple clicks while processing
@@ -548,6 +627,29 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* Analytics Section */}
+            <div className="analytics-section">
+              <h2 className="analytics-heading">Node Analytics</h2>
+              <div className="chart-controls">
+                <button 
+                  className={`chart-button ${activeChart === 'points' ? 'active' : ''}`}
+                  onClick={() => setActiveChart('points')}
+                >
+                  Points History
+                </button>
+                <button 
+                  className={`chart-button ${activeChart === 'uptime' ? 'active' : ''}`}
+                  onClick={() => setActiveChart('uptime')}
+                >
+                  Uptime History
+                </button>
+              </div>
+              <div className="chart-container">
+                {renderActiveChart()}
+              </div>
+              <p className="chart-disclaimer">* Sample data shown. Historical data will be available as you use your node.</p>
+            </div>
+
             {/* Node Control */}
             <div className="node-control">
               <h3 className="control-title">Node Status: <span className={isNodeRunning ? "status-running" : "status-stopped"}>{isNodeRunning ? "Running" : "Stopped"}</span></h3>
@@ -571,4 +673,5 @@ export default function Dashboard() {
       </div>
     </main>
   )
+
 }

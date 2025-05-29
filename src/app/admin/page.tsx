@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 import "./admin.css"
 
@@ -76,25 +75,6 @@ export default function AdminDashboard() {
                 <p className="admin-stats__value">{stats.totalPoints}</p>
               </div>
             </div>
-
-            <div className="admin-card">
-              <h2 className="admin-card__title">Quick Actions</h2>
-              <div className="admin-actions">
-                <Link href="/admin/tasks" className="admin-button admin-button--primary">
-                  Manage Tasks
-                </Link>
-                <Link href="/admin/usersmanagment" className="admin-button admin-button--secondary">
-                  Manage Users
-                </Link>
-                <Link href="/admin/achievements" className="admin-button admin-button--secondary">
-                  Manage Achievements
-                </Link>
-                <Link href="/admin/opinionfund" className="admin-button admin-button--secondary">
-                  Opinion Fund
-                </Link>
-              </div>
-            </div>
-
             <div className="admin-card">
               <h2 className="admin-card__title">Recent Activity</h2>
               <p>No recent activity to display.</p>
