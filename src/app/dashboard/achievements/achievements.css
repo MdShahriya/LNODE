@@ -1,7 +1,7 @@
 .achievements {
   min-height: 100vh;
   padding: 2rem;
-  background-color: #15192b; /* Deep Blue background */
+  background: transparent; /* Deep Blue background */
   color: #FFFFFF; /* White text */
 }
 

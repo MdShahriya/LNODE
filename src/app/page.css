@@ -73,15 +73,14 @@ body, html, #__next, #root {
   font-weight: 700;
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 8px 15px rgba(21, 207, 241, 0.4);
+  box-shadow: 0 8px 15px rgba(21, 208, 241, 0.103);
   transition: all 0.3s ease;
   user-select: none;
 }
 
 .cta-button:hover {
-  background: linear-gradient(135deg, #15CFF1, #0D7CE9);
-  box-shadow: 0 12px 25px rgba(21, 207, 241, 0.7);
-  transform: translateY(-3px);
+  background: linear-gradient(135deg, #0D7CE9, #15CFF1);
+  box-shadow: 0 8px 30px rgba(21, 208, 241, 0.37);
 }
 
 /* Content Sections */

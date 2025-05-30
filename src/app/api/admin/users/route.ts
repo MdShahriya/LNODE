@@ -84,29 +84,34 @@ export async function GET(request: NextRequest) {
 // PATCH /api/admin/users/:id - Update user
 export async function PATCH(request: NextRequest) {
   try {
-    await connectDB();
+    // This route is now deprecated. Use the dynamic route /api/admin/users/[id] instead.
+    // This function remains for backward compatibility but will redirect to the new endpoint.
     
     const data = await request.json();
-    const userId = request.url.split('/').pop();
+    
+    // Extract userId from URL using URL object
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    const pathSegments = pathname.split('/');
+    const userId = pathSegments[pathSegments.length - 1];
     
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
     
-    const user = await User.findById(userId);
+    // Create a new request to the dynamic route
+    const newUrl = new URL(`${url.origin}/api/admin/users/${userId}`);
+    const newRequest = new NextRequest(newUrl, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      headers: request.headers
+    });
     
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    // Forward to the dynamic route handler
+    const response = await fetch(newRequest);
+    const result = await response.json();
     
-    // Update user fields
-    if (data.points !== undefined) {
-      user.points = data.points;
-    }
-    
-    await user.save();
-    
-    return NextResponse.json({ user });
+    return NextResponse.json(result, { status: response.status });
   } catch (error) {
     console.error('Error updating user:', error);
     return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });

@@ -48,6 +48,11 @@ async function connectWalletHandler() {
 // Attach connect wallet handler
 connectWalletButton.addEventListener('click', connectWalletHandler);
 
+// Go to dashboard handler
+document.getElementById('go-to-dashboard').addEventListener('click', () => {
+  chrome.tabs.create({ url: 'http://localhost:3000/dashboard' });
+});
+
 // Toggle node status
 toggleNodeButton.addEventListener('click', async () => {
   toggleNodeButton.disabled = true;
