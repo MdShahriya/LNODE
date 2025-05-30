@@ -51,7 +51,10 @@ connectWalletButton.addEventListener('click', connectWalletHandler);
 // Toggle node status
 toggleNodeButton.addEventListener('click', async () => {
   toggleNodeButton.disabled = true;
-  toggleNodeButton.textContent = 'Processing...';
+  toggleNodeButton.classList.add('loading');
+  
+  // Add a 1-second delay for the loading animation
+  await new Promise(resolve => setTimeout(resolve, 1000));
   
   try {
     const response = await chrome.runtime.sendMessage({ action: 'toggleNode' });
@@ -61,12 +64,12 @@ toggleNodeButton.addEventListener('click', async () => {
     } else {
       console.error('Error toggling node:', response.error);
       toggleNodeButton.disabled = false;
-      toggleNodeButton.textContent = nodeStatusElement.classList.contains('status-running') ? 'Stop Node' : 'Start Node';
+      toggleNodeButton.classList.remove('loading');
     }
   } catch (error) {
     console.error('Error communicating with background script:', error);
     toggleNodeButton.disabled = false;
-    toggleNodeButton.textContent = nodeStatusElement.classList.contains('status-running') ? 'Stop Node' : 'Start Node';
+    toggleNodeButton.classList.remove('loading');
   }
 });
 
@@ -91,16 +94,17 @@ function updateUI(data) {
   if (isNodeRunning) {
     nodeStatusElement.textContent = 'Running';
     nodeStatusElement.className = 'status-running';
-    toggleNodeButton.textContent = 'Stop Node';
     toggleNodeButton.className = 'control-button stop-button';
+    toggleNodeButton.setAttribute('aria-label', 'Stop Node');
   } else {
     nodeStatusElement.textContent = 'Stopped';
     nodeStatusElement.className = 'status-stopped';
-    toggleNodeButton.textContent = 'Start Node';
     toggleNodeButton.className = 'control-button start-button';
+    toggleNodeButton.setAttribute('aria-label', 'Start Node');
   }
   
   toggleNodeButton.disabled = false;
+  toggleNodeButton.classList.remove('loading');
 }
 
 // Initialize popup

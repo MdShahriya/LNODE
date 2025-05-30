@@ -109,32 +109,53 @@ h1 {
   color: #ef4444;
 }
 
+/* Control Button - Round with icon */
 .control-button {
-  width: 100%;
-  padding: 10px;
+  width: 60px;
+  height: 60px;
   border: none;
-  border-radius: 6px;
+  border-radius: 50%;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  padding: 0;
+  position: relative;
 }
 
 .start-button {
   background: #0D7CE9;
   background-image: linear-gradient(135deg, #0D7CE9, #15CFF1);
   color: #fff;
+  box-shadow: 0 4px 10px rgba(13, 124, 233, 0.3);
 }
 
 .start-button:hover {
   background-image: linear-gradient(135deg, #15CFF1, #0D7CE9);
   box-shadow: 0 0 15px rgba(13, 124, 233, 0.5);
+  transform: scale(1.05);
 }
 
 .stop-button {
-  background: #333333;
-  border: 2px solid #ef4444;
+  background: #ef4444;
   color: #fff;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+}
+
+.stop-button:hover {
+  background: #ff5555;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+  transform: scale(1.05);
+}
+
+.control-button svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
 }
 
 .stop-button:hover {
@@ -157,7 +178,44 @@ h1 {
   font-size: 12px;
 }
 
-button:disabled {
-  opacity: 0.7;
+/* Loading animation for button */
+.control-button:disabled,
+.control-button.loading {
+  opacity: 0.8;
   cursor: not-allowed;
+  position: relative;
+}
+
+.control-button.loading svg {
+  opacity: 0.2; /* Reduce opacity more for better contrast with spinner */
+  transition: opacity 0.2s ease;
+}
+
+.control-button:disabled::after,
+.control-button.loading::after {
+  content: '';
+  position: absolute;
+  width: 26px; /* Slightly larger spinner */
+  height: 26px;
+  top: calc(50% - 13px);
+  left: calc(50% - 13px);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.6s linear infinite; /* Faster spin */
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.2); /* More visible glow */
+}
+
+.control-button.loading {
+  animation: pulse 1s ease-in-out infinite; /* Faster pulse */
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+  50% { transform: scale(1.05); box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 255, 255, 0); }
 }

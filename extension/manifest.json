@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TOPAY Node Dashboard",
-  "version": "1.0.0",
+  "version": "0.1.253",
   "description": "Control your TOPAY node and monitor points and uptime",
   "action": {
     "default_popup": "popup.html",

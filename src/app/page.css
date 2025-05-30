@@ -5,8 +5,24 @@ body, html, #__next, #root {
   margin: 0;
   padding: 0;
   height: 100%;
-  background-color: #15192b; /* Deep Blue background */
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #000000;
+  --gap: 5em;
+  --line: 1px;
+  --color: rgba(255, 255, 255, 0.2);
+
+  background-image: linear-gradient(
+      -90deg,
+      transparent calc(var(--gap) - var(--line)),
+      var(--color) calc(var(--gap) - var(--line) + 1px),
+      var(--color) var(--gap)
+    ),
+    linear-gradient(
+      0deg,
+      transparent calc(var(--gap) - var(--line)),
+      var(--color) calc(var(--gap) - var(--line) + 1px),
+      var(--color) var(--gap)
+    );
+  background-size: var(--gap) var(--gap);  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #FFFFFF;
   overflow-x: hidden;
   user-select: none;
@@ -35,7 +51,6 @@ body, html, #__next, #root {
   font-size: 3.5rem;
   font-weight: 800;
   color: #15CFF1; /* Primary Blue */
-  text-shadow: 0 0 15px #0D7CE9;
   letter-spacing: 0.03em;
   margin-bottom: 1rem;
 }
@@ -87,7 +102,6 @@ body, html, #__next, #root {
   font-weight: 700;
   margin-bottom: 1.5rem;
   color: #15CFF1;
-  text-shadow: 0 0 10px #0D7CE9;
 }
 
 /* Lists */
@@ -123,7 +137,6 @@ body, html, #__next, #root {
   font-size: 2rem;
   color: #15CFF1;
   margin-bottom: 0.8rem;
-  text-shadow: 0 0 8px #0D7CE9;
 }
 
 .landing-cta p {
