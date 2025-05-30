@@ -3,12 +3,15 @@ import connectDB from '@/lib/db';
 import User from '@/models/User';
 
 // PATCH /api/admin/users/[id] - Update user by ID
-export async function PATCH(request: NextRequest, context: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await connectDB();
     
     const data = await request.json();
-    const userId = context.params.id;
+    const { id: userId } = await params;
     
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -35,11 +38,14 @@ export async function PATCH(request: NextRequest, context: { params: { id: strin
 }
 
 // GET /api/admin/users/[id] - Get user by ID
-export async function GET(request: NextRequest, context: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     await connectDB();
     
-    const userId = context.params.id;
+    const { id: userId } = await params;
     
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
