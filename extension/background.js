@@ -1,6 +1,6 @@
 // Constants
 const MAX_NODE_RUNTIME_SECONDS = 24 * 60 * 60; // 24 hours in seconds
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://node.topayfoundation.com/api';
 
 // State management
 let state = {
@@ -262,7 +262,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             
             // Verify with API
             try {
-              const apiResponse = await fetch(`http://localhost:3000/api/extension/wallet?walletAddress=${walletAddress}`);
+              const apiResponse = await fetch(`https://node.topayfoundation.com/api/extension/wallet?walletAddress=${walletAddress}`);
               if (apiResponse.ok) {
                 const apiData = await apiResponse.json();
                 if (apiData.success) {

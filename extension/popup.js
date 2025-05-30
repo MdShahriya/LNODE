@@ -21,7 +21,7 @@ async function connectWalletHandler() {
     
     if (!isDashboardOpen) {
       // Open dashboard in new tab
-      await chrome.tabs.create({ url: 'http://localhost:3000/dashboard' });
+      await chrome.tabs.create({ url: 'https://node.topayfoundation.com/dashboard' });
       notConnectedSection.innerHTML = '<p>Please connect your wallet on the dashboard page</p>';
       return;
     }
@@ -50,7 +50,7 @@ connectWalletButton.addEventListener('click', connectWalletHandler);
 
 // Go to dashboard handler
 document.getElementById('go-to-dashboard').addEventListener('click', () => {
-  chrome.tabs.create({ url: 'http://localhost:3000/dashboard' });
+  chrome.tabs.create({ url: 'https://node.topayfoundation.com/dashboard' });
 });
 
 // Toggle node status
