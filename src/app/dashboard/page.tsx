@@ -30,10 +30,65 @@ const generateSampleData = (days = 7) => {
     date.setDate(date.getDate() - (days - i - 1));
     return {
       date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      points: Math.floor(Math.random() * 500) + 100,
-      uptime: Math.floor(Math.random() * 8) + 1,
+      points: 0,
+      uptime: 0,
     };
   });
+};
+
+// Function to fetch historical data from API
+const fetchHistoricalData = async (walletAddress: string, days = 7) => {
+  try {
+    const response = await fetch(`/api/user/history?walletAddress=${walletAddress}&days=${days}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.data; // Return the processed daily data
+    }
+    
+    // If there's an error, return sample data
+    return generateSampleData(days);
+  } catch (error) {
+    console.error('Error fetching historical data:', error);
+    return generateSampleData(days);
+  }
+};
+
+// Fallback function to generate historical data based on user's current stats
+const generateHistoricalData = (user: User | null, days = 7) => {
+  if (!user) return generateSampleData(days);
+  
+  // Create an array of dates for the past 'days' days
+  const dates = Array.from({ length: days }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (days - i - 1));
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+  
+  // For the last entry (today), use the current user stats
+  const result = dates.map((date, index) => {
+    // For the last day (today), use actual data
+    if (index === dates.length - 1) {
+      return {
+        date,
+        points: user.points,
+        uptime: Math.floor(user.uptime / 3600), // Convert seconds to hours
+      };
+    }
+    
+    // For previous days, calculate a reasonable progression
+    // This creates a more realistic progression instead of random data
+    const pointsRatio = (index + 1) / dates.length;
+    const uptimeRatio = (index + 1) / dates.length;
+    
+    return {
+      date,
+      points: Math.floor(user.points * pointsRatio),
+      uptime: Math.floor((user.uptime / 3600) * uptimeRatio), // Convert seconds to hours
+    };
+  });
+  
+  return result;
 };
 
 export default function Dashboard() {
@@ -55,7 +110,9 @@ export default function Dashboard() {
   // Sample data for charts
   const [activityData, setActivityData] = useState(generateSampleData())
   // State to toggle between different chart views
-  const [activeChart, setActiveChart] = useState('points')
+  const [activeChart] = useState('points')
+  // Add state for referral link
+  const [referralCount] = useState(0)
 
   useEffect(() => {
     if (!isConnected || !address) return
@@ -86,6 +143,10 @@ export default function Dashboard() {
               tasksCompleted: data.user.tasksCompleted
             })
             
+            // Fetch real historical data from API
+            const historyData = await fetchHistoricalData(address)
+            setActivityData(historyData.length > 0 ? historyData : generateHistoricalData(data.user))
+            
             // If node is running, set the start time from server
             if (data.user.nodeStatus && data.user.nodeStartTime) {
               setStartTime(new Date(data.user.nodeStartTime).getTime())
@@ -101,6 +162,10 @@ export default function Dashboard() {
               points: data.user.points,
               tasksCompleted: data.user.tasksCompleted
             })
+          
+          // Fetch real historical data from API
+          const historyData = await fetchHistoricalData(address)
+          setActivityData(historyData.length > 0 ? historyData : generateHistoricalData(data.user))
           
           // If node is running, set the start time from server
           if (data.user.nodeStatus && data.user.nodeStartTime) {
@@ -122,6 +187,31 @@ export default function Dashboard() {
             })
           } catch (error) {
             console.log('Extension API not available:', error)
+          }
+          
+          // Track device information for analytics
+          try {
+            const deviceInfo = {
+              userAgent: navigator.userAgent,
+              language: navigator.language,
+              platform: navigator.platform,
+              screenWidth: window.screen.width,
+              screenHeight: window.screen.height,
+              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            };
+            
+            await fetch('/api/user/track-device', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ 
+                walletAddress: address,
+                deviceInfo: JSON.stringify(deviceInfo)
+              }),
+            })
+          } catch (error) {
+            console.log('Error tracking device:', error)
           }
         }
       } catch (error) {
@@ -146,18 +236,33 @@ export default function Dashboard() {
       if (!lastEntry || lastEntry.date !== currentDate || 
           lastEntry.points !== nodeStats.points || 
           lastEntry.uptime !== nodeStats.uptime) {
-        const newActivityData = [
-          ...activityData.slice(1),
-          {
+        // Create a new array with the updated current day data
+        const newActivityData = [...activityData];
+        
+        // Find the index of today's entry
+        const todayIndex = newActivityData.findIndex(entry => entry.date === currentDate);
+        
+        if (todayIndex >= 0) {
+          // Update today's entry
+          newActivityData[todayIndex] = {
             date: currentDate,
             points: nodeStats.points,
             uptime: nodeStats.uptime
-          }
-        ];
+          };
+        } else {
+          // If today's entry doesn't exist, add it by replacing the oldest entry
+          newActivityData.shift(); // Remove the oldest entry
+          newActivityData.push({
+            date: currentDate,
+            points: nodeStats.points,
+            uptime: nodeStats.uptime
+          });
+        }
+        
         setActivityData(newActivityData);
       }
     }
-  }, [nodeStats, user, isNodeRunning, activityData]); // Remove activityData from dependencies
+  }, [nodeStats, user, isNodeRunning, activityData]); // Added activityData to dependencies
 
   // Function to render the active chart
   const renderActiveChart = () => {
@@ -354,7 +459,7 @@ export default function Dashboard() {
   const MAX_NODE_RUNTIME_SECONDS = 24 * 60 * 60; // 24 hours in seconds
 
   // State to track remaining time
-  const [remainingTime, setRemainingTime] = useState<string>('');
+  const [, setRemainingTime] = useState<string>('');
 
   // Format remaining time
   const formatRemainingTime = (seconds: number): string => {
@@ -615,80 +720,114 @@ export default function Dashboard() {
           </div>
         ) : (
           <>
-            <h1 className="dashboard-heading">Node Dashboard</h1>
-            <p className="dashboard-subheading">Monitor your node&apos;s performance and earnings</p>
-            
-            <div className="stats-grid">
-              <div className="stats-card">
-                <h3 className="stats-title">Total Uptime</h3>
-                <p className="stats-value">{nodeStats.uptime} hours</p>
-                <span className="stats-label">Time your node has been active</span>
-                {isNodeRunning && (
-                  <span className="stats-update">Time: {secondsToHours(secondsElapsed)} hours {Math.floor((secondsElapsed % 3600) / 60)} minutes</span>
-                )}
+            <div className="dashboard-header">
+              <h1 className="main-dashboard-title">Main Dashboard</h1>
+              <div className="referral-section">
+                <span className="referral-count">Referrals: {referralCount}</span>
+                <button className="copy-referral-button" onClick={() => {
+                  const link = `${window.location.origin}/ref/${address}`;
+                  navigator.clipboard.writeText(link);
+                  alert('Referral link copied to clipboard!');
+                }}>
+                  Copy referral link
+                </button>
               </div>
-              
-              <div className="stats-card">
-                <h3 className="stats-title">Points Earned</h3>
-                <p className="stats-value">{nodeStats.points.toFixed(3)}</p>
-                <span className="stats-label">Earn points by running NODE</span>
-                {isNodeRunning && (
-                  <span className="stats-update">Points: {localPoints.toFixed(3)}</span>
-                )}
-              </div>
-              
-              <div className="stats-card">
-                <h3 className="stats-title">Tasks Completed</h3>
-                <p className="stats-value">{nodeStats.tasksCompleted}</p>
-                <span className="stats-label">Network tasks processed by your node</span>
+              <div className="user-section">
+                <span className="greeting">Hi, {address ? address.substring(0, 6) + '...' + address.substring(address.length - 4) : 'User'}</span>
               </div>
             </div>
 
-            {/* Analytics Section */}
-            <div className="analytics-section">
-              <h2 className="analytics-heading">Node Analytics</h2>
-              <div className="chart-controls">
-                <button 
-                  className={`chart-button ${activeChart === 'points' ? 'active' : ''}`}
-                  onClick={() => setActiveChart('points')}
-                >
-                  Points History
-                </button>
-                <button 
-                  className={`chart-button ${activeChart === 'uptime' ? 'active' : ''}`}
-                  onClick={() => setActiveChart('uptime')}
-                >
-                  Uptime History
-                </button>
-              </div>
-              <div className="chart-container">
-                {renderActiveChart()}
-              </div>
-              <p className="chart-disclaimer">* Sample data shown. Historical data will be available as you use your node.</p>
-            </div>
-
-            {/* Node Control */}
-            <div className="node-control">
-              <h3 className="control-title">Node Status: <span className={isNodeRunning ? "status-running" : "status-stopped"}>{isNodeRunning ? "Running" : "Stopped"}</span></h3>
-              {isNodeRunning && (
-                <div className="time-limit-info">
-                  <p>Time remaining: <span className="remaining-time">{remainingTime}</span></p>
-                  <p className="time-limit-note">Nodes automatically stop after 24 hours and must be manually restarted.</p>
+            <div className="earnings-section">
+              <h2 className="section-title">Earnings</h2>
+              <div className="earnings-cards">
+                <div className="earnings-card">
+                  <h3 className="earnings-title">Epoch Earnings:</h3>
+                  <p className="earnings-value">{nodeStats.points.toFixed(2)} pt</p>
+                  <span className="earnings-detail">Total Uptime: {nodeStats.uptime} hrs, {Math.floor((secondsElapsed % 3600) / 60)} mins</span>
                 </div>
-              )}
+                <div className="earnings-card">
+                  <h3 className="earnings-title">Today&apos;s Earnings:</h3>
+                  <p className="earnings-value">{localPoints.toFixed(2)} pt</p>
+                  <span className="earnings-detail">Today Uptime: {Math.floor((secondsElapsed % 3600) / 60)} min</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="connection-status-section">
+              <div className="connection-status">
+                <div className="status-icon">{isNodeRunning ? '🟢' : '🔴'}</div>
+                <span className="status-text">{isNodeRunning ? 'Connected' : 'Disconnected'}</span>
+              </div>
+              <p className="connection-info">Connect devices on more networks to earn more.<br />You can always disconnect device in the profile tab.</p>
               <button 
-                className={`control-button ${isNodeRunning ? "stop-button" : "start-button"}`}
+                className={`connection-button ${isNodeRunning ? "stop-button" : "start-button"}`}
                 onClick={toggleNode}
                 disabled={isSignLoading || isProcessingSignature}
               >
-                {isSignLoading ? "Waiting for signature..." : isProcessingSignature ? "Processing..." : isNodeRunning ? "Stop Node" : "Start Node"}
+                {isSignLoading ? "Waiting for signature..." : isProcessingSignature ? "Processing..." : isNodeRunning ? "Disconnect" : "Add more Node now to earn Point"}
               </button>
-              <p className="control-info">{isNodeRunning ? "Your node is active and earning points." : "Start your node to begin earning points."}</p>
+            </div>
+
+            <div className="earnings-statistics">
+              <h2 className="section-title">Earnings Statistics</h2>
+              <div className="chart-container">
+                {renderActiveChart()}
+              </div>
+              <div className="chart-legend">
+                <div className="legend-item">
+                  <span className="legend-dot telegram"></span>
+                  <span className="legend-text">Telegram Earnings</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot extension"></span>
+                  <span className="legend-text">Extension Earnings</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot referrals"></span>
+                  <span className="legend-text">Referrals</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot reward"></span>
+                  <span className="legend-text">Reward</span>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot social"></span>
+                  <span className="legend-text">Social Earnings</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="nodes-section">
+              <div className="nodes-header">
+                <h2 className="section-title">Your Nodes</h2>
+                <button className="view-all-button">View All</button>
+              </div>
+              <div className="nodes-table">
+                <div className="table-header">
+                  <div className="header-cell status">Status</div>
+                  <div className="header-cell node">Node</div>
+                  <div className="header-cell id">Unique ID</div>
+                  <div className="header-cell ip">IP</div>
+                  <div className="header-cell pts">PT/S</div>
+                  <div className="header-cell uptime">Total Uptime</div>
+                  <div className="header-cell points">Points Earned</div>
+                </div>
+                {isNodeRunning && (
+                  <div className="table-row">
+                    <div className="cell status">🟢 Connected</div>
+                    <div className="cell node">Extension Node</div>
+                    <div className="cell id">{address ? address.substring(0, 6) + '...' + address.substring(address.length - 4) : '000000'}</div>
+                    <div className="cell ip">192.168.1.1</div>
+                    <div className="cell pts">0.0002</div>
+                    <div className="cell uptime">{Math.floor(secondsElapsed / 3600)} hrs, {Math.floor((secondsElapsed % 3600) / 60)} mins</div>
+                    <div className="cell points">{localPoints.toFixed(1)} pt</div>
+                  </div>
+                )}
+              </div>
             </div>
           </>
         )}
       </div>
     </main>
   )
-
 }

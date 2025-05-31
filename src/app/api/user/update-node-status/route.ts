@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
+import UserHistory from '@/models/UserHistory';
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,6 +52,21 @@ export async function POST(request: NextRequest) {
       
       // Reset the start time
       user.nodeStartTime = null;
+      
+      // Get client IP address
+      const forwardedFor = request.headers.get('x-forwarded-for');
+      const clientIP = forwardedFor ? forwardedFor.split(',')[0].trim() : request.headers.get('x-real-ip') || '0.0.0.0';
+      
+      // Create history record
+      await UserHistory.create({
+        user: user._id,
+        walletAddress: user.walletAddress,
+        deviceIP: clientIP,
+        earnings: pointsEarned,
+        earningType: 'node',
+        uptime: elapsedSeconds,
+        timestamp: now
+      });
       
       console.log(`User ${user.walletAddress} earned ${pointsEarned.toFixed(3)} points for ${elapsedMinutes.toFixed(2)} minutes (${elapsedSeconds} seconds) of uptime`);
     }
