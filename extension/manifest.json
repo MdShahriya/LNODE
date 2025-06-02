@@ -1,25 +1,27 @@
 {
   "manifest_version": 3,
   "name": "TOPAY Node Dashboard",
-  "version": "0.1.253",
-  "description": "Control your TOPAY node and monitor points and uptime",
+  "version": "0.1.254",
+  "description": "Control your TOPAY node, track device IP, and monitor points and uptime",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "icons/icon16.svg",
-      "48": "icons/icon48.svg",
-      "128": "icons/icon128.svg"
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
   },
   "icons": {
-    "16": "icons/icon16.svg",
-    "48": "icons/icon48.svg",
-    "128": "icons/icon128.svg"
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "alarms",
+    "tabs"
   ],
   "content_scripts": [
     {
@@ -29,7 +31,8 @@
   ],
   "host_permissions": [
     "http://localhost:3000/*",
-    "https://node.topayfoundation.com/*"
+    "https://node.topayfoundation.com/*",
+    "https://api.ipify.org/*"
   ],
   "background": {
     "service_worker": "background.js",

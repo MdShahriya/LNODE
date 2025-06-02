@@ -78,7 +78,8 @@
 
 .dashboard-content {
   flex: 1;
-  margin-left: 50px;
+  width: 100%;
+  margin-left: 8%;
   padding: 1.5rem;
   background: transparent; /* Deep Blue background */
   min-height: 100vh;

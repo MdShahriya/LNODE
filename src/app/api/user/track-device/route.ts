@@ -6,7 +6,7 @@ import UserHistory from '@/models/UserHistory';
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
-    const { walletAddress, deviceInfo } = await request.json();
+    const { walletAddress, deviceInfo, deviceType, browser, platform } = await request.json();
     
     if (!walletAddress) {
       return NextResponse.json(
@@ -34,11 +34,13 @@ export async function POST(request: NextRequest) {
       user: user._id,
       walletAddress: user.walletAddress,
       deviceIP: clientIP,
-      earnings: 0, // No earnings for just connecting
-      earningType: 'other',
-      uptime: 0,
+      connectionType: 'login',
       timestamp: new Date(),
-      deviceInfo: deviceInfo || 'Unknown device'
+      deviceInfo: deviceInfo || 'Unknown device',
+      deviceType: deviceType || 'Unknown',
+      browser: browser || 'Unknown',
+      platform: platform || 'Unknown',
+      sessionId: `${user._id}-${Date.now()}` // Generate a unique sessionId
     });
     
     return NextResponse.json({ 

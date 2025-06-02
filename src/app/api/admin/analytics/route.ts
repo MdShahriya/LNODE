@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import UserHistory from '@/models/UserHistory';
+import PointsHistory from '@/models/PointsHistory';
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,11 +37,11 @@ export async function GET(request: NextRequest) {
     // Get active users (users with node activity in the period)
     const activeUsers = await UserHistory.distinct('walletAddress', {
       timestamp: { $gte: startDate, $lte: endDate },
-      earningType: 'node'
+      connectionType: 'node_start'
     }).then(addresses => addresses.length);
     
-    // Get total earnings in the period
-    const earningsResult = await UserHistory.aggregate([
+    // Get total earnings in the period from PointsHistory
+    const earningsResult = await PointsHistory.aggregate([
       { 
         $match: { 
           timestamp: { $gte: startDate, $lte: endDate } 
@@ -48,50 +49,26 @@ export async function GET(request: NextRequest) {
       },
       {
         $group: {
-          _id: '$earningType',
-          totalEarnings: { $sum: '$earnings' },
+          _id: '$source',
+          totalPoints: { $sum: '$points' },
           count: { $sum: 1 }
         }
       }
     ]);
     
-    // Get device statistics
+    // Get device statistics from UserHistory
     const deviceStats = await UserHistory.aggregate([
       { 
         $match: { 
-          timestamp: { $gte: startDate, $lte: endDate },
-          deviceInfo: { $exists: true, $ne: null }
+          timestamp: { $gte: startDate, $lte: endDate }
         } 
-      },
-      {
-        $addFields: {
-          parsedDevice: { 
-            $function: {
-              body: function(deviceInfo: string) {
-                try {
-                  const info = JSON.parse(deviceInfo);
-                  return {
-                    platform: info.platform || 'Unknown',
-                    browser: info.userAgent ? (info.userAgent.includes('Chrome') ? 'Chrome' : 
-                                              info.userAgent.includes('Firefox') ? 'Firefox' : 
-                                              info.userAgent.includes('Safari') ? 'Safari' : 
-                                              info.userAgent.includes('Edge') ? 'Edge' : 'Other') : 'Unknown'
-                  };
-                } catch {
-                  return { platform: 'Unknown', browser: 'Unknown' };
-                }
-              },
-              args: ["$deviceInfo"],
-              lang: "js"
-            }
-          }
-        }
       },
       {
         $group: {
           _id: {
-            platform: "$parsedDevice.platform",
-            browser: "$parsedDevice.browser"
+            deviceType: "$deviceType",
+            browser: "$browser",
+            platform: "$platform"
           },
           count: { $sum: 1 }
         }
@@ -99,8 +76,8 @@ export async function GET(request: NextRequest) {
       { $sort: { count: -1 } }
     ]);
     
-    // Get daily activity
-    const dailyActivity = await UserHistory.aggregate([
+    // Get daily activity from PointsHistory
+    const dailyPointsActivity = await PointsHistory.aggregate([
       { 
         $match: { 
           timestamp: { $gte: startDate, $lte: endDate } 
@@ -110,9 +87,31 @@ export async function GET(request: NextRequest) {
         $group: {
           _id: {
             date: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } },
-            type: "$earningType"
+            source: "$source"
           },
-          earnings: { $sum: "$earnings" },
+          points: { $sum: "$points" },
+          count: { $sum: 1 }
+        }
+      },
+      { 
+        $sort: { "_id.date": 1 } 
+      }
+    ]);
+    
+    // Get daily uptime from UserHistory
+    const dailyUptimeActivity = await UserHistory.aggregate([
+      { 
+        $match: { 
+          timestamp: { $gte: startDate, $lte: endDate },
+          connectionType: 'node_stop',
+          uptime: { $exists: true, $gt: 0 }
+        } 
+      },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } }
+          },
           uptime: { $sum: "$uptime" },
           count: { $sum: 1 }
         }
@@ -130,32 +129,48 @@ export async function GET(request: NextRequest) {
       task: number;
       checkin: number;
       other: number;
-      totalEarnings: number;
+      totalPoints: number;
       totalUptime: number;
     }> = [];
     const dateMap = new Map();
     
-    dailyActivity.forEach(item => {
+    // Initialize the date map with all dates in the range
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      dateMap.set(dateStr, {
+        date: new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        node: 0,
+        referral: 0,
+        task: 0,
+        checkin: 0,
+        other: 0,
+        totalPoints: 0,
+        totalUptime: 0
+      });
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Add points data
+    dailyPointsActivity.forEach(item => {
       const dateStr = item._id.date;
-      const type = item._id.type;
+      const source = item._id.source;
       
-      if (!dateMap.has(dateStr)) {
-        dateMap.set(dateStr, {
-          date: new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          node: 0,
-          referral: 0,
-          task: 0,
-          checkin: 0,
-          other: 0,
-          totalEarnings: 0,
-          totalUptime: 0
-        });
+      if (dateMap.has(dateStr)) {
+        const dateData = dateMap.get(dateStr);
+        dateData[source] = item.points;
+        dateData.totalPoints += item.points;
       }
+    });
+    
+    // Add uptime data
+    dailyUptimeActivity.forEach(item => {
+      const dateStr = item._id.date;
       
-      const dateData = dateMap.get(dateStr);
-      dateData[type] = item.earnings;
-      dateData.totalEarnings += item.earnings;
-      dateData.totalUptime += item.uptime;
+      if (dateMap.has(dateStr)) {
+        const dateData = dateMap.get(dateStr);
+        dateData.totalUptime += item.uptime;
+      }
     });
     
     // Convert map to array and sort by date

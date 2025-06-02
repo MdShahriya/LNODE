@@ -8,40 +8,64 @@
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <img src="assets/logo.svg" alt="TOPAY Logo" class="logo">
-      <h1>TOPAY Node</h1>
-    </div>
-
     <!-- Not Connected State -->
     <div id="not-connected">
-      <p>Connect your wallet to start earning rewards</p>
-      <button class="button primary-button" id="connect-wallet">Connect Wallet</button>
+      <div class="login-container">
+        <p>Connect Dashboard to access extension.</p>
+        <button class="button primary-button" id="connect-wallet">Connect Dashboard</button>
+      </div>
     </div>
 
     <!-- Connected State -->
     <div id="connected" class="hidden">
+      <div class="header">
+        <div class="logo">
+          <img src="assets/logo.png" alt="TOPAY Logo">
+        </div>
+        <h1>NODE</h1>
+      </div>
+      
       <!-- Node Control -->
       <div class="node-control">
-        <div class="control-title">
-          Node Status: <span id="node-status" class="status-stopped">Stopped</span>
-        </div>
-        <button id="toggle-node" class="control-button start-button" aria-label="Start Node">
+        <button id="toggle-node" class="connection-button start-button" aria-label="Start Node">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
             <line x1="12" y1="2" x2="12" y2="12"></line>
           </svg>
         </button>
+        
+        <div class="control-title">
+          NODE STATUS <span id="node-status" class="status-stopped"></span>
+        </div>
       </div>
 
-      <!-- Wallet Info -->
-      <div class="wallet-info">
-        <p>Connected Wallet:</p>
-        <p id="wallet-address">Loading...</p>
+      <!-- Wallet Connected -->
+      <div class="wallet-connected">
+        Connected : <span id="wallet-address">Loading...</span>
+        <button id="disconnect-wallet" class="button secondary-button">Disconnect</button>
+      </div>
+
+      <!-- Rewards Display -->
+      <div class="rewards-display">
+        <div class="reward-item">
+          <div class="reward-value">0.00 pt</div>
+          <div class="reward-label">Total Rewards</div>
+        </div>
+        <div class="reward-item">
+          <div class="reward-value">0.000 pt</div>
+          <div class="reward-label">pt/s</div>
+        </div>
+      </div>
+
+      <!-- Dashboard Link -->
+      <div class="dashboard-link-container">
+        <button id="go-to-dashboard" class="button">DASHBOARD</button>
       </div>
     </div>
-    <div class="dashboard-link-container">
-      <button id="go-to-dashboard" class="button primary-button">Go to Dashboard</button>
+
+    <!-- Footer -->
+    <div class="footer">
+      From <span>TOPAY Labs</span> with <span class="heart">♥</span>
     </div>
   </div>
 

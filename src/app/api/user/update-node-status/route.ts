@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import UserHistory from '@/models/UserHistory';
+import PointsHistory from '@/models/PointsHistory';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,9 +29,23 @@ export async function POST(request: NextRequest) {
     // Update node status
     user.nodeStatus = isRunning;
     
+    // Get client IP address
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const clientIP = forwardedFor ? forwardedFor.split(',')[0].trim() : request.headers.get('x-real-ip') || '0.0.0.0';
+    
     if (isRunning) {
       // If node is being turned on, store the current time as the start time
       user.nodeStartTime = new Date();
+      
+      // Create connection history record for node start
+      await UserHistory.create({
+        user: user._id,
+        walletAddress: user.walletAddress,
+        deviceIP: clientIP,
+        connectionType: 'node_start',
+        timestamp: new Date(),
+        sessionId: `${user._id}-${Date.now()}` // Generate a unique sessionId
+      });
     } else if (user.nodeStartTime) {
       // If node is being turned off and we have a start time, calculate uptime and points
       const now = new Date();
@@ -53,18 +68,24 @@ export async function POST(request: NextRequest) {
       // Reset the start time
       user.nodeStartTime = null;
       
-      // Get client IP address
-      const forwardedFor = request.headers.get('x-forwarded-for');
-      const clientIP = forwardedFor ? forwardedFor.split(',')[0].trim() : request.headers.get('x-real-ip') || '0.0.0.0';
-      
-      // Create history record
+      // Create connection history record for node stop
       await UserHistory.create({
         user: user._id,
         walletAddress: user.walletAddress,
         deviceIP: clientIP,
-        earnings: pointsEarned,
-        earningType: 'node',
+        connectionType: 'node_stop',
         uptime: elapsedSeconds,
+        timestamp: now,
+        sessionId: `${user._id}-${Date.now()}` // Generate a unique sessionId
+      });
+      
+      // Create points history record
+      await PointsHistory.create({
+        user: user._id,
+        walletAddress: user.walletAddress,
+        points: pointsEarned,
+        source: 'node',
+        description: `Earned for ${elapsedMinutes.toFixed(2)} minutes of node uptime`,
         timestamp: now
       });
       
