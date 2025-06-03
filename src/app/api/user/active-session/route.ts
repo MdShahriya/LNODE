@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import UserHistory, { IUserHistory } from '@/models/UserHistory';
+import NodeSession, { INodeSession } from '@/models/NodeSession';
 import User from '@/models/User';
 
 export async function GET(request: NextRequest) {
@@ -34,13 +34,13 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // Get the most recent node_start entry
-    const latestSession = await UserHistory.findOne({
+    // Get the most recent active session
+    const activeSession = await NodeSession.findOne({
       walletAddress: walletAddress.toLowerCase(),
-      connectionType: 'node_start'
-    }).sort({ timestamp: -1 }).lean() as IUserHistory | null;
+      status: 'active'
+    }).sort({ startTime: -1 }).lean() as INodeSession | null;
     
-    if (!latestSession) {
+    if (!activeSession) {
       return NextResponse.json({
         isActive: user.nodeStatus,
         deviceIP: '0.0.0.0',
@@ -54,46 +54,54 @@ export async function GET(request: NextRequest) {
     let browser = 'Unknown';
     let platform = 'Unknown';
     
-    if (latestSession && 'deviceInfo' in latestSession && latestSession.deviceInfo) {
+    if (activeSession && 'deviceInfo' in activeSession && activeSession.deviceInfo) {
       try {
         // Check if deviceInfo is already a string or needs parsing
         let parsedInfo;
-        if (typeof latestSession.deviceInfo === 'string') {
+        if (typeof activeSession.deviceInfo === 'string') {
           // Try to parse as JSON, if it fails, use as plain string
           try {
-            parsedInfo = JSON.parse(latestSession.deviceInfo);
+            parsedInfo = JSON.parse(activeSession.deviceInfo);
           } catch {
             // If JSON parsing fails, treat as plain string
-            deviceInfo = latestSession.deviceInfo;
-            browser = latestSession.browser || 'Unknown';
-            platform = latestSession.platform || 'Unknown';
+            deviceInfo = activeSession.deviceInfo;
+            browser = activeSession.browser || 'Unknown';
+            platform = activeSession.platform || 'Unknown';
             parsedInfo = null;
           }
         } else {
-          parsedInfo = latestSession.deviceInfo;
+          parsedInfo = activeSession.deviceInfo;
         }
         
         if (parsedInfo) {
           deviceInfo = parsedInfo.userAgent || parsedInfo.deviceInfo || 'Unknown device';
-          browser = latestSession.browser || parsedInfo.browser || 'Unknown';
-          platform = latestSession.platform || parsedInfo.platform || 'Unknown';
+          browser = activeSession.browser || parsedInfo.browser || 'Unknown';
+          platform = activeSession.platform || parsedInfo.platform || 'Unknown';
         }
       } catch (e) {
         console.error('Error parsing device info:', e);
         // Fallback to using deviceInfo as string if available
-        deviceInfo = typeof latestSession.deviceInfo === 'string' ? latestSession.deviceInfo : 'Unknown device';
-        browser = latestSession.browser || 'Unknown';
-        platform = latestSession.platform || 'Unknown';
+        deviceInfo = typeof activeSession.deviceInfo === 'string' ? activeSession.deviceInfo : 'Unknown device';
+        browser = activeSession.browser || 'Unknown';
+        platform = activeSession.platform || 'Unknown';
       }
     }
     
+    // Calculate current uptime
+    const now = new Date();
+    const startTime = new Date(activeSession.startTime);
+    const currentUptime = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+    
     return NextResponse.json({
       isActive: true,
-      deviceIP: latestSession.deviceIP || '0.0.0.0',
+      sessionId: activeSession.sessionId,
+      deviceIP: activeSession.deviceIP || '0.0.0.0',
       deviceInfo: deviceInfo,
       browser: browser,
       platform: platform,
-      timestamp: latestSession.timestamp || new Date()
+      startTime: activeSession.startTime,
+      currentUptime: currentUptime,
+      lastHeartbeat: activeSession.lastHeartbeat || activeSession.startTime
     });
     
   } catch (error) {

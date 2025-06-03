@@ -27,21 +27,7 @@ export default function ReferralByAddressPage() {
     try {
       setApplying(true)
       
-      // First, get the referrer's referral code using their wallet address
-      const userResponse = await fetch(`/api/user?walletAddress=${referrerAddress}`)
-      
-      if (!userResponse.ok) {
-        throw new Error('Invalid referrer address')
-      }
-      
-      const userData = await userResponse.json()
-      const referralCode = userData.user.referralCode
-      
-      if (!referralCode) {
-        throw new Error('Referrer does not have a valid referral code')
-      }
-      
-      // Apply the referral code
+      // Apply the referral directly using the referrer's wallet address
       const response = await fetch('/api/referral', {
         method: 'POST',
         headers: {
@@ -49,7 +35,7 @@ export default function ReferralByAddressPage() {
         },
         body: JSON.stringify({
           walletAddress: address,
-          referralCode: referralCode
+          referrerAddress: referrerAddress
         }),
       })
       

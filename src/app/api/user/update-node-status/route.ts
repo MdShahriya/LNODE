@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
-import UserHistory from '@/models/UserHistory';
+import NodeSession from '@/models/NodeSession';
 import PointsHistory from '@/models/PointsHistory';
 
 export async function POST(request: NextRequest) {
@@ -33,18 +33,27 @@ export async function POST(request: NextRequest) {
     const forwardedFor = request.headers.get('x-forwarded-for');
     const clientIP = forwardedFor ? forwardedFor.split(',')[0].trim() : request.headers.get('x-real-ip') || '0.0.0.0';
     
+    // Get user agent information
+    const userAgent = request.headers.get('user-agent') || 'Unknown';
+    
     if (isRunning) {
       // If node is being turned on, store the current time as the start time
-      user.nodeStartTime = new Date();
+      const now = new Date();
+      user.nodeStartTime = now;
       
-      // Create connection history record for node start
-      await UserHistory.create({
+      // Generate a unique session ID
+      const sessionId = `${user._id}-${Date.now()}`;
+      
+      // Create a new node session
+      await NodeSession.create({
         user: user._id,
         walletAddress: user.walletAddress,
         deviceIP: clientIP,
-        connectionType: 'node_start',
-        timestamp: new Date(),
-        sessionId: `${user._id}-${Date.now()}` // Generate a unique sessionId
+        status: 'active',
+        startTime: now,
+        sessionId: sessionId,
+        deviceInfo: userAgent,
+        // Additional fields can be populated from request headers or client data
       });
     } else if (user.nodeStartTime) {
       // If node is being turned off and we have a start time, calculate uptime and points
@@ -68,16 +77,20 @@ export async function POST(request: NextRequest) {
       // Reset the start time
       user.nodeStartTime = null;
       
-      // Create connection history record for node stop
-      await UserHistory.create({
-        user: user._id,
+      // Find and update the active session
+      const activeSession = await NodeSession.findOne({
         walletAddress: user.walletAddress,
-        deviceIP: clientIP,
-        connectionType: 'node_stop',
-        uptime: elapsedSeconds,
-        timestamp: now,
-        sessionId: `${user._id}-${Date.now()}` // Generate a unique sessionId
-      });
+        status: 'active',
+        endTime: { $exists: false }
+      }).sort({ startTime: -1 });
+      
+      if (activeSession) {
+        activeSession.status = 'inactive';
+        activeSession.endTime = now;
+        activeSession.uptime = elapsedSeconds;
+        activeSession.pointsEarned = pointsEarned;
+        await activeSession.save();
+      }
       
       // Create points history record
       await PointsHistory.create({
@@ -98,7 +111,8 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: 'Node status updated',
       user
-    }, { status: 200 });
+    });
+    
   } catch (error) {
     console.error('Error updating node status:', error);
     return NextResponse.json(

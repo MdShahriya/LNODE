@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import PointsHistory from '@/models/PointsHistory';
-import UserHistory from '@/models/UserHistory';
+import NodeSession from '@/models/NodeSession';
 
 // Points earned per minute (same as in update-node-status)
 const POINTS_PER_MINUTE = 12;
@@ -91,15 +91,35 @@ export async function POST(request: NextRequest) {
     
     await pointsHistory.save();
     
-    // Update user history with heartbeat
-    await UserHistory.create({
-      user: user._id,
+    // Find active session or create a new one for this heartbeat
+    const activeSession = await NodeSession.findOne({
       walletAddress: user.walletAddress,
-      deviceIP: clientIP,
-      connectionType: 'node_heartbeat',
-      timestamp: now,
-      sessionId: `${user._id}-${Date.now()}` // Generate a unique sessionId
-    });
+      status: 'active',
+      deviceIP: clientIP
+    }).sort({ startTime: -1 });
+    
+    if (activeSession) {
+      // Update existing session with heartbeat
+      activeSession.lastHeartbeat = now;
+      activeSession.pointsEarned = (activeSession.pointsEarned || 0) + pointsToAdd;
+      await activeSession.save();
+    } else {
+      // Create a new session for this heartbeat
+      await NodeSession.create({
+        user: user._id,
+        walletAddress: user.walletAddress,
+        deviceIP: clientIP,
+        status: 'active',
+        startTime: now,
+        lastHeartbeat: now,
+        sessionId: `heartbeat_${user._id}_${Date.now()}`,
+        pointsEarned: pointsToAdd,
+        metadata: {
+          event: 'node_heartbeat',
+          source: 'points_update'
+        }
+      });
+    }
     
     return NextResponse.json({ 
       success: true, 

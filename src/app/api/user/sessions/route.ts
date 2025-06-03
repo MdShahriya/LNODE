@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import UserHistory from '@/models/UserHistory';
+import NodeSession from '@/models/NodeSession';
 import User from '@/models/User';
 import {
   calculatePerformanceScore,
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get enhanced session data with better aggregation
-    const sessions = await UserHistory.aggregate([
+    const sessions = await NodeSession.aggregate([
       {
         $match: {
           walletAddress: walletAddress.toLowerCase()
@@ -50,14 +50,22 @@ export async function GET(request: NextRequest) {
             platform: '$platform',
             deviceType: '$deviceType'
           },
-          firstConnection: { $min: '$timestamp' },
-          lastConnection: { $max: '$timestamp' },
-          endTimestamp: { $max: '$endTimestamp' },
+          firstConnection: { $min: '$startTime' },
+          lastConnection: { $max: '$endTime' },
+          endTimestamp: { $max: '$endTime' },
           totalConnections: { $sum: 1 },
-          connectionTypes: { $addToSet: '$connectionType' },
+          statusTypes: { $addToSet: '$status' },
           activityTypes: { $addToSet: '$activityType' },
           totalUptime: { $sum: '$uptime' },
-          totalSessionDuration: { $sum: '$sessionDuration' },
+          totalSessionDuration: {
+            $sum: {
+              $cond: [
+                { $and: [{ $ne: ['$startTime', null] }, { $ne: ['$endTime', null] }] },
+                { $divide: [{ $subtract: ['$endTime', '$startTime'] }, 1000] },
+                0
+              ]
+            }
+          },
           totalPointsEarned: { $sum: '$pointsEarned' },
           lastHeartbeat: { $max: '$lastHeartbeat' },
           errorCount: { $sum: '$errorCount' },
@@ -75,19 +83,21 @@ export async function GET(request: NextRequest) {
           cities: { $addToSet: '$geolocation.city' },
           nodeStartSessions: {
             $sum: {
-              $cond: [{ $eq: ['$connectionType', 'node_start'] }, 1, 0]
+              $cond: [{ $eq: ['$status', 'active'] }, 1, 0]
             }
           },
           nodeStopSessions: {
             $sum: {
-              $cond: [{ $eq: ['$connectionType', 'node_stop'] }, 1, 0]
+              $cond: [{ $eq: ['$status', 'disconnected'] }, 1, 0]
             }
           },
           heartbeatSessions: {
             $sum: {
-              $cond: [{ $eq: ['$connectionType', 'heartbeat'] }, 1, 0]
+              $cond: [{ $ne: ['$lastHeartbeat', null] }, 1, 0]
             }
-          }
+          },
+          nodeQuality: { $last: '$nodeQuality' },
+          performanceScore: { $avg: '$performanceScore' }
         }
       },
       {
@@ -110,7 +120,7 @@ export async function GET(request: NextRequest) {
       const hasRecentHeartbeat = session.lastHeartbeat && 
         (new Date().getTime() - new Date(session.lastHeartbeat).getTime()) < 5 * 60 * 1000; // 5 minutes
       const isNodeRunning = (session.nodeStartSessions > session.nodeStopSessions) || hasRecentHeartbeat;
-      const hasActiveActivity = session.activityTypes?.includes('active');
+      const hasActiveActivity = session.statusTypes?.includes('active');
       
       // Calculate session metrics
       const totalUptimeHours = Math.round((session.totalUptime || 0) / 3600 * 100) / 100;
@@ -135,7 +145,7 @@ export async function GET(request: NextRequest) {
       const currentPointsPerHour = basePointsPerHour * qualityMultiplier;
       
       // Generate enhanced unique ID
-      const uniqueId = sessionId.substring(0, 8) || `${deviceIP.split('.').slice(-2).join('')}${index.toString().padStart(2, '0')}`;
+      const uniqueId = sessionId.substring(0, 8) + '_' + index.toString().padStart(2, '0');
       
       return {
         id: uniqueId,

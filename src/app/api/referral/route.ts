@@ -26,13 +26,7 @@ export async function GET(request: NextRequest) {
     const activeReferrals = referredUsers.filter(u => u.isActive !== false).length;
     const totalPointsEarned = referredUsers.reduce((total, u) => total + (u.referralPointsEarned || 0), 0);
     
-    // Generate referral code if not exists
-    if (!user.referralCode) {
-      user.referralCode = `TOPAY${user._id.toString().slice(-6).toUpperCase()}`;
-      await user.save();
-    }
-
-    // Generate referral link with the new format: domain.com/dashboard/referer-address
+    // Generate referral link with the format: domain.com/ref/referer-address
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const referralLink = `${baseUrl}/ref/${user.walletAddress}`;
 
@@ -40,7 +34,6 @@ export async function GET(request: NextRequest) {
       totalReferrals: referredUsers.length,
       activeReferrals,
       pointsEarned: totalPointsEarned,
-      referralCode: user.referralCode,
       referralLink: referralLink
     };
     
@@ -59,18 +52,18 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/referral - Apply referral code
+// POST /api/referral - Apply referral by referrer wallet address
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
     
-    const { walletAddress, referralCode } = await request.json();
+    const { walletAddress, referrerAddress } = await request.json();
     
-    if (!walletAddress || !referralCode) {
-      return NextResponse.json({ error: 'Wallet address and referral code are required' }, { status: 400 });
+    if (!walletAddress || !referrerAddress) {
+      return NextResponse.json({ error: 'Wallet address and referrer address are required' }, { status: 400 });
     }
     
-    // Find the user applying the referral code
+    // Find the user applying the referral
     const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
     
     if (!user) {
@@ -82,16 +75,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User already has a referrer' }, { status: 400 });
     }
     
-    // Find the referrer by referral code
-    const referrer = await User.findOne({ referralCode });
+    // Find the referrer by wallet address
+    const referrer = await User.findOne({ walletAddress: referrerAddress.toLowerCase() });
     
     if (!referrer) {
-      return NextResponse.json({ error: 'Invalid referral code' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid referrer address' }, { status: 400 });
     }
     
     // Can't refer yourself
     if (referrer._id.toString() === user._id.toString()) {
-      return NextResponse.json({ error: 'Cannot use your own referral code' }, { status: 400 });
+      return NextResponse.json({ error: 'Cannot refer yourself' }, { status: 400 });
     }
     
     // Apply referral

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import PointsHistory from '@/models/PointsHistory';
-import UserHistory from '@/models/UserHistory';
+import NodeSession from '@/models/NodeSession';
 import CheckIn from '@/models/CheckIn';
 
 export async function POST(request: NextRequest) {
@@ -13,8 +13,7 @@ export async function POST(request: NextRequest) {
       username, 
       email, 
       profilePicture,
-      preferences = {},
-      referralCode
+      preferences = {}
     } = await request.json();
     
     if (!walletAddress) {
@@ -93,8 +92,7 @@ export async function POST(request: NextRequest) {
         longestStreak: 0,
         maxStreak: 0,
         totalCheckIns: 0,
-        checkInPointsEarned: 0,
-        referralCode: referralCode || null
+        checkInPointsEarned: 0
       });
 
       // Create initial points history record for user creation
@@ -117,8 +115,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           registrationMethod: 'api',
           initialUser: true,
-          userAgent,
-          referralCode
+          userAgent
         },
         ipAddress,
         userAgent
@@ -268,7 +265,7 @@ export async function GET(request: NextRequest) {
         }
       ]);
 
-      const [sessionStats] = await UserHistory.aggregate([
+      const [sessionStats] = await NodeSession.aggregate([
         {
           $match: { walletAddress: walletAddress.toLowerCase() }
         },
@@ -277,13 +274,29 @@ export async function GET(request: NextRequest) {
             _id: null,
             totalSessions: { $sum: 1 },
             totalUptime: { $sum: '$uptime' },
-            avgSessionDuration: { $avg: '$sessionDuration' },
-            maxSessionDuration: { $max: '$sessionDuration' },
+            avgSessionDuration: {
+              $avg: {
+                $cond: [
+                  { $and: [{ $ne: ['$endTime', null] }, { $ne: ['$startTime', null] }] },
+                  { $divide: [{ $subtract: ['$endTime', '$startTime'] }, 1000] },
+                  '$uptime'
+                ]
+              }
+            },
+            maxSessionDuration: {
+              $max: {
+                $cond: [
+                  { $and: [{ $ne: ['$endTime', null] }, { $ne: ['$startTime', null] }] },
+                  { $divide: [{ $subtract: ['$endTime', '$startTime'] }, 1000] },
+                  '$uptime'
+                ]
+              }
+            },
             totalPointsEarned: { $sum: '$pointsEarned' },
             uniqueDevices: { $addToSet: '$deviceIP' },
             uniqueBrowsers: { $addToSet: '$browser' },
             uniquePlatforms: { $addToSet: '$platform' },
-            lastSession: { $max: '$timestamp' }
+            lastSession: { $max: '$startTime' }
           }
         }
       ]);
@@ -360,10 +373,10 @@ export async function GET(request: NextRequest) {
       .limit(10)
       .lean();
 
-      const recentSessions = await UserHistory.find({
+      const recentSessions = await NodeSession.find({
         walletAddress: walletAddress.toLowerCase()
       })
-      .sort({ timestamp: -1 })
+      .sort({ startTime: -1 })
       .limit(5)
       .lean();
 
@@ -388,7 +401,15 @@ export async function GET(request: NextRequest) {
           uptime: s.uptime,
           pointsEarned: s.pointsEarned,
           deviceInfo: s.deviceInfo,
-          timestamp: s.timestamp
+          status: s.status,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          sessionId: s.sessionId,
+          deviceType: s.deviceType,
+          browser: s.browser,
+          platform: s.platform,
+          performanceScore: s.performanceScore,
+          nodeQuality: s.nodeQuality
         })),
         checkIns: recentCheckIns.map(c => ({
           id: c._id,

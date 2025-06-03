@@ -7,7 +7,6 @@ export interface IUser extends Document {
   uptime: number; // Total uptime in seconds
   nodeStatus: boolean;
   nodeStartTime: Date | null;
-  referralCode?: string;
   referredBy?: mongoose.Types.ObjectId;
   referralPointsEarned?: number;
   isActive?: boolean;
@@ -86,12 +85,6 @@ const UserSchema: Schema = new Schema(
     nodeStartTime: {
       type: Date,
       default: null,
-    },
-    referralCode: {
-      type: String,
-      unique: true,
-      sparse: true,
-      index: true,
     },
     referredBy: {
       type: Schema.Types.ObjectId,

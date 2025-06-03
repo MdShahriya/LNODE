@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
-import UserHistory from '@/models/UserHistory';
+import NodeSession from '@/models/NodeSession';
+import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,19 +30,50 @@ export async function POST(request: NextRequest) {
     const forwardedFor = request.headers.get('x-forwarded-for');
     const clientIP = forwardedFor ? forwardedFor.split(',')[0].trim() : request.headers.get('x-real-ip') || '0.0.0.0';
     
-    // Create a device connection history record
-    await UserHistory.create({
+    // Generate a stable sessionId based on user ID and device info to prevent duplicate sessions
+    const deviceHash = crypto
+      .createHash('md5')
+      .update(`${deviceInfo || ''}${clientIP}`)
+      .digest('hex')
+      .substring(0, 8);
+    
+    const sessionId = `${user._id}-${deviceHash}`;
+    
+    // Check if a session with this ID already exists for today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const existingSession = await NodeSession.findOne({
       user: user._id,
       walletAddress: user.walletAddress,
       deviceIP: clientIP,
-      connectionType: 'login',
-      timestamp: new Date(),
-      deviceInfo: deviceInfo || 'Unknown device',
-      deviceType: deviceType || 'Unknown',
-      browser: browser || 'Unknown',
-      platform: platform || 'Unknown',
-      sessionId: `${user._id}-${Date.now()}` // Generate a unique sessionId
+      sessionId: sessionId,
+      startTime: { $gte: today }
     });
+    
+    if (!existingSession) {
+      // Only create a new session if one doesn't exist for today
+      await NodeSession.create({
+        user: user._id,
+        walletAddress: user.walletAddress,
+        deviceIP: clientIP,
+        status: 'active',
+        startTime: new Date(),
+        deviceInfo: deviceInfo || 'Unknown device',
+        deviceType: deviceType || 'Unknown',
+        browser: browser || 'Unknown',
+        platform: platform || 'Unknown',
+        sessionId: sessionId,
+        metadata: {
+          event: 'login',
+          source: 'device_tracking'
+        }
+      });
+    } else {
+      // Update the existing session's last heartbeat
+      existingSession.lastHeartbeat = new Date();
+      await existingSession.save();
+    }
     
     return NextResponse.json({ 
       success: true, 
@@ -50,7 +82,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error tracking device:', error);
     return NextResponse.json(
-      { error: 'Failed to track device' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

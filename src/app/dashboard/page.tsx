@@ -5,25 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import './dashboard.css'
 import React from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
-// Add Chrome extension API type declaration
-declare global {
-  interface Window {
-    chrome?: {
-      runtime?: {
-        sendMessage?: (message: unknown) => void;
-      };
-      storage?: {
-        local?: {
-          get: (keys: string[], callback: (result: unknown) => void) => void;
-        };
-        onChanged?: {
-          addListener: (callback: (changes: unknown) => void) => void;
-        };
-      };
-    };
-  }
-}
+import { ProcessedNodeSession } from '@/app/api/user/node-sessions/helpers';
 
 interface NodeStats {
   uptime: number
@@ -109,24 +91,6 @@ const generateSampleData = (days = 7): ChartDataPoint[] => {
   });
 };
 
-// Function to fetch historical data from API
-const fetchHistoricalData = async (walletAddress: string | undefined, days = 7, dataType = 'points') => {
-  try {
-    const response = await fetch(`/api/user/history?walletAddress=${walletAddress}&days=${days}&dataType=${dataType}`);
-    
-    if (response.ok) {
-      const data = await response.json();
-      return data.data; // Return the processed daily data
-    }
-    
-    // If there's an error, return sample data
-    return generateSampleData(days);
-  } catch (error) {
-    console.error('Error fetching historical data:', error);
-    return generateSampleData(days);
-  }
-};
-
 // Fallback function to generate historical data based on user's current stats
 const generateHistoricalData = (user: User | null, days = 7) => {
   if (!user) return generateSampleData(days);
@@ -201,7 +165,6 @@ export default function Dashboard() {
   })
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
-  const [extensionWalletAddress, setExtensionWalletAddress] = useState<string | null>(null)
   
   // Sample data for charts
   const [activityData, setActivityData] = useState<ChartDataPoint[]>(generateSampleData())
@@ -216,67 +179,16 @@ export default function Dashboard() {
   const [userSessions, setUserSessions] = useState<UserSession[]>([])
   const [loadingSessions, setLoadingSessions] = useState(false)
 
-  // Check for extension wallet connection
-  useEffect(() => {
-    // Function to check if extension is installed and get wallet address
-    const checkExtensionConnection = () => {
-      // Check if Chrome extension API is available
-      if (typeof window !== 'undefined' && window.chrome?.runtime && window.chrome?.runtime?.sendMessage) {
-        try {
-          // Try to access chrome.storage
-          if (window.chrome?.storage && window.chrome?.storage?.local) {
-            window.chrome.storage.local.get(['walletAddress'], function(result) {
-              if (result.walletAddress) {
-                setExtensionWalletAddress(result.walletAddress);
-                console.log('Extension wallet connected:', result.walletAddress);
-              }
-            });
-          }
-        } catch (error) {
-          console.error('Error accessing extension:', error);
-        }
-      } else {
-        // Handle case where extension is not installed or accessible
-        console.log('TOPAY extension not detected');
-      }
-    };
-
-    // Check on component mount
-    checkExtensionConnection();
-
-    // Set up listener for storage changes to detect wallet connections/disconnections
-    const setupStorageListener = () => {
-      if (typeof window !== 'undefined' && window.chrome?.storage && window.chrome?.storage?.onChanged) {
-        window.chrome.storage.onChanged.addListener((changes) => {
-          if (changes.walletAddress) {
-            if (changes.walletAddress.newValue) {
-              setExtensionWalletAddress(changes.walletAddress.newValue);
-              console.log('Extension wallet updated:', changes.walletAddress.newValue);
-            } else {
-              setExtensionWalletAddress(null);
-              console.log('Extension wallet disconnected');
-            }
-          }
-        });
-      }
-    };
-
-    setupStorageListener();
-  }, []);
-
   // Function to fetch today's earnings
   const fetchTodaysEarnings = useCallback(async () => {
-    // Use extension wallet address if available, otherwise use connected wallet
-    const walletToUse = extensionWalletAddress || address;
-    
-    if (!walletToUse) return;
+    if (!address) return;
     
     try {
       // Get today's date in YYYY-MM-DD format
       const today = new Date().toISOString().split('T')[0];
       
       // Fetch today's earnings from API
-      const response = await fetch(`/api/user/daily-earnings?walletAddress=${walletToUse}&date=${today}`);
+      const response = await fetch(`/api/user/daily-earnings?walletAddress=${address}&date=${today}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -286,14 +198,11 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error fetching today\'s earnings:', error);
     }
-  }, [address, extensionWalletAddress]);
+  }, [address]);
 
   // Fetch today's earnings on initial load and periodically
   useEffect(() => {
-    // Use extension wallet or connected wallet
-    const walletConnected = extensionWalletAddress || (isConnected && address);
-    
-    if (!walletConnected) return;
+    if (!isConnected || !address) return;
     
     // Fetch immediately
     fetchTodaysEarnings();
@@ -303,63 +212,164 @@ export default function Dashboard() {
     
     // Clean up interval on unmount
     return () => clearInterval(intervalId);
-  }, [address, isConnected, fetchTodaysEarnings, extensionWalletAddress]);
+  }, [address, isConnected, fetchTodaysEarnings]);
 
   // Fetch user sessions/nodes
   useEffect(() => {
-    // Use extension wallet address if available, otherwise use connected wallet
-    const walletToUse = extensionWalletAddress || address;
+    if (!address) return;
     
-    if (walletToUse) {
-      setLoadingSessions(true);
-      fetch(`/api/user/sessions?walletAddress=${walletToUse}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            setUserSessions(data.sessions || []);
-          }
-        })
-        .catch(error => {
-          console.error('Error fetching user sessions:', error);
-        })
-        .finally(() => {
-          setLoadingSessions(false);
-        });
-    }
-  }, [address, extensionWalletAddress]); 
+    setLoadingSessions(true);
+    fetch(`/api/user/sessions?walletAddress=${address}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          setUserSessions(data.sessions || []);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching user sessions:', error);
+      })
+      .finally(() => {
+        setLoadingSessions(false);
+      });
+  }, [address]); 
 
   // Function to safely fetch historical data with type checking
   const fetchHistoricalDataSafe = async (walletAddress: string | undefined, days = 7, dataType = 'points') => {
     if (!walletAddress) return generateSampleData(days);
     
     try {
-      const response = await fetch(`/api/user/history?walletAddress=${walletAddress}&days=${days}&dataType=${dataType}`);
+      const response = await fetch(`/api/user/node-sessions?walletAddress=${walletAddress}&days=${days}`);
       
       if (response.ok) {
         const data = await response.json();
-        return data.data; // Return the processed daily data
+        
+        // Transform the node sessions data into the format expected by the charts
+        const chartData = data.sessions.map((session: ProcessedNodeSession) => {
+          const date = new Date(session.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          
+          // Create data point based on the requested data type
+          if (dataType === 'points') {
+            return {
+              date,
+              points: parseFloat(session.pointsEarned.toString()) || 0,
+              sources: {
+                node: parseFloat(session.pointsEarned.toString()) || 0,
+                referral: 0,
+                task: 0,
+                checkin: 0,
+                other: 0
+              }
+            } as ChartDataPoint;
+          } else { // connections
+            return {
+              date,
+              uptime: parseFloat(session.uptime.toString()) / 3600 || 0, // Convert seconds to hours
+              connectionTypes: {
+                login: 1,
+                node_start: session.status === 'active' ? 1 : 0,
+                node_stop: session.status !== 'active' ? 1 : 0,
+                dashboard_view: 1,
+                other: 0
+              }
+            } as ChartDataPoint;
+          }
+        });
+        
+        // Group by date and aggregate values
+        const groupedData = chartData.reduce((acc: ChartDataPoint[], item: ChartDataPoint) => {
+          const existingItem = acc.find((i: ChartDataPoint) => i.date === item.date);
+          
+          if (existingItem) {
+            // Update existing item
+            if (dataType === 'points') {
+              existingItem.points += item.points;
+              if (existingItem.sources && item.sources) {
+                existingItem.sources.node += item.sources.node;
+              }
+            } else { // connections
+              existingItem.uptime += item.uptime;
+              if (existingItem.connectionTypes && item.connectionTypes) {
+                existingItem.connectionTypes.node_start += item.connectionTypes.node_start;
+                existingItem.connectionTypes.node_stop += item.connectionTypes.node_stop;
+              }
+            }
+          } else {
+            // Add new item
+            acc.push(item);
+          }
+          
+          return acc;
+        }, []);
+        
+        // Sort by date
+        groupedData.sort((a: ChartDataPoint, b: ChartDataPoint) => {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        // Ensure we have data for all days
+        const dates = Array.from({ length: days }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (days - i - 1));
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        
+        const result = dates.map(date => {
+          const existingData = groupedData.find((item: ChartDataPoint) => item.date === date);
+          
+          if (existingData) {
+            return existingData;
+          } else {
+            // Create empty data point
+            if (dataType === 'points') {
+              return {
+                date,
+                points: 0,
+                sources: {
+                  node: 0,
+                  referral: 0,
+                  task: 0,
+                  checkin: 0,
+                  other: 0
+                }
+              } as ChartDataPoint;
+            } else { // connections
+              return {
+                date,
+                uptime: 0,
+                connectionTypes: {
+                  login: 0,
+                  node_start: 0,
+                  node_stop: 0,
+                  dashboard_view: 0,
+                  other: 0
+                }
+              };
+            }
+          }
+        });
+        
+        return result;
       }
       
       // If there's an error, return sample data
       return generateSampleData(days);
     } catch (error) {
-      console.error('Error fetching historical data:', error);
+      console.error('Error fetching session data:', error);
       return generateSampleData(days);
     }
   };
 
   useEffect(() => {
-    // Use extension wallet address if available, otherwise use connected wallet
-    const walletToUse = extensionWalletAddress || address;
-    const walletConnected = extensionWalletAddress || (isConnected && address);
-    
-    if (!walletConnected) return;
+    if (!isConnected || !address) return;
     
     const registerOrFetchUser = async () => {
       try {
         setLoading(true);
         // Try to fetch existing user first
-        const response = await fetch(`/api/user?walletAddress=${walletToUse}`);
+        const response = await fetch(`/api/user?walletAddress=${address}`);
         
         if (response.status === 404) {
           // User doesn't exist, create a new one
@@ -368,7 +378,7 @@ export default function Dashboard() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ walletAddress: walletToUse }),
+            body: JSON.stringify({ walletAddress: address }),
           });
           
           if (createResponse.ok) {
@@ -381,7 +391,7 @@ export default function Dashboard() {
             });
             
             // Fetch real historical data from API
-            const historyData = await fetchHistoricalDataSafe(walletToUse, 7, chartDataType);
+            const historyData = await fetchHistoricalDataSafe(address, 7, chartDataType);
             setActivityData(historyData.length > 0 ? historyData : generateHistoricalData(data.user));
           }
         } else if (response.ok) {
@@ -395,13 +405,13 @@ export default function Dashboard() {
             });
           
           // Fetch real historical data from API
-          const historyData = await fetchHistoricalDataSafe(walletToUse, 7, chartDataType);
+          const historyData = await fetchHistoricalDataSafe(address, 7, chartDataType);
           setActivityData(historyData.length > 0 ? historyData : generateHistoricalData(data.user));
         }
         
-        // Store wallet address for extension access
-        if (walletToUse) {
-          localStorage.setItem('walletAddress', walletToUse);
+        // Store wallet address for access
+        if (address) {
+          localStorage.setItem('walletAddress', address);
           
           // Track device information for analytics
           try {
@@ -420,7 +430,7 @@ export default function Dashboard() {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({ 
-                walletAddress: walletToUse,
+                walletAddress: address,
                 deviceInfo: JSON.stringify(deviceInfo)
               }),
             });
@@ -436,25 +446,20 @@ export default function Dashboard() {
     };
     
     registerOrFetchUser();
-  }, [isConnected, address, chartDataType, extensionWalletAddress]);
+  }, [isConnected, address, chartDataType]);
 
   // Effect to refresh history data periodically
   useEffect(() => {
-    // Use extension wallet address if available, otherwise use connected wallet
-    const walletToUse = extensionWalletAddress || address;
-    const walletConnected = extensionWalletAddress || (isConnected && address);
+    if (!isConnected || !address) return;
     
-    if (!walletConnected) return;
-    
-    // Function to refresh history data
     const refreshHistoryData = async () => {
       try {
-        const historyData = await fetchHistoricalDataSafe(walletToUse, 7, chartDataType);
+        const historyData = await fetchHistoricalDataSafe(address, 7, chartDataType);
         if (historyData.length > 0) {
           setActivityData(historyData);
         }
       } catch (error) {
-        console.error('Error refreshing history data:', error);
+        console.error('Error refreshing session data:', error);
       }
     };
     
@@ -466,7 +471,7 @@ export default function Dashboard() {
     
     // Clean up interval on unmount
     return () => clearInterval(intervalId);
-  }, [address, isConnected, chartDataType, extensionWalletAddress]);
+  }, [address, isConnected, chartDataType]);
 
   // Update activity data when node stats change
   useEffect(() => {
@@ -581,10 +586,10 @@ export default function Dashboard() {
   return (
     <main className="dashboard-page">
       <div className="dashboard-container">
-        {!isConnected && !extensionWalletAddress ? (
+        {!isConnected ? (
           <div className="connect-wallet">
-          <p>Please connect your wallet or TOPAY extension to continue.</p>
-          <appkit-connect-button />
+            <p>Please connect your wallet to continue.</p>
+            <appkit-connect-button />
           </div>
         ) : loading ? (
           <div className="stats-grid">
@@ -603,11 +608,9 @@ export default function Dashboard() {
               <div className="referral-section">
                 <span className="referral-count">Referrals: {referralCount}</span>
                 <button className="copy-referral-button" onClick={() => {
-                  // Use extension wallet address if available, otherwise use connected wallet
-                  const walletToUse = extensionWalletAddress || address;
                   // Only create and copy link if wallet address is available
-                  if (walletToUse) {
-                    const link = `${window.location.origin}/ref/${walletToUse}`;
+                  if (address) {
+                    const link = `${window.location.origin}/ref/${address}`;
                     navigator.clipboard.writeText(link);
                     alert('Referral link copied to clipboard!');
                   } else {
@@ -619,9 +622,7 @@ export default function Dashboard() {
               </div>
               <div className="user-section">
                 <span className="greeting">
-                  Hi, {extensionWalletAddress ? 
-                    extensionWalletAddress.substring(0, 6) + '...' + extensionWalletAddress.substring(extensionWalletAddress.length - 4) + ' (Extension)' : 
-                    address ? 
+                  Hi, {address ? 
                     address.substring(0, 6) + '...' + address.substring(address.length - 4) : 
                     'User'}
                 </span>

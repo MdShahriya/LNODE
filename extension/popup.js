@@ -1,242 +1,202 @@
-document.addEventListener('DOMContentLoaded', function() {
-  // DOM Elements
-  const connectWalletBtn = document.getElementById('connect-wallet');
-  const disconnectWalletBtn = document.getElementById('disconnect-wallet');
-  const notConnectedDiv = document.getElementById('not-connected');
-  const connectedDiv = document.getElementById('connected');
-  const toggleNodeBtn = document.getElementById('toggle-node');
-  const nodeStatusSpan = document.getElementById('node-status');
-  const walletAddressP = document.getElementById('wallet-address');
-  const dashboardBtn = document.getElementById('go-to-dashboard');
-  
-  // State variables
-  let isNodeRunning = false;
-  let walletAddress = '';
-  let deviceIp = '';
-  let totalRewards = 0;
-  let rewardsPerSecond = 0;
-  
-  // Get device IP address
-  fetchIpAddress();
-  
-  // Check if wallet is already connected
-  chrome.storage.local.get(['walletAddress', 'nodeStatus', 'totalRewards', 'rewardsPerSecond', 'deviceIp'], function(result) {
-    if (result.walletAddress) {
-      walletAddress = result.walletAddress;
-      showConnectedState();
-      
-      if (result.nodeStatus === 'running') {
-        isNodeRunning = true;
-        updateNodeUI(true);
-        simulateRewards();
-      }
-      
-      // Update rewards if available
-      if (result.totalRewards) {
-        totalRewards = result.totalRewards;
-        updateRewardsDisplay();
-      }
-      
-      if (result.rewardsPerSecond) {
-        rewardsPerSecond = result.rewardsPerSecond;
-        updateRewardsDisplay();
-      }
+// popup.js - UI controller for the TOPAY Node Dashboard extension popup
 
-      // Update device IP if available
-      if (result.deviceIp) {
-        deviceIp = result.deviceIp;
-      }
-    }
+// DOM elements
+const notConnectedDiv = document.getElementById('not-connected');
+const connectedDiv = document.getElementById('connected');
+const connectButton = document.getElementById('connect-wallet');
+const disconnectButton = document.getElementById('disconnect-wallet');
+const walletAddressElement = document.getElementById('wallet-address');
+const startButton = document.getElementById('toggle-node');
+const nodeStatusIndicator = document.getElementById('node-status-indicator');
+const totalRewardsElement = document.querySelector('.reward-item:first-child .reward-value');
+const rewardRateElement = document.querySelector('.reward-item:last-child .reward-value');
+const dashboardButton = document.getElementById('go-to-dashboard');
+
+// State variables
+let walletAddress = null;
+let isNodeRunning = false;
+let totalPoints = 0;
+let pointsRate = 0;
+
+// Initialize the popup
+function init() {
+  // Load state from storage
+  chrome.storage.local.get(['walletAddress', 'isNodeRunning', 'totalPoints', 'pointsRate'], (result) => {
+    walletAddress = result.walletAddress || null;
+    isNodeRunning = result.isNodeRunning || false;
+    totalPoints = result.totalPoints || 0;
+    pointsRate = result.pointsRate || 0;
+    
+    // Update the UI
+    updateUI();
   });
   
-  // Event Listeners
-  connectWalletBtn.addEventListener('click', connectWallet);
-  disconnectWalletBtn.addEventListener('click', disconnectWallet);
-  toggleNodeBtn.addEventListener('click', toggleNode);
-  dashboardBtn.addEventListener('click', openDashboard);
-  
-  // Functions
-  function fetchIpAddress() {
-    fetch('https://api.ipify.org?format=json')
-      .then(response => response.json())
-      .then(data => {
-        deviceIp = data.ip;
-        console.log('Device IP:', deviceIp);
-        // Store IP in local storage
-        chrome.storage.local.set({ deviceIp: deviceIp });
-      })
-      .catch(error => {
-        console.error('Error fetching IP:', error);
-      });
-  }
-  
-  function connectWallet() {
-    // Simulate dashboard connection (in a real extension, this would use Web3 or similar)
-    connectWalletBtn.classList.add('loading');
-    
-    // Simulate delay for connection
-    setTimeout(() => {
-      // Generate a mock wallet address
-      walletAddress = '0x' + Array.from({length: 40}, () => 
-        Math.floor(Math.random() * 16).toString(16)).join('');
-      
-      // Save to storage
-      chrome.storage.local.set({ 
-        walletAddress: walletAddress,
-        deviceIp: deviceIp,
-        connectionTime: new Date().toISOString(),
-        totalRewards: 0,
-        rewardsPerSecond: 0
-      });
-      
-      showConnectedState();
-      connectWalletBtn.classList.remove('loading');
-      
-      // Send message to background script
-      chrome.runtime.sendMessage({
-        action: 'walletConnected',
-        walletAddress: walletAddress,
-        deviceIp: deviceIp
-      });
-    }, 1500);
-  }
-  
-  function disconnectWallet() {
-    // If node is running, stop it first
-    if (isNodeRunning) {
-      // Send message to background script to stop the node
-      chrome.runtime.sendMessage({
-        action: 'nodeStatusChanged',
-        status: 'stopped',
-        walletAddress: walletAddress,
-        deviceIp: deviceIp
-      });
+  // Listen for storage changes
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.walletAddress) {
+      walletAddress = changes.walletAddress.newValue;
+    }
+    if (changes.isNodeRunning) {
+      isNodeRunning = changes.isNodeRunning.newValue;
+    }
+    if (changes.totalPoints) {
+      totalPoints = changes.totalPoints.newValue;
+    }
+    if (changes.pointsRate) {
+      pointsRate = changes.pointsRate.newValue;
     }
     
-    // Clear wallet data from storage
-    chrome.storage.local.remove(['walletAddress', 'nodeStatus', 'totalRewards', 'rewardsPerSecond', 'connectionTime']);
-    
-    // Reset state variables
-    walletAddress = '';
+    // Update the UI
+    updateUI();
+  });
+  
+  // Set up event listeners
+  connectButton.addEventListener('click', connectWallet);
+  disconnectButton.addEventListener('click', disconnectWallet);
+  startButton.addEventListener('click', toggleNode);
+  dashboardButton.addEventListener('click', goToDashboard);
+  
+  // Request current state from background script
+  chrome.runtime.sendMessage({ type: 'GET_STATE' }, (response) => {
+    if (response) {
+      walletAddress = response.walletAddress;
+      isNodeRunning = response.isNodeRunning;
+      totalPoints = response.totalPoints;
+      pointsRate = response.pointsRate || 0;
+      updateUI();
+    }
+  });
+}
+
+function connectWallet() {
+  // For testing purposes, generate a random wallet address
+  const randomWallet = '0x' + Math.random().toString(16).substr(2, 40);
+  walletAddress = randomWallet;
+  
+  // Save the wallet address to storage
+  chrome.storage.local.set({ walletAddress });
+  
+  // Notify the dashboard of the connection
+  notifyDashboard('WALLET_CONNECTED', { walletAddress });
+  
+  // Update the UI
+  updateUI();
+}
+
+function disconnectWallet() {
+  // Clear the wallet address
+  walletAddress = null;
+  
+  // If the node is running, stop it
+  if (isNodeRunning) {
     isNodeRunning = false;
-    totalRewards = 0;
-    rewardsPerSecond = 0;
+    chrome.storage.local.set({ isNodeRunning });
     
-    // Record disconnection event
-    chrome.runtime.sendMessage({
-      action: 'walletDisconnected',
-      deviceIp: deviceIp
-    });
-    
-    // Show not connected state
-    showNotConnectedState();
+    // Send a message to the background script to toggle the node
+    chrome.runtime.sendMessage({ type: 'TOGGLE_NODE' });
   }
   
-  function toggleNode() {
-    toggleNodeBtn.classList.add('loading');
-    
-    setTimeout(() => {
-      isNodeRunning = !isNodeRunning;
-      updateNodeUI(isNodeRunning);
-      
-      // Save node status
-      chrome.storage.local.set({ 
-        nodeStatus: isNodeRunning ? 'running' : 'stopped',
-        lastToggleTime: new Date().toISOString()
-      });
-      
-      // If node is running, simulate rewards accumulation
-      if (isNodeRunning) {
-        simulateRewards();
-      }
-      
-      // Send message to background script with current wallet address and device IP
-      chrome.runtime.sendMessage({
-        action: 'nodeStatusChanged',
-        status: isNodeRunning ? 'running' : 'stopped',
-        walletAddress: walletAddress,
-        deviceIp: deviceIp
-      });
-      
-      toggleNodeBtn.classList.remove('loading');
-    }, 1000);
-  }
+  // Save the wallet address to storage
+  chrome.storage.local.set({ walletAddress });
   
-  function updateNodeUI(isRunning) {
-    if (isRunning) {
-      toggleNodeBtn.classList.remove('start-button');
-      toggleNodeBtn.classList.add('stop-button');
-      toggleNodeBtn.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="8" y1="12" x2="16" y2="12"></line>
-        </svg>
-      `;
-      toggleNodeBtn.setAttribute('aria-label', 'Stop Node');
-      nodeStatusSpan.classList.remove('status-stopped');
-      nodeStatusSpan.classList.add('status-running');
-    } else {
-      toggleNodeBtn.classList.remove('stop-button');
-      toggleNodeBtn.classList.add('start-button');
-      toggleNodeBtn.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
-          <line x1="12" y1="2" x2="12" y2="12"></line>
-        </svg>
-      `;
-      toggleNodeBtn.setAttribute('aria-label', 'Start Node');
-      nodeStatusSpan.classList.remove('status-running');
-      nodeStatusSpan.classList.add('status-stopped');
+  // Notify the dashboard of the disconnection
+  notifyDashboard('WALLET_DISCONNECTED');
+  
+  // Update the UI
+  updateUI();
+}
+
+function toggleNode() {
+  // Send a message to the background script to toggle the node
+  chrome.runtime.sendMessage({ type: 'TOGGLE_NODE' }, (response) => {
+    if (response && response.success) {
+      isNodeRunning = response.isNodeRunning;
+      
+      // Notify the dashboard of the node status change
+      notifyDashboard(isNodeRunning ? 'NODE_STARTED' : 'NODE_STOPPED');
+      
+      // Update the UI
+      updateUI();
     }
-  }
-  
-  function showConnectedState() {
+  });
+}
+
+function goToDashboard() {
+  // Open the dashboard in a new tab with the wallet address as a parameter
+  chrome.tabs.create({ url: `https://node.topayfoundation.com/dashboard?wallet=${walletAddress}` });
+}
+
+function notifyDashboard(event, data = {}) {
+  // Send a message to the content script to notify the dashboard of an event
+  chrome.tabs.query({ url: ["http://localhost:3000/*", "https://node.topayfoundation.com/*"] }, (tabs) => {
+    tabs.forEach((tab) => {
+      chrome.tabs.sendMessage(tab.id, {
+        type: 'EXTENSION_EVENT',
+        event,
+        data: {
+          ...data,
+          walletAddress,
+          isNodeRunning,
+          totalPoints
+        }
+      });
+    });
+  });
+}
+
+function updateUI() {
+  // Update wallet connection status
+  if (walletAddress) {
+    // Show connected UI
     notConnectedDiv.classList.add('hidden');
     connectedDiv.classList.remove('hidden');
-    // Display truncated wallet address
-    const displayAddress = '0×' + walletAddress.substring(2, 6) + '...' + walletAddress.substring(walletAddress.length - 3);
-    walletAddressP.textContent = displayAddress;
-  }
-  
-  function showNotConnectedState() {
-    connectedDiv.classList.add('hidden');
+    
+    // Update wallet address display (truncate for readability)
+    const truncatedAddress = walletAddress.substring(0, 6) + '...' + walletAddress.substring(walletAddress.length - 4);
+    walletAddressElement.textContent = truncatedAddress;
+  } else {
+    // Show disconnected UI
     notConnectedDiv.classList.remove('hidden');
+    connectedDiv.classList.add('hidden');
+    walletAddressElement.textContent = 'Not connected';
   }
   
-  function updateRewardsDisplay() {
-    // Update the rewards display in the UI
-    const rewardElements = document.querySelectorAll('.reward-value');
-    if (rewardElements.length >= 2) {
-      rewardElements[0].textContent = totalRewards.toFixed(2) + ' pt';
-      rewardElements[1].textContent = rewardsPerSecond.toFixed(3) + ' pt';
-    }
+  // Update node status
+  if (isNodeRunning) {
+    // Show running UI
+    startButton.classList.add('running');
+    nodeStatusIndicator.classList.remove('status-stopped');
+    nodeStatusIndicator.classList.add('status-running');
+    startButton.querySelector('.button-text').textContent = 'Stop Node';
+  } else {
+    // Show stopped UI
+    startButton.classList.remove('running');
+    nodeStatusIndicator.classList.remove('status-running');
+    nodeStatusIndicator.classList.add('status-stopped');
+    startButton.querySelector('.button-text').textContent = 'Start Node';
   }
   
-  function simulateRewards() {
-    // Simulate rewards accumulation (in a real extension, this would be based on actual node performance)
-    rewardsPerSecond = Math.random() * 0.01;
+  // Update rewards display
+  totalRewardsElement.textContent = totalPoints.toFixed(2) + ' pt';
+  rewardRateElement.textContent = pointsRate.toFixed(3) + ' pt/s';
+}
+
+// Listen for messages from the background script
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'STATE_UPDATED') {
+    // Update local state
+    if (message.walletAddress !== undefined) walletAddress = message.walletAddress;
+    if (message.isNodeRunning !== undefined) isNodeRunning = message.isNodeRunning;
+    if (message.totalPoints !== undefined) totalPoints = message.totalPoints;
+    if (message.pointsRate !== undefined) pointsRate = message.pointsRate;
     
-    // Save to storage
-    chrome.storage.local.set({ rewardsPerSecond: rewardsPerSecond });
-    
-    // Update display
-    updateRewardsDisplay();
-    
-    // Set up interval to accumulate rewards
-    const rewardsInterval = setInterval(() => {
-      if (!isNodeRunning) {
-        clearInterval(rewardsInterval);
-        return;
-      }
-      
-      totalRewards += rewardsPerSecond;
-      chrome.storage.local.set({ totalRewards: totalRewards });
-      updateRewardsDisplay();
-    }, 1000);
+    // Update the UI
+    updateUI();
   }
   
-  function openDashboard() {
-    // Open dashboard in a new tab
-    chrome.tabs.create({ url: 'https://node.topayfoundation.com/dashboard' });
-  }
+  // Always return true to indicate async response
+  return true;
 });
+
+// Initialize the popup when the DOM is loaded
+document.addEventListener('DOMContentLoaded', init);

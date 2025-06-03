@@ -9,7 +9,6 @@ interface ReferralStats {
   totalReferrals: number
   activeReferrals: number
   pointsEarned: number
-  referralCode: string
   referralLink: string
 }
 
@@ -26,7 +25,6 @@ export default function ReferralProgram() {
     totalReferrals: 0,
     activeReferrals: 0,
     pointsEarned: 0,
-    referralCode: '',
     referralLink: ''
   })
   const [history, setHistory] = useState<ReferralHistory[]>([])

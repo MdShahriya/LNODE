@@ -1,340 +1,178 @@
-// Background script for TOPAY Node Extension
+// background.js - Service worker for the TOPAY Node Dashboard extension
 
 // Initialize state
-let nodeStatus = 'stopped';
-let deviceIp = '';
-let walletAddress = '';
+let isNodeRunning = false;
+let walletAddress = null;
+let totalPoints = 0;
+let deviceIP = null;
 let connectionHistory = [];
-let ipCheckInterval = null;
-let pointsUpdateInterval = null;
+// Removed unused global variable and moved it to where it's needed
+const POINTS_PER_SECOND = 0.001;
 
-// Constants
-const IP_CHECK_INTERVAL_MINUTES = 5; // Check IP every 5 minutes
-const POINTS_UPDATE_INTERVAL_SECONDS = 60; // Update points every 60 seconds
-const API_BASE_URL = 'https://node.topayfoundation.com/api';
-
-// Check for stored data on startup
-chrome.storage.local.get(['nodeStatus', 'deviceIp', 'walletAddress', 'connectionHistory'], function(result) {
-  if (result.nodeStatus) nodeStatus = result.nodeStatus;
-  if (result.deviceIp) deviceIp = result.deviceIp;
-  if (result.walletAddress) walletAddress = result.walletAddress;
-  if (result.connectionHistory) connectionHistory = result.connectionHistory;
+// Load state from storage on startup
+chrome.storage.local.get(['isNodeRunning', 'walletAddress', 'totalPoints', 'deviceIP', 'connectionHistory'], (result) => {
+  isNodeRunning = result.isNodeRunning || false;
+  walletAddress = result.walletAddress || null;
+  totalPoints = result.totalPoints || 0;
+  deviceIP = result.deviceIP || null;
+  connectionHistory = result.connectionHistory || [];
   
-  // If node was running before browser closed, restart the services
-  if (nodeStatus === 'running' && walletAddress) {
-    startPeriodicIpCheck();
-    startPeriodicPointsUpdate();
-  }
-});
-
-// Listen for messages from popup or content scripts
-chrome.runtime.onMessage.addListener(function(message) {
-  console.log('Background received message:', message);
-  
-  // Handle wallet connection
-  if (message.action === 'walletConnected') {
-    walletAddress = message.walletAddress;
-    deviceIp = message.deviceIp || deviceIp;
+  // If the node was running when the extension was closed, update the points
+  if (isNodeRunning && walletAddress) {
+    const now = Date.now();
+    const lastUpdate = result.lastPointsUpdate || now;
+    const elapsedSeconds = (now - lastUpdate) / 1000;
     
-    // Record connection event
-    const connectionEvent = {
-      timestamp: new Date().toISOString(),
-      walletAddress: walletAddress,
-      deviceIp: deviceIp,
-      event: 'wallet_connected'
-    };
-    
-    connectionHistory.push(connectionEvent);
-    chrome.storage.local.set({ connectionHistory: connectionHistory });
-    
-    // Send data to server
-    sendDataToServer({
-      type: 'wallet_connected',
-      walletAddress: walletAddress,
-      deviceIp: deviceIp,
-      timestamp: new Date().toISOString()
-    });
-  }
-  
-  // Handle wallet disconnection
-  if (message.action === 'walletDisconnected') {
-    // Record disconnection event
-    const disconnectionEvent = {
-      timestamp: new Date().toISOString(),
-      walletAddress: walletAddress, // Use the current wallet address before clearing it
-      deviceIp: deviceIp,
-      event: 'wallet_disconnected'
-    };
-    
-    connectionHistory.push(disconnectionEvent);
-    chrome.storage.local.set({ connectionHistory: connectionHistory });
-    
-    // Send data to server
-    sendDataToServer({
-      type: 'wallet_disconnected',
-      walletAddress: walletAddress,
-      deviceIp: deviceIp,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Stop any periodic services
-    stopPeriodicIpCheck();
-    stopPeriodicPointsUpdate();
-    
-    // Clear wallet address
-    walletAddress = '';
-    nodeStatus = 'stopped';
-  }
-  
-  // Handle node status change
-  if (message.action === 'nodeStatusChanged') {
-    nodeStatus = message.status;
-    walletAddress = message.walletAddress || walletAddress;
-    deviceIp = message.deviceIp || deviceIp;
-    
-    // Record status change event
-    const statusEvent = {
-      timestamp: new Date().toISOString(),
-      walletAddress: walletAddress,
-      deviceIp: deviceIp,
-      event: 'node_status_changed',
-      status: nodeStatus
-    };
-    
-    connectionHistory.push(statusEvent);
-    chrome.storage.local.set({ connectionHistory: connectionHistory });
-    
-    // Send data to server
-    sendDataToServer({
-      type: 'node_status',
-      walletAddress: walletAddress,
-      deviceIp: deviceIp,
-      isRunning: nodeStatus === 'running',
-      timestamp: new Date().toISOString()
-    });
-    
-    // Start or stop periodic services based on node status
-    if (nodeStatus === 'running') {
-      startPeriodicIpCheck();
-      startPeriodicPointsUpdate();
-    } else {
-      stopPeriodicIpCheck();
-      stopPeriodicPointsUpdate();
+    // Add points for the time the extension was closed
+    if (elapsedSeconds > 0) {
+      totalPoints += elapsedSeconds * POINTS_PER_SECOND;
+      chrome.storage.local.set({ totalPoints, lastPointsUpdate: now });
     }
   }
+  
+  // Start the points accumulation interval if the node is running
+  if (isNodeRunning) {
+    startPointsAccumulation();
+  }
+  
+  // Fetch the device IP if we don't have it yet
+  if (!deviceIP) {
+    fetchDeviceIP();
+  }
 });
 
-function startPeriodicIpCheck() {
-  // Clear any existing interval
-  if (ipCheckInterval) {
-    clearInterval(ipCheckInterval);
+// Listen for messages from the popup or content scripts
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  switch (message.type) {
+    case 'TOGGLE_NODE':
+      toggleNode(sendResponse);
+      return true; // Keep the message channel open for the async response
+      
+    case 'GET_STATE':
+      sendResponse({
+        isNodeRunning,
+        walletAddress,
+        totalPoints,
+        deviceIP
+      });
+      break;
+      
+    case 'GET_CONNECTION_HISTORY':
+      sendResponse(connectionHistory);
+      break;
   }
-  
-  // Check IP immediately
-  checkDeviceIp();
-  
-  // Set up interval for periodic checks
-  ipCheckInterval = setInterval(checkDeviceIp, IP_CHECK_INTERVAL_MINUTES * 60 * 1000);
-}
+});
 
-function stopPeriodicIpCheck() {
-  if (ipCheckInterval) {
-    clearInterval(ipCheckInterval);
-    ipCheckInterval = null;
+// Set up alarms for periodic tasks
+chrome.alarms.create('updatePoints', { periodInMinutes: 1 });
+chrome.alarms.create('refreshIP', { periodInMinutes: 60 });
+
+// Listen for alarm events
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'updatePoints') {
+    // Save the current points to storage
+    chrome.storage.local.set({ totalPoints, lastPointsUpdate: Date.now() });
+  } else if (alarm.name === 'refreshIP') {
+    // Refresh the device IP
+    fetchDeviceIP();
   }
-}
+});
 
-function startPeriodicPointsUpdate() {
-  // Clear any existing interval
-  if (pointsUpdateInterval) {
-    clearInterval(pointsUpdateInterval);
-  }
+// Function to toggle the node state
+function toggleNode(sendResponse) {
+  isNodeRunning = !isNodeRunning;
   
-  // Update points immediately
-  updatePoints();
+  // Save the state to storage
+  chrome.storage.local.set({ isNodeRunning });
   
-  // Set up interval for periodic updates
-  pointsUpdateInterval = setInterval(updatePoints, POINTS_UPDATE_INTERVAL_SECONDS * 1000);
-}
-
-function stopPeriodicPointsUpdate() {
-  if (pointsUpdateInterval) {
-    clearInterval(pointsUpdateInterval);
-    pointsUpdateInterval = null;
-  }
-}
-
-function updatePoints() {
-  // Only update points if node is running and wallet is connected
-  if (nodeStatus === 'running' && walletAddress) {
-    console.log('Sending periodic points update for running node');
+  // If the node is now running, start accumulating points
+  if (isNodeRunning) {
+    startPointsAccumulation();
     
-    // Send heartbeat to server to update points
-    sendDataToServer({
-      type: 'node_points_update',
-      walletAddress: walletAddress,
-      deviceIp: deviceIp,
-      timestamp: new Date().toISOString()
-    });
+    // Add a connection record to the history
+    addConnectionRecord('CONNECTED');
+  } else {
+    // Stop accumulating points
+    stopPointsAccumulation();
+    
+    // Add a disconnection record to the history
+    addConnectionRecord('DISCONNECTED');
+  }
+  
+  // Send the response back to the popup
+  if (sendResponse) {
+    sendResponse({ success: true, isNodeRunning });
   }
 }
 
-function checkDeviceIp() {
+// Function to start accumulating points
+let pointsInterval = null;
+function startPointsAccumulation() {
+  // Clear unknown existing interval
+  if (pointsInterval) {
+    clearInterval(pointsInterval);
+  }
+  
+  // Start a new interval to accumulate points
+  pointsInterval = setInterval(() => {
+    if (isNodeRunning && walletAddress) {
+      totalPoints += POINTS_PER_SECOND;
+    }
+  }, 1000);
+}
+
+// Function to stop accumulating points
+function stopPointsAccumulation() {
+  if (pointsInterval) {
+    clearInterval(pointsInterval);
+    pointsInterval = null;
+  }
+}
+
+// Function to fetch the device's public IP address
+function fetchDeviceIP() {
   fetch('https://api.ipify.org?format=json')
     .then(response => response.json())
     .then(data => {
-      const newIp = data.ip;
-      
-      // If IP has changed, record the change
-      if (deviceIp && newIp !== deviceIp) {
-        const ipChangeEvent = {
-          timestamp: new Date().toISOString(),
-          walletAddress: walletAddress,
-          oldIp: deviceIp,
-          newIp: newIp,
-          event: 'ip_changed'
-        };
-        
-        connectionHistory.push(ipChangeEvent);
-        chrome.storage.local.set({ connectionHistory: connectionHistory });
-        
-        // Send data to server (if needed)
-        sendDataToServer({
-          type: 'ip_change',
-          walletAddress: walletAddress,
-          oldIp: deviceIp,
-          newIp: newIp,
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      // Update stored IP
-      deviceIp = newIp;
-      chrome.storage.local.set({ deviceIp: deviceIp });
+      deviceIP = data.ip;
+      chrome.storage.local.set({ deviceIP });
     })
     .catch(error => {
-      console.error('Error checking device IP:', error);
+      console.error('Error fetching IP:', error);
     });
 }
 
-function sendDataToServer(data) {
-  console.log('Sending data to server:', data);
+// Function to add a connection record to the history
+function addConnectionRecord(action) {
+  const record = {
+    timestamp: Date.now(),
+    action,
+    walletAddress,
+    deviceIP
+  };
   
-  // Handle different types of data
-  if (data.type === 'node_status') {
-    // Send node status update to the API
-    fetch(`${API_BASE_URL}/user/update-node-status`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        walletAddress: data.walletAddress,
-        isRunning: data.isRunning,
-        deviceIp: data.deviceIp
-      })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(result => {
-      console.log('Server response for node status update:', result);
-    })
-    .catch(error => {
-      console.error('Error sending node status to server:', error);
-    });
-  } 
-  else if (data.type === 'wallet_connected') {
-    // Create or update user in the database
-    fetch(`${API_BASE_URL}/user`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        walletAddress: data.walletAddress,
-        deviceIp: data.deviceIp
-      })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(result => {
-      console.log('Server response for wallet connection:', result);
-    })
-    .catch(error => {
-      console.error('Error sending wallet connection to server:', error);
-    });
+  // Add the record to the beginning of the array
+  connectionHistory.unshift(record);
+  
+  // Limit the history to 100 records
+  if (connectionHistory.length > 100) {
+    connectionHistory = connectionHistory.slice(0, 100);
   }
-  else if (data.type === 'wallet_disconnected') {
-    // Notify server about wallet disconnection
-    fetch(`${API_BASE_URL}/user/disconnect-wallet`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        walletAddress: data.walletAddress,
-        deviceIp: data.deviceIp
-      })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(result => {
-      console.log('Server response for wallet disconnection:', result);
-    })
-    .catch(error => {
-      console.error('Error sending wallet disconnection to server:', error);
-    });
-  }
-  else if (data.type === 'node_points_update') {
-    // Send heartbeat to update points for running node
-    fetch(`${API_BASE_URL}/user/update-node-points`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        walletAddress: data.walletAddress,
-        deviceIp: data.deviceIp
-      })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(result => {
-      console.log('Server response for points update:', result);
-      
-      // Update local rewards display if available
-      if (result.success && result.pointsAdded) {
-        chrome.storage.local.get(['totalRewards', 'rewardsPerSecond'], function(result) {
-          let totalRewards = result.totalRewards || 0;
-          totalRewards += result.pointsAdded;
-          chrome.storage.local.set({ totalRewards: totalRewards });
-        });
-      }
-    })
-    .catch(error => {
-      console.error('Error sending points update to server:', error);
-    });
-  }
-  // Additional data types can be handled here as needed
+  
+  // Save the updated history to storage
+  chrome.storage.local.set({ connectionHistory });
 }
 
-// When extension is installed, get the initial device IP
-chrome.runtime.onInstalled.addListener(() => {
-  checkDeviceIp();
+// Listen for changes to the wallet address in storage
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.walletAddress) {
+    walletAddress = changes.walletAddress.newValue;
+    
+    // If the wallet was connected, add a record to the history
+    if (walletAddress) {
+      addConnectionRecord('WALLET_CONNECTED');
+    } else {
+      addConnectionRecord('WALLET_DISCONNECTED');
+    }
+  }
 });
