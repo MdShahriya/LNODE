@@ -5,7 +5,6 @@ import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import './tasks.css'
-import React from 'react'
 
 // Animation variants
 const containerVariants = {
