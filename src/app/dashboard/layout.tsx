@@ -14,8 +14,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <Sidebar />
       <div className="dashboard-content">
         <main className="main-content">{children}</main>
+        <Footer />
       </div>
-      <Footer />
     </div>
   );
 }

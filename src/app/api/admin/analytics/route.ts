@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
-import UserHistory from '@/models/UserHistory';
+import NodeSession from '@/models/NodeSession';
 import PointsHistory from '@/models/PointsHistory';
 
 export async function GET(request: NextRequest) {
@@ -35,9 +35,9 @@ export async function GET(request: NextRequest) {
     const totalUsers = await User.countDocuments();
     
     // Get active users (users with node activity in the period)
-    const activeUsers = await UserHistory.distinct('walletAddress', {
-      timestamp: { $gte: startDate, $lte: endDate },
-      connectionType: 'node_start'
+    const activeUsers = await NodeSession.distinct('walletAddress', {
+      startTime: { $gte: startDate, $lte: endDate },
+      status: 'active'
     }).then(addresses => addresses.length);
     
     // Get total earnings in the period from PointsHistory
@@ -56,11 +56,11 @@ export async function GET(request: NextRequest) {
       }
     ]);
     
-    // Get device statistics from UserHistory
-    const deviceStats = await UserHistory.aggregate([
+    // Get device statistics from NodeSession
+    const deviceStats = await NodeSession.aggregate([
       { 
         $match: { 
-          timestamp: { $gte: startDate, $lte: endDate }
+          startTime: { $gte: startDate, $lte: endDate }
         } 
       },
       {
@@ -98,102 +98,134 @@ export async function GET(request: NextRequest) {
       }
     ]);
     
-    // Get daily uptime from UserHistory
-    const dailyUptimeActivity = await UserHistory.aggregate([
+    // Get daily node activity from NodeSession
+    const dailyNodeActivity = await NodeSession.aggregate([
       { 
         $match: { 
-          timestamp: { $gte: startDate, $lte: endDate },
-          connectionType: 'node_stop',
-          uptime: { $exists: true, $gt: 0 }
+          startTime: { $gte: startDate, $lte: endDate } 
         } 
       },
       {
         $group: {
-          _id: {
-            date: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } }
-          },
-          uptime: { $sum: "$uptime" },
-          count: { $sum: 1 }
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$startTime" } },
+          sessions: { $sum: 1 },
+          uniqueUsers: { $addToSet: "$walletAddress" },
+          totalUptime: { $sum: "$uptime" },
+          avgUptime: { $avg: "$uptime" }
         }
       },
-      { 
-        $sort: { "_id.date": 1 } 
-      }
+      {
+        $project: {
+          _id: 0,
+          date: "$_id",
+          sessions: 1,
+          uniqueUsers: { $size: "$uniqueUsers" },
+          totalUptime: 1,
+          avgUptime: 1
+        }
+      },
+      { $sort: { date: 1 } }
     ]);
     
-    // Format daily activity for chart display
-    const formattedDailyActivity: Array<{
-      date: string;
-      node: number;
-      referral: number;
-      task: number;
-      checkin: number;
-      other: number;
-      totalPoints: number;
-      totalUptime: number;
-    }> = [];
-    const dateMap = new Map();
+    // Get user growth over time
+    const userGrowth = await User.aggregate([
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          newUsers: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
     
-    // Initialize the date map with all dates in the range
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      dateMap.set(dateStr, {
-        date: new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        node: 0,
-        referral: 0,
-        task: 0,
-        checkin: 0,
-        other: 0,
-        totalPoints: 0,
-        totalUptime: 0
-      });
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
+    // Get top users by points
+    const topUsers = await User.find()
+      .sort({ points: -1 })
+      .limit(10)
+      .select('walletAddress points uptime totalSessions');
     
-    // Add points data
+    // Format earnings data
+    const earnings: Record<string, { totalPoints: number; count: number }> = {};
+    earningsResult.forEach(item => {
+      earnings[item._id || 'unknown'] = {
+        totalPoints: item.totalPoints,
+        count: item.count
+      };
+    });
+    
+    // Calculate total points in the period
+    const totalPointsInPeriod = earningsResult.reduce((sum, item) => sum + item.totalPoints, 0);
+    
+    // Format device stats
+    const devices = deviceStats.map(item => ({
+      deviceType: item._id.deviceType || 'unknown',
+      browser: item._id.browser || 'unknown',
+      platform: item._id.platform || 'unknown',
+      count: item.count
+    }));
+    
+    // Format daily activity
+    const dailyActivity: Record<string, Record<string, { points: number; count: number }>> = {};
     dailyPointsActivity.forEach(item => {
-      const dateStr = item._id.date;
-      const source = item._id.source;
+      const date = item._id.date;
+      const source = item._id.source || 'unknown';
       
-      if (dateMap.has(dateStr)) {
-        const dateData = dateMap.get(dateStr);
-        dateData[source] = item.points;
-        dateData.totalPoints += item.points;
+      if (!dailyActivity[date]) {
+        dailyActivity[date] = {};
       }
+      
+      dailyActivity[date][source] = {
+        points: item.points,
+        count: item.count
+      };
     });
     
-    // Add uptime data
-    dailyUptimeActivity.forEach(item => {
-      const dateStr = item._id.date;
-      
-      if (dateMap.has(dateStr)) {
-        const dateData = dateMap.get(dateStr);
-        dateData.totalUptime += item.uptime;
-      }
-    });
+    // Format node activity
+    const nodeActivity: Record<string, { 
+      sessions: number; 
+      uniqueUsers: number; 
+      totalUptime: number; 
+      avgUptime: number 
+    }> = dailyNodeActivity.reduce((acc, item) => {
+      acc[item.date] = {
+        sessions: item.sessions,
+        uniqueUsers: item.uniqueUsers,
+        totalUptime: item.totalUptime,
+        avgUptime: item.avgUptime
+      };
+      return acc;
+    }, {} as Record<string, { 
+      sessions: number; 
+      uniqueUsers: number; 
+      totalUptime: number; 
+      avgUptime: number 
+    }>);
     
-    // Convert map to array and sort by date
-    dateMap.forEach(value => formattedDailyActivity.push(value));
-    formattedDailyActivity.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Format user growth
+    const growth: Record<string, number> = userGrowth.reduce((acc, item) => {
+      acc[item._id] = item.newUsers;
+      return acc;
+    }, {} as Record<string, number>);
     
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      totalUsers,
-      activeUsers,
-      earningsByType: earningsResult,
-      deviceStats,
-      dailyActivity: formattedDailyActivity,
-      period,
-      dateRange: {
-        start: startDate.toISOString(),
-        end: endDate.toISOString()
+      data: {
+        totalUsers,
+        activeUsers,
+        totalPointsInPeriod,
+        earnings,
+        devices,
+        dailyActivity,
+        nodeActivity,
+        userGrowth: growth,
+        topUsers,
+        period
       }
-    }, { status: 200 });
+    });
   } catch (error) {
-    console.error('Error fetching analytics:', error);
+    console.error('Error in analytics API:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch analytics data' },
+      { success: false, error: 'Failed to fetch analytics data' },
       { status: 500 }
     );
   }

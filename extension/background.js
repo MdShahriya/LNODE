@@ -430,17 +430,22 @@ async function updateNodeStatusOnServer(isRunning) {
 // Function to start accumulating points
 let pointsInterval = null;
 function startPointsAccumulation() {
-  // Clear unknown existing interval
-  if (pointsInterval) {
-    clearInterval(pointsInterval);
-  }
+  // Clear any existing interval
+  stopPointsAccumulation();
   
-  // Start a new interval to accumulate points
-  pointsInterval = setInterval(() => {
-    if (isNodeRunning && walletAddress) {
-      totalPoints += POINTS_PER_SECOND;
-    }
-  }, 1000);
+  // Only start accumulating points if both conditions are met
+  if (isNodeRunning && walletAddress) {
+    // Start a new interval to accumulate points
+    pointsInterval = setInterval(() => {
+      // Double-check conditions are still met before adding points
+      if (isNodeRunning && walletAddress) {
+        totalPoints += POINTS_PER_SECOND;
+      } else {
+        // If conditions are no longer met, stop accumulation
+        stopPointsAccumulation();
+      }
+    }, 1000);
+  }
 }
 
 // Function to stop accumulating points
@@ -504,9 +509,19 @@ chrome.storage.onChanged.addListener((changes) => {
 // Set wallet address and notify all tabs
 function setWalletAddress(address, sendResponse) {
   try {
+    // Get the previous wallet address for comparison
+    const previousWalletAddress = walletAddress;
+    
     // Update state
     walletAddress = address;
     const isConnected = !!address;
+    
+    // If wallet is being disconnected, stop the node and points accumulation
+    if (previousWalletAddress && !address && isNodeRunning) {
+      isNodeRunning = false;
+      stopPointsAccumulation();
+      chrome.storage.local.set({ isNodeRunning });
+    }
     
     // Save to storage
     chrome.storage.local.set({ walletAddress: address, isConnected }, () => {
@@ -519,60 +534,13 @@ function setWalletAddress(address, sendResponse) {
       // Add connection record
       addConnectionRecord(isConnected ? 'WALLET_CONNECTED' : 'WALLET_DISCONNECTED');
       
-      // Notify all tabs about state update
-      try {
-        // Determine the URL pattern based on the current tab
-        let urlPatterns = ["http://localhost:3000/*", "https://*.topay.io/*", "https://*.topay.com/*"];
-        
-        // Query tabs that match our content script URL patterns
-        chrome.tabs.query({
-          url: urlPatterns
-        }, (tabs) => {
-          if (chrome.runtime.lastError) {
-            console.error('Error querying tabs:', chrome.runtime.lastError);
-            return;
-          }
-          
-          // Add a small delay to ensure content scripts are fully loaded
-          setTimeout(() => {
-            tabs.forEach(tab => {
-              try {
-                chrome.tabs.sendMessage(tab.id, { 
-                  type: 'STATE_UPDATED', 
-                  state: {
-                    walletAddress: address,
-                    isNodeRunning,
-                    totalPoints,
-                    isConnected
-                  }
-                }, () => {
-                  if (chrome.runtime.lastError) {
-                    // This is expected for tabs that don't have content script
-                    console.log(`Could not send STATE_UPDATED to tab ${tab.id}: ${chrome.runtime.lastError.message}`);
-                  }
-                  // Even if there's no response, we need to handle it to prevent "Receiving end does not exist" errors
-                });
-                
-                chrome.tabs.sendMessage(tab.id, { 
-                  type: 'WALLET_ADDRESS_UPDATED', 
-                  walletAddress: address, 
-                  isConnected 
-                }, () => {
-                  if (chrome.runtime.lastError) {
-                    // This is expected for tabs that don't have content script
-                    console.log(`Could not send WALLET_ADDRESS_UPDATED to tab ${tab.id}: ${chrome.runtime.lastError.message}`);
-                  }
-                  // Even if there's no response, we need to handle it to prevent "Receiving end does not exist" errors
-                });
-              } catch (error) {
-                console.error(`Error sending message to tab ${tab.id}:`, error);
-              }
-            });
-          }, 500); // 500ms delay to ensure content scripts are loaded
-        });
-      } catch (error) {
-        console.error('Error notifying tabs:', error);
+      // If wallet is being disconnected (was connected before but not now), notify the server
+      if (previousWalletAddress && !address) {
+        notifyServerAboutWalletDisconnection(previousWalletAddress);
       }
+      
+      // Notify all tabs about state update
+      notifyTabsAboutStateUpdate();
       
       // Send response if callback provided
       if (sendResponse) sendResponse({ success: true });
@@ -618,5 +586,78 @@ function getConnectionHistory(sendResponse) {
     if (sendResponse) {
       sendResponse({ success: false, error: error.message });
     }
+  }
+}
+
+// Function to notify the server about wallet disconnection
+async function notifyServerAboutWalletDisconnection(walletAddressToDisconnect) {
+  try {
+    // Only update if we have a wallet address
+    if (!walletAddressToDisconnect) {
+      console.log('Cannot notify server about wallet disconnection: No wallet address provided');
+      return;
+    }
+    
+    // Determine the API URL based on the environment
+    // First try to get the current tab URL to determine the base URL
+    let apiBaseUrl = 'http://localhost:3000';
+    
+    try {
+      const tabs = await chrome.tabs.query({active: true, currentWindow: true});
+      if (tabs && tabs.length > 0 && tabs[0].url) {
+        const tabUrl = new URL(tabs[0].url);
+        // If the tab is on a domain that matches our app, use that domain for API calls
+        if (tabUrl.hostname.includes('topay') || tabUrl.hostname === 'localhost') {
+          apiBaseUrl = `${tabUrl.protocol}//${tabUrl.host}`;
+        }
+      }
+    } catch (error) {
+      console.log('Error determining API URL from tabs, using default:', error);
+    }
+    
+    // Prepare the request data
+    const data = {
+      walletAddress: walletAddressToDisconnect,
+      deviceIp: deviceIP
+    };
+    
+    // Add a custom header to identify this as an extension request
+    const response = await fetch(`${apiBaseUrl}/api/user/disconnect-wallet`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Source': 'extension'
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      // Try to get more detailed error information from the response
+      try {
+        const errorData = await response.json();
+        throw new Error(`Server responded with status: ${response.status}, message: ${errorData.message || errorData.error || 'Unknown error'}`);
+      } catch (jsonError) {
+        // If we can't parse the error response, just use the status code
+        console.error('Error parsing error response:', jsonError);
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+    }
+    
+    // Safely parse the response body
+    let result;
+    try {
+      result = await response.json();
+    } catch (jsonError) {
+      console.error('Error parsing response JSON:', jsonError);
+      throw new Error(`Failed to parse server response: ${jsonError.message}`);
+    }
+    
+    if (result.success) {
+      console.log(`Wallet disconnection notified to server: ${walletAddressToDisconnect}`);
+    } else {
+      console.error('Failed to notify server about wallet disconnection:', result.error);
+    }
+  } catch (error) {
+    console.error('Error notifying server about wallet disconnection:', error);
   }
 }

@@ -16,6 +16,14 @@ const dashboardButton = document.getElementById('go-to-dashboard');
 let walletAddress = null;
 let isNodeRunning = false;
 let totalPoints = 0;
+let pointsRate = 0;
+
+// Constants
+const POINTS_PER_SECOND = 0.2;
+
+// Variables for points animation
+let displayedPoints = 0;
+let pointsAnimationInterval = null;
 
 // Initialize the popup
 function init() {
@@ -91,37 +99,66 @@ function connectWallet() {
 }
 
 function disconnectWallet() {
-  // Clear the wallet address
+  // Store the current wallet address before clearing it
+  const currentWalletAddress = walletAddress;
+  
+  // Clear the wallet address locally
   walletAddress = null;
   
-  // If the node is running, stop it
+  // If the node is running, stop it first and ensure server is updated
   if (isNodeRunning) {
     isNodeRunning = false;
     chrome.storage.local.set({ isNodeRunning });
     
     // Send a message to the background script to toggle the node
+    // This will update the server about node status change
     try {
       chrome.runtime.sendMessage({ type: 'TOGGLE_NODE' }, () => {
         // Handle potential error with callback
         if (chrome.runtime.lastError) {
           console.log('Error toggling node:', chrome.runtime.lastError.message);
-          // Continue execution despite error
         }
-        // No response processing needed but callback required to prevent errors
+        
+        // After node is stopped, then disconnect the wallet
+        disconnectWalletAfterNodeStopped(currentWalletAddress);
       });
     } catch (error) {
       console.error('Error sending TOGGLE_NODE message:', error);
+      // Still try to disconnect wallet even if there was an error stopping the node
+      disconnectWalletAfterNodeStopped(currentWalletAddress);
     }
+  } else {
+    // If node is not running, disconnect wallet immediately
+    disconnectWalletAfterNodeStopped(currentWalletAddress);
   }
-  
+}
+
+// Helper function to disconnect wallet after node is stopped
+function disconnectWalletAfterNodeStopped() {
   // Save the wallet address to storage
-  chrome.storage.local.set({ walletAddress });
+  chrome.storage.local.set({ walletAddress: null });
   
   // Notify the dashboard of the disconnection
   notifyDashboard('WALLET_DISCONNECTED');
   
   // Update the UI
   updateUI();
+  
+  // Send a message to the background script to set the wallet address to null
+  // This will trigger the notifyServerAboutWalletDisconnection function in background.js
+  try {
+    chrome.runtime.sendMessage({ 
+      type: 'SET_WALLET_ADDRESS', 
+      walletAddress: null 
+    }, () => {
+      // Handle potential error with callback
+      if (chrome.runtime.lastError) {
+        console.log('Error setting wallet address to null:', chrome.runtime.lastError.message);
+      }
+    });
+  } catch (error) {
+    console.error('Error sending SET_WALLET_ADDRESS message:', error);
+  }
 }
 
 function toggleNode() {
@@ -228,6 +265,9 @@ function updateUI() {
         <line x1="8" y1="12" x2="16" y2="12"></line>
       </svg>
     `;
+    
+    // Start points animation if not already running
+    startPointsAnimation();
   } else {
     // Show stopped UI
     startButton.classList.remove('stop-button');
@@ -243,11 +283,61 @@ function updateUI() {
         <line x1="12" y1="2" x2="12" y2="12"></line>
       </svg>
     `;
+    
+    // Stop points animation and update to exact value
+    stopPointsAnimation();
+    totalRewardsElement.textContent = totalPoints.toFixed(2) + ' pt';
   }
   
-  // Update rewards display
-  totalRewardsElement.textContent = totalPoints.toFixed(2) + ' pt';
-  rewardRateElement.textContent = isNodeRunning ? '0.2 pt/s' : '0.000 pt/s';
+  // Update rewards rate display
+  rewardRateElement.textContent = isNodeRunning ? pointsRate.toFixed(2) + ' pt/s' : '0.200 pt/s';
+  
+  // If not animating, update the total rewards display directly
+  if (!pointsAnimationInterval) {
+    displayedPoints = totalPoints;
+    totalRewardsElement.textContent = displayedPoints.toFixed(2) + ' pt';
+  }
+}
+
+// Function to start the points animation
+function startPointsAnimation() {
+  // Clear any existing animation interval
+  stopPointsAnimation();
+  
+  // Set the initial displayed points if needed
+  if (displayedPoints === 0 && totalPoints > 0) {
+    displayedPoints = totalPoints;
+  }
+  
+  // Start a new interval to animate the points
+  pointsAnimationInterval = setInterval(() => {
+    // If the node is running, increment the displayed points
+    if (isNodeRunning) {
+      // Increment by a small amount for smooth animation (using pointsRate)
+      displayedPoints += pointsRate / 10;
+      
+      // Ensure displayed points don't exceed actual points by too much
+      if (displayedPoints > totalPoints + 0.5) {
+        displayedPoints = totalPoints;
+      }
+      
+      // Update the display
+      totalRewardsElement.textContent = displayedPoints.toFixed(2) + ' pt';
+      totalRewardsElement.classList.add('points-animating');
+    } else {
+      // If node is stopped, stop the animation
+      stopPointsAnimation();
+    }
+  }, 100); // Update every 100ms for smooth animation
+}
+
+// Function to stop the points animation
+function stopPointsAnimation() {
+  if (pointsAnimationInterval) {
+    clearInterval(pointsAnimationInterval);
+    pointsAnimationInterval = null;
+    totalRewardsElement.classList.remove('points-animating');
+  }
 }
 
 // Listen for messages from the background script
@@ -258,6 +348,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.walletAddress !== undefined) walletAddress = message.walletAddress;
       if (message.isNodeRunning !== undefined) isNodeRunning = message.isNodeRunning;
       if (message.totalPoints !== undefined) totalPoints = message.totalPoints;
+      if (message.pointsRate !== undefined) pointsRate = message.pointsRate || POINTS_PER_SECOND;
       
       // Update the UI
       updateUI();

@@ -572,13 +572,6 @@ export default function Dashboard() {
                   Copy referral link
                 </button>
               </div>
-              <div className="user-section">
-                <span className="greeting">
-                  Hi, {address ? 
-                    address.substring(0, 6) + '...' + address.substring(address.length - 4) : 
-                    'User'}
-                </span>
-              </div>
             </div>
 
             {/* Rest of the dashboard UI */}
@@ -658,10 +651,13 @@ export default function Dashboard() {
                     <div className="cell uptime">---</div>
                     <div className="cell points">---</div>
                   </div>
-                ) : userSessions.length > 0 ? (
-                  userSessions.map((session) => (
-                    <div key={session.id} className="table-row">
-                      <div className="cell status">{session.statusIcon} {session.status}</div>
+                ) : userSessions && userSessions.length > 0 ? (
+                  userSessions.map((session, index) => (
+                    <div key={index} className="table-row">
+                      <div className="cell status">
+                        <span dangerouslySetInnerHTML={{ __html: session.statusIcon }} />
+                        {session.status}
+                      </div>
                       <div className="cell node">{session.nodeType}</div>
                       <div className="cell id">{session.id}</div>
                       <div className="cell ip">{session.deviceIP}</div>
@@ -672,13 +668,13 @@ export default function Dashboard() {
                   ))
                 ) : (
                   <div className="table-row">
-                    <div className="cell status">🔴 No Sessions</div>
-                    <div className="cell node">No active sessions</div>
-                    <div className="cell id">---</div>
-                    <div className="cell ip">---</div>
-                    <div className="cell pts">0.0</div>
-                    <div className="cell uptime">0 hrs</div>
-                    <div className="cell points">0 pt</div>
+                      <div className="cell status">🔴 No Sessions</div>
+                      <div className="cell node">No active sessions</div>
+                      <div className="cell id">---</div>
+                      <div className="cell ip">---</div>
+                      <div className="cell pts">0.0</div>
+                      <div className="cell uptime">0 hrs</div>
+                      <div className="cell points">0 pt</div>
                   </div>
                 )}
               </div>

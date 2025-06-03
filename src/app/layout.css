@@ -1,11 +1,9 @@
 * {
   box-sizing: border-box;
-  margin: 0;
   padding: 0;
 }
 
 body, html, #__next, #root {
-  margin: 0;
   padding: 0;
   height: 100%;
   background: #000000;
@@ -55,8 +53,6 @@ button {
 /* Utility Classes */
 .container {
   max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
 }
 
 .flex {
@@ -81,22 +77,6 @@ button {
 
 .gap-8 {
   gap: 2rem;
-}
-
-.mt-4 {
-  margin-top: 1rem;
-}
-
-.mt-8 {
-  margin-top: 2rem;
-}
-
-.mb-4 {
-  margin-bottom: 1rem;
-}
-
-.mb-8 {
-  margin-bottom: 2rem;
 }
 
 /* Responsive Breakpoints */
