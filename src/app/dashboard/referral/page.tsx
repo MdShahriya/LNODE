@@ -3,6 +3,7 @@
 import { useAccount } from 'wagmi'
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
+import { motion } from 'framer-motion'
 import "./referral.css"
 
 interface ReferralStats {
@@ -67,14 +68,49 @@ export default function ReferralProgram() {
     }
   }
 
+  // Container variants for staggered children animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }
+
+  // Card variants for individual card animations
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
+  }
+
+  // Row variants for table row animations
+  const rowVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 100 } }
+  }
+
   if (!isConnected) {
     return (
       <div className="referral">
         <div className="referral__container">
-          <h1 className="referral__title">Referral Program</h1>
-          <div className="referral__message">
+          <motion.h1 
+            className="referral__title"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            Referral Program
+          </motion.h1>
+          <motion.div 
+            className="referral__message"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             Please connect your wallet to view your referral data.
-          </div>
+          </motion.div>
         </div>
       </div>
     )
@@ -83,82 +119,157 @@ export default function ReferralProgram() {
   return (
     <div className="referral">
       <div className="referral__container">
-        <h1 className="referral__title">Referral Program</h1>
+        <motion.h1 
+          className="referral__title"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Referral Program
+        </motion.h1>
 
         {loading ? (
-          <div className="referral__loading">
+          <motion.div 
+            className="referral__loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="referral__loading-spinner"></div>
             <p>Loading referral data...</p>
-          </div>
+          </motion.div>
         ) : (
           <>
             {/* Stats */}
-            <div className="referral__stats-grid">
-              <div className="referral__stat-card">
+            <motion.div 
+              className="referral__stats-grid"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <motion.div className="referral__stat-card" variants={cardVariants}>
                 <h3 className="referral__stat-title">Total Referrals</h3>
-                <p className="referral__stat-value">{stats.totalReferrals}</p>
-              </div>
-              <div className="referral__stat-card">
+                <motion.p 
+                  className="referral__stat-value"
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+                >
+                  {stats.totalReferrals}
+                </motion.p>
+              </motion.div>
+              <motion.div className="referral__stat-card" variants={cardVariants}>
                 <h3 className="referral__stat-title">Active Referrals</h3>
-                <p className="referral__stat-value">{stats.activeReferrals}</p>
-              </div>
-              <div className="referral__stat-card">
+                <motion.p 
+                  className="referral__stat-value"
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
+                >
+                  {stats.activeReferrals}
+                </motion.p>
+              </motion.div>
+              <motion.div className="referral__stat-card" variants={cardVariants}>
                 <h3 className="referral__stat-title">Points Earned</h3>
-                <p className="referral__stat-value">{stats.pointsEarned}</p>
-              </div>
-              <div className="referral__stat-card">
+                <motion.p 
+                  className="referral__stat-value"
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
+                >
+                  {stats.pointsEarned}
+                </motion.p>
+              </motion.div>
+              <motion.div className="referral__stat-card" variants={cardVariants}>
                 <h3 className="referral__stat-title">Your Referral Link</h3>
                 <div className="referral__code-group">
-                  <code className="referral__code">
+                  <motion.code 
+                    className="referral__code"
+                    whileHover={{ scale: 1.02 }}
+                  >
                     {stats.referralLink || 'Generating...'}
-                  </code>
+                  </motion.code>
                   {stats.referralLink && (
-                    <button
+                    <motion.button
                       onClick={copyReferralLink}
                       className="referral__copy-btn"
                       title="Copy referral link"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       📋
-                    </button>
+                    </motion.button>
                   )}
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
 
             {/* History */}
-            <div className="referral__history">
+            <motion.div 
+              className="referral__history"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
               <h2 className="referral__history-title">Referral History</h2>
               {history.length === 0 ? (
-                <div className="referral__empty-message">
+                <motion.div 
+                  className="referral__empty-message"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
                   No referrals yet. Share your referral link to start earning!
-                </div>
+                </motion.div>
               ) : (
                 <table className="referral__history-table">
                   <thead>
-                    <tr>
+                    <motion.tr
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5, delay: 0.4 }}
+                    >
                       <th>Address</th>
                       <th>Date</th>
                       <th>Status</th>
                       <th>Points</th>
-                    </tr>
+                    </motion.tr>
                   </thead>
-                  <tbody>
+                  <motion.tbody
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {history.map((entry, index) => (
-                      <tr key={index}>
+                      <motion.tr 
+                        key={index}
+                        variants={rowVariants}
+                        whileHover={{ scale: 1.01, x: 5 }}
+                      >
                         <td>{entry.address}</td>
                         <td>{entry.date}</td>
                         <td>
-                          <span className={`referral__status referral__status--${entry.status}`}>
+                          <motion.span 
+                            className={`referral__status referral__status--${entry.status}`}
+                            whileHover={{ scale: 1.1 }}
+                          >
                             {entry.status}
-                          </span>
+                          </motion.span>
                         </td>
-                        <td>{entry.pointsEarned}</td>
-                      </tr>
+                        <td>
+                          <motion.span
+                            whileHover={{ scale: 1.1 }}
+                            style={{ display: 'inline-block' }}
+                          >
+                            {entry.pointsEarned}
+                          </motion.span>
+                        </td>
+                      </motion.tr>
                     ))}
-                  </tbody>
+                  </motion.tbody>
                 </table>
               )}
-            </div>
+            </motion.div>
           </>
         )}
       </div>

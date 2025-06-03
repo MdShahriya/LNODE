@@ -3,6 +3,7 @@
 import { useAccount } from 'wagmi'
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
+import { motion } from 'framer-motion'
 import './check-in.css'
 
 interface CheckInHistory {
@@ -19,6 +20,19 @@ interface CheckInStats {
   totalPointsEarned: number
 }
 
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+      damping: 12
+    }
+  }
+}
+
 export default function DailyCheckIn() {
   const { address, isConnected } = useAccount()
   const [checkInStats, setCheckInStats] = useState<CheckInStats>({
@@ -32,8 +46,6 @@ export default function DailyCheckIn() {
   const [loading, setLoading] = useState(true)
   const [checkingIn, setCheckingIn] = useState(false)
   const [canCheckInToday, setCanCheckInToday] = useState(false)
-  
-  // Calculate points based on streak
   
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -132,10 +144,22 @@ export default function DailyCheckIn() {
     return (
       <div className="check-in">
         <div className="check-in__container">
-          <h1 className="check-in__title">Daily Check-In</h1>
-          <div className="check-in__message">
+          <motion.h1 
+            className="check-in__title"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            Daily Check-In
+          </motion.h1>
+          <motion.div 
+            className="check-in__message"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             Please connect your wallet to access the daily check-in feature.
-          </div>
+          </motion.div>
         </div>
       </div>
     )
@@ -144,20 +168,34 @@ export default function DailyCheckIn() {
   return (
     <div className="check-in">
       <div className="check-in__container">
-        <h1 className="check-in__title">Daily Check-In</h1>
-        <p className="check-in__description">
-          Check in daily to earn points and build your streak. Longer streaks earn bonus points!
-        </p>
+        <motion.h1 
+          className="check-in__title"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Daily Check-In
+        </motion.h1>
         
         {loading ? (
-          <div className="check-in__loading">
+          <motion.div 
+            className="check-in__loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="check-in__loading-spinner"></div>
             <p>Loading check-in data...</p>
-          </div>
+          </motion.div>
         ) : (
           <>
             {/* Check-in Button */}
-            <div className="check-in__action">
+            <motion.div 
+              className="check-in__action"
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+            >
               <button 
                 className={`check-in__button ${!canCheckInToday ? 'check-in__button--disabled' : ''}`}
                 onClick={performCheckIn}
@@ -172,65 +210,108 @@ export default function DailyCheckIn() {
                   You&apos;ve already checked in today. Come back tomorrow!
                 </p>
               )}
-            </div>
+            </motion.div>
             
             {/* Stats */}
-            <div className="check-in__stats-grid">
-              <div className="check-in__stat-card">
+            <motion.div 
+              className="check-in__stats-grid"
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <motion.div 
+                className="check-in__stat-card"
+                whileHover={{ y: -5, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              >
                 <h3 className="check-in__stat-title">Current Streak</h3>
                 <p className="check-in__stat-value">{checkInStats.currentStreak} days</p>
-              </div>
-              <div className="check-in__stat-card">
+              </motion.div>
+              <motion.div 
+                className="check-in__stat-card"
+                whileHover={{ y: -5, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              >
                 <h3 className="check-in__stat-title">Longest Streak</h3>
                 <p className="check-in__stat-value">{checkInStats.longestStreak} days</p>
-              </div>
-              <div className="check-in__stat-card">
+              </motion.div>
+              <motion.div 
+                className="check-in__stat-card"
+                whileHover={{ y: -5, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              >
                 <h3 className="check-in__stat-title">Total Check-ins</h3>
                 <p className="check-in__stat-value">{checkInStats.totalCheckIns}</p>
-              </div>
-              <div className="check-in__stat-card">
+              </motion.div>
+              <motion.div 
+                className="check-in__stat-card"
+                whileHover={{ y: -5, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              >
                 <h3 className="check-in__stat-title">Points Earned</h3>
                 <p className="check-in__stat-value">{checkInStats.totalPointsEarned}</p>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
             
             {/* Rewards Info */}
-            <div className="check-in__rewards-info">
+            <motion.div 
+              className="check-in__rewards-info"
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+            >
               <h2 className="check-in__rewards-title">Streak Rewards</h2>
               <div className="check-in__rewards-grid">
-                <div className="check-in__reward-item">
+                <motion.div 
+                  className="check-in__reward-item"
+                  whileHover={{ scale: 1.03, backgroundColor: 'rgba(13, 124, 233, 0.15)' }}
+                >
                   <div className="check-in__reward-icon">🔄</div>
                   <div className="check-in__reward-details">
                     <h4>Daily Check-in</h4>
                     <p>100 points</p>
                   </div>
-                </div>
-                <div className="check-in__reward-item">
+                </motion.div>
+                <motion.div 
+                  className="check-in__reward-item"
+                  whileHover={{ scale: 1.03, backgroundColor: 'rgba(13, 124, 233, 0.15)' }}
+                >
                   <div className="check-in__reward-icon">🔥</div>
                   <div className="check-in__reward-details">
                     <h4>3-Day Streak</h4>
                     <p>+500 bonus points</p>
                   </div>
-                </div>
-                <div className="check-in__reward-item">
+                </motion.div>
+                <motion.div 
+                  className="check-in__reward-item"
+                  whileHover={{ scale: 1.03, backgroundColor: 'rgba(13, 124, 233, 0.15)' }}
+                >
                   <div className="check-in__reward-icon">⚡</div>
                   <div className="check-in__reward-details">
                     <h4>7-Day Streak</h4>
                     <p>+2000 bonus points</p>
                   </div>
-                </div>
-                <div className="check-in__reward-item">
+                </motion.div>
+                <motion.div 
+                  className="check-in__reward-item"
+                  whileHover={{ scale: 1.03, backgroundColor: 'rgba(13, 124, 233, 0.15)' }}
+                >
                   <div className="check-in__reward-icon">🌟</div>
                   <div className="check-in__reward-details">
                     <h4>30-Day Streak</h4>
                     <p>+50000 bonus points</p>
                   </div>
-                </div>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
             
             {/* History */}
-            <div className="check-in__history">
+            <motion.div 
+              className="check-in__history"
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+            >
               <h2 className="check-in__history-title">Check-in History</h2>
               {history.length === 0 ? (
                 <div className="check-in__empty-message">
@@ -239,15 +320,22 @@ export default function DailyCheckIn() {
               ) : (
                 <div className="check-in__history-list">
                   {history.map((entry, index) => (
-                    <div key={index} className="check-in__history-item">
+                    <motion.div 
+                      key={index} 
+                      className="check-in__history-item"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      whileHover={{ backgroundColor: 'rgba(13, 124, 233, 0.2)' }}
+                    >
                       <div className="check-in__history-date">{formatDate(entry.date)}</div>
                       <div className="check-in__history-streak">{entry.streak} day streak</div>
                       <div className="check-in__history-points">+{entry.points} pts</div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               )}
-            </div>
+            </motion.div>
           </>
         )}
       </div>

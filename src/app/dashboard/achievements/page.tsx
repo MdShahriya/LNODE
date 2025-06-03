@@ -34,6 +34,7 @@ export default function Achievements() {
       }
       
       const data = await response.json()
+      // Extract the achievements array from the response
       setAchievements(data.achievements || [])
     } catch (err) {
       console.error('Error fetching achievements:', err)
@@ -46,55 +47,82 @@ export default function Achievements() {
   useEffect(() => {
     if (isConnected && address) {
       fetchAchievements()
+    } else {
+      // Reset state when wallet is disconnected
+      setAchievements([])
+      setLoading(false)
+      setError(null)
     }
   }, [isConnected, address, fetchAchievements])
 
+  // Debug logging
+  console.log('Render state:', { isConnected, loading, error, achievementsCount: achievements.length })
+  
+  if (!isConnected) {
+    return (
+      <div className="achievements">
+        <h1 className="achievements__title">Achievements</h1>
+        <div className="achievements__message">Please connect your wallet to view your achievements.</div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="achievements">
+        <h1 className="achievements__title">Achievements</h1>
+        <div className="achievements__message">Loading achievements data...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="achievements">
+        <h1 className="achievements__title">Achievements</h1>
+        <div className="achievements__message achievements__error">{error}</div>
+      </div>
+    )
+  }
+
   return (
     <div className="achievements">
-      <div className="achievements__container">
-        <h1 className="achievements__title">Achievements</h1>
+      <h1 className="achievements__title">Achievements</h1>
+      
+      {achievements.length === 0 ? (
+        <div className="achievements__message">No achievements data available yet.</div>
+      ) : (
+        <div className="achievements__grid">
+          {achievements.map((achievement) => {
+            const progressPercentage = (achievement.progress / achievement.target) * 100
 
-        {loading ? (
-          <div className="achievements__loading">Loading achievements data...</div>
-        ) : error ? (
-          <div className="achievements__error">{error}</div>
-        ) : (
-          <div className="achievements__grid">
-            {achievements.length === 0 ? (
-              <div className="achievements__empty">No achievements data available yet.</div>
-            ) : (
-              achievements.map((achievement) => {
-                const progressPercentage = (achievement.progress / achievement.target) * 100
+            return (
+              <div key={achievement.id} className="achievement-card">
+                <div className="achievement-card__header">
+                  <h3 className="achievement-card__title">{achievement.title}</h3>
+                  <span className="achievement-card__reward">{achievement.reward} pts</span>
+                </div>
 
-                return (
-                  <div key={achievement.id} className="achievement-card">
-                    <div className="achievement-card__header">
-                      <h3 className="achievement-card__title">{achievement.title}</h3>
-                      <span className="achievement-card__reward">{achievement.reward} pts</span>
-                    </div>
+                <p className="achievement-card__description">{achievement.description}</p>
 
-                    <p className="achievement-card__description">{achievement.description}</p>
-
-                    <div className="achievement-card__progress">
-                      <div className="achievement-card__progress-info">
-                        <span>{achievement.progress} / {achievement.target}</span>
-                        <span>{progressPercentage.toFixed(0)}%</span>
-                      </div>
-
-                      <div className="achievement-card__progress-bar">
-                        <div
-                          className={`achievement-card__progress-fill ${achievement.completed ? 'completed' : 'in-progress'}`}
-                          style={{ width: `${progressPercentage}%` }}
-                        />
-                      </div>
-                    </div>
+                <div className="achievement-card__progress">
+                  <div className="achievement-card__progress-info">
+                    <span>{achievement.progress} / {achievement.target}</span>
+                    <span>{progressPercentage.toFixed(0)}%</span>
                   </div>
-                )
-              })
-            )}
-          </div>
-        )}
-      </div>
+
+                  <div className="achievement-card__progress-bar">
+                    <div
+                      className={`achievement-card__progress-fill ${achievement.completed ? 'completed' : 'in-progress'}`}
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

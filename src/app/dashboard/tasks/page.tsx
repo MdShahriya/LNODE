@@ -3,7 +3,32 @@
 import { useAccount } from 'wagmi'
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
+import { motion } from 'framer-motion'
 import './tasks.css'
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+      damping: 12
+    }
+  }
+}
 
 interface Task {
   id: string
@@ -149,78 +174,166 @@ export default function TaskCenter() {
   return (
     <div className="task-center">
       <div className="task-center__container">
-        <h1 className="task-center__heading">Task Center</h1>
+        <motion.h1 
+          className="task-center__heading"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Task Center
+        </motion.h1>
         
         {!isConnected ? (
-          <div className="task-center__message" key="not-connected">
+          <motion.div 
+            className="task-center__message" 
+            key="not-connected"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             Please connect your wallet to view and complete tasks.
-          </div>
+          </motion.div>
         ) : loading ? (
-          <div className="task-center__loading" key="loading">
+          <motion.div 
+            className="task-center__loading" 
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="task-center__loading-spinner" key="spinner"></div>
             <p key="loading-text">Loading tasks...</p>
-          </div>
+          </motion.div>
         ) : tasks.length === 0 ? (
-          <div className="task-center__message" key="empty-message">
+          <motion.div 
+            className="task-center__message" 
+            key="empty-message"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             No tasks available at the moment. Check back later!
-          </div>
+          </motion.div>
         ) : (
-          <div className="task-center__grid">
+          <motion.div 
+            className="task-center__grid"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {tasks.map((task) => (
-              <div key={task.id} className="task-card">
-                <h3 className="task-card__title">{task.title}</h3>
-                <p className="task-card__description">{task.description}</p>
+              <motion.div 
+                key={task.id} 
+                className="task-card"
+                variants={itemVariants}
+                whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' }}
+              >
+                <motion.h3 
+                  className="task-card__title"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  {task.title}
+                </motion.h3>
+                <motion.p 
+                  className="task-card__description"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  {task.description}
+                </motion.p>
 
-                <div className="task-card__section">
+                <motion.div 
+                  className="task-card__section"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
                   <h4 className="task-card__section-heading">Requirements:</h4>
                   <ul className="task-card__requirements">
                     {task.requirements.map((req, index) => (
-                      <li key={`${task.id}-req-${index}`} className="task-card__requirement-item">
+                      <motion.li 
+                        key={`${task.id}-req-${index}`} 
+                        className="task-card__requirement-item"
+                        initial={{ x: -10, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.4 + (index * 0.05) }}
+                      >
                         {req}
-                      </li>
+                      </motion.li>
                     ))}
                   </ul>
-                </div>
+                </motion.div>
 
-                <div className="task-card__section">
+                <motion.div 
+                  className="task-card__section"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
                   <h4 className="task-card__section-heading">Rewards:</h4>
                   <div className="task-card__rewards">
-                    <span className="task-card__points">{task.rewards.points} Points</span>
+                    <motion.span 
+                      className="task-card__points"
+                      whileHover={{ scale: 1.05, y: -2 }}
+                    >
+                      {task.rewards.points} Points
+                    </motion.span>
                     {task.rewards.tokens && task.rewards.tokens > 0 && (
-                      <span className="task-card__tokens">{task.rewards.tokens} Tokens</span>
+                      <motion.span 
+                        className="task-card__tokens"
+                        whileHover={{ scale: 1.05, y: -2 }}
+                      >
+                        {task.rewards.tokens} Tokens
+                      </motion.span>
                     )}
                   </div>
-                </div>
+                </motion.div>
 
                 {task.status === 'available' ? (
-                  <button
+                  <motion.button
                     onClick={() => startTask(task.id, task.taskUrl)}
                     disabled={updating === task.id || redirecting}
                     className="task-card__button task-card__button--available"
+                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ y: -2, boxShadow: '0 8px 20px rgba(59, 130, 246, 0.5)' }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
                   >
                     {updating === task.id ? 'Starting...' : 
                      redirecting ? 'Redirecting...' : 
                      'Start Task'}
-                  </button>
+                  </motion.button>
                 ) : task.status === 'in_progress' ? (
-                  <button
+                  <motion.button
                     onClick={() => completeTask(task.id)}
                     disabled={updating === task.id}
                     className="task-card__button task-card__button--in-progress"
+                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ y: -2, boxShadow: '0 8px 20px rgba(245, 158, 11, 0.5)' }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
                   >
                     {updating === task.id ? 'Completing...' : 'Verify'}
-                  </button>
+                  </motion.button>
                 ) : (
-                  <button
+                  <motion.button
                     disabled
                     className="task-card__button task-card__button--completed"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
                   >
                     Completed
-                  </button>
+                  </motion.button>
                 )}
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
