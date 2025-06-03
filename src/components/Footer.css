@@ -13,6 +13,7 @@
 }
 
 .footer {
+  position: relative;
   background-color: var(--clr-bg);
   color: var(--clr-text);
   font-family: var(--font-sans);
@@ -24,7 +25,7 @@
 }
 
 .footer__container {
-  max-width: 1200px;
+  max-width: 800px;
   margin: 0 auto;
   display: flex;
   flex-wrap: wrap;

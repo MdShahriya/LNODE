@@ -15,6 +15,7 @@ export interface INodeSession extends Document {
   endTime?: Date;
   uptime?: number; // in seconds
   pointsEarned?: number; // Points earned in this session
+  pointsPerSecond?: number; // Rate at which points are earned per second
   // Performance metrics
   performanceMetrics?: {
     cpuUsage?: number;
@@ -101,6 +102,12 @@ const NodeSessionSchema: Schema = new Schema(
       default: 0,
       min: 0,
       description: 'Points earned in this session',
+    },
+    pointsPerSecond: {
+      type: Number,
+      default: 0.2,
+      min: 0,
+      description: 'Rate at which points are earned per second',
     },
     deviceInfo: {
       type: String,

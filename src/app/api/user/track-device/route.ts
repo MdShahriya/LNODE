@@ -51,8 +51,11 @@ export async function POST(request: NextRequest) {
       startTime: { $gte: today }
     });
     
-    if (!existingSession) {
-      // Only create a new session if one doesn't exist for today
+    // Check if the request is coming from the extension
+    const isExtension = deviceInfo?.toLowerCase().includes('extension') || false;
+    
+    if (!existingSession && isExtension) {
+      // Only create a new session if one doesn't exist for today AND the request is from the extension
       await NodeSession.create({
         user: user._id,
         walletAddress: user.walletAddress,
@@ -66,10 +69,10 @@ export async function POST(request: NextRequest) {
         sessionId: sessionId,
         metadata: {
           event: 'login',
-          source: 'device_tracking'
+          source: 'extension_tracking'
         }
       });
-    } else {
+    } else if (existingSession) {
       // Update the existing session's last heartbeat
       existingSession.lastHeartbeat = new Date();
       await existingSession.save();

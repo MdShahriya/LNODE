@@ -104,21 +104,9 @@ export async function POST(request: NextRequest) {
       activeSession.pointsEarned = (activeSession.pointsEarned || 0) + pointsToAdd;
       await activeSession.save();
     } else {
-      // Create a new session for this heartbeat
-      await NodeSession.create({
-        user: user._id,
-        walletAddress: user.walletAddress,
-        deviceIP: clientIP,
-        status: 'active',
-        startTime: now,
-        lastHeartbeat: now,
-        sessionId: `heartbeat_${user._id}_${Date.now()}`,
-        pointsEarned: pointsToAdd,
-        metadata: {
-          event: 'node_heartbeat',
-          source: 'points_update'
-        }
-      });
+      // Don't create a new session for heartbeats, only update points
+      // This prevents multiple sessions from appearing for the same node
+      console.log(`No active session found for heartbeat from ${walletAddress}. Points added without creating new session.`);
     }
     
     return NextResponse.json({ 

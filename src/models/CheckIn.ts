@@ -11,7 +11,7 @@ export interface ICheckIn extends Document {
   previousStreak: number;
   maxStreak: number;
   // Enhanced tracking
-  checkInType: 'daily' | 'weekly' | 'monthly' | 'special';
+  checkInType: 'daily' | 'weekly' | 'monthly' | 'special' | 'first_time' | 'streak_break' | 'yearly' | 'centennial';
   isConsecutive: boolean;
   missedDays: number;
   // Rewards and multipliers
@@ -100,7 +100,7 @@ const CheckInSchema: Schema = new Schema(
     // Enhanced tracking
     checkInType: {
       type: String,
-      enum: ['daily', 'weekly', 'monthly', 'special'],
+      enum: ['daily', 'weekly', 'monthly', 'special', 'first_time', 'streak_break', 'yearly', 'centennial'],
       default: 'daily',
       index: true,
     },

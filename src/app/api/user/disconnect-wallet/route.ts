@@ -40,26 +40,35 @@ export async function POST(request: Request) {
       }
     );
     
-    // Record the disconnection event in NodeSession
-    await NodeSession.create({
-      user: user._id,
-      walletAddress: walletAddress.toLowerCase(),
-      sessionId: `disconnect_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
-      deviceIP: deviceIp || '0.0.0.0',
-      status: 'disconnected',
-      startTime: new Date(),
-      endTime: new Date(),
-      userAgent: request.headers.get('user-agent') || 'unknown',
-      deviceInfo: request.headers.get('user-agent') || 'unknown',
-      browser: (request.headers.get('user-agent') || 'unknown').split(' ')[0] || 'Unknown',
-      platform: (request.headers.get('user-agent') || '').includes('Windows') ? 'Windows' : 
-               (request.headers.get('user-agent') || '').includes('Mac') ? 'Mac' : 
-               (request.headers.get('user-agent') || '').includes('Linux') ? 'Linux' : 'Unknown',
-      deviceType: (request.headers.get('user-agent') || '').includes('Mobile') ? 'mobile' : 'desktop',
-      metadata: {
-        event: 'wallet_disconnected'
-      }
-    });
+    // Get user agent information
+    const userAgent = request.headers.get('user-agent') || 'unknown';
+    
+    // Check if the request is coming from the extension
+    const isExtension = userAgent.toLowerCase().includes('extension') || false;
+    
+    // Record the disconnection event in NodeSession only if it's from the extension
+    if (isExtension) {
+      await NodeSession.create({
+        user: user._id,
+        walletAddress: walletAddress.toLowerCase(),
+        sessionId: `disconnect_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+        deviceIP: deviceIp || '0.0.0.0',
+        status: 'disconnected',
+        startTime: new Date(),
+        endTime: new Date(),
+        userAgent: userAgent,
+        deviceInfo: userAgent,
+        browser: userAgent.split(' ')[0] || 'Unknown',
+        platform: userAgent.includes('Windows') ? 'Windows' : 
+                 userAgent.includes('Mac') ? 'Mac' : 
+                 userAgent.includes('Linux') ? 'Linux' : 'Unknown',
+        deviceType: userAgent.includes('Mobile') ? 'mobile' : 'desktop',
+        metadata: {
+          event: 'wallet_disconnected',
+          source: 'extension'
+        }
+      });
+    }
     
     // Return success response
     return NextResponse.json({

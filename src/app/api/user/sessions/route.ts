@@ -140,7 +140,8 @@ export async function GET(request: NextRequest) {
       const nodeQuality = determineNodeQuality(performanceScore, totalUptimeHours, session.errorCount);
       
       // Calculate current points per hour rate
-      const basePointsPerHour = 0.2;
+      const basePointsPerSecond = session.pointsPerSecond || 0.2;
+      const basePointsPerHour = basePointsPerSecond * 3600; // Convert per second to per hour
       const qualityMultiplier = getQualityMultiplier(nodeQuality);
       const currentPointsPerHour = basePointsPerHour * qualityMultiplier;
       
@@ -165,6 +166,7 @@ export async function GET(request: NextRequest) {
         memoryUsage: session.avgMemoryUsage ? `${Math.round(session.avgMemoryUsage)} MB` : 'N/A',
         networkLatency: session.avgNetworkLatency ? `${Math.round(session.avgNetworkLatency)} ms` : 'N/A',
         // Points and earnings
+        pointsPerSecond: basePointsPerSecond.toFixed(4),
         pointsPerHour: currentPointsPerHour.toFixed(2),
         totalUptime: `${totalUptimeHours} hrs`,
         sessionDuration: `${totalSessionHours} hrs`,

@@ -113,7 +113,7 @@ export default function DailyCheckIn() {
       setCanCheckInToday(false)
       
       // Show success message with points earned
-      toast.success(`Check-in successful! You earned ${data.pointsEarned} points!`)
+      toast.success(`Check-in successful! You earned ${data.checkIn.points} points!`)
     } catch (error) {
       console.error('Error checking in:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to check in')

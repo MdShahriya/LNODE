@@ -92,10 +92,12 @@ export function determineNodeType(
   deviceType: string
 ): string {
   if (deviceInfo.toLowerCase().includes('extension')) {
-    return 'Extension Node';
+    return 'Browser Node';
   }
   
   switch (deviceType) {
+    case 'browser':
+      return 'Browser Node';
     case 'mobile':
       return 'Mobile Node';
     case 'tablet':

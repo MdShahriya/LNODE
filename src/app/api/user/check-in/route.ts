@@ -354,7 +354,7 @@ export async function POST(request: NextRequest) {
       walletAddress: walletAddress.toLowerCase(),
       points: rewards.totalPoints,
       basePoints: rewards.basePoints,
-      source: 'check_in',
+      source: 'checkin',
       subSource: checkInType,
       description: `Daily check-in (${newStreak} day streak)`,
       timestamp: now,

@@ -72,37 +72,64 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // If no active session found, create a new one
-    const newSessionId = `${user._id}-${Date.now()}`;
-    
+    // If no active session found, check if request is from extension before creating a new one
     // Get user agent information
     const userAgent = request.headers.get('user-agent') || 'Unknown';
     
-    // Create a new node session
-    const newSession = await NodeSession.create({
-      user: user._id,
-      walletAddress: user.walletAddress,
-      deviceIP: clientIP,
-      status: 'active',
-      startTime: now,
-      sessionId: newSessionId,
-      deviceInfo: userAgent,
-      lastHeartbeat: now
-    });
+    // Check if the request is coming from the extension
+    const isExtension = userAgent.toLowerCase().includes('extension') || 
+                       request.headers.get('x-source') === 'extension';
+    
+    // Only create a new session if the request is from the extension
+    if (isExtension) {
+      const newSessionId = `${user._id}-${Date.now()}`;
+      
+      // Create a new node session
+      const newSession = await NodeSession.create({
+        user: user._id,
+        walletAddress: user.walletAddress,
+        deviceIP: clientIP,
+        status: 'active',
+        startTime: now,
+        sessionId: newSessionId,
+        deviceInfo: userAgent,
+        deviceType: 'browser',
+        browser: userAgent.includes('Chrome') ? 'Chrome' : 
+                userAgent.includes('Firefox') ? 'Firefox' : 
+                userAgent.includes('Safari') ? 'Safari' : 
+                userAgent.includes('Edge') ? 'Edge' : 'Unknown',
+        platform: userAgent.includes('Windows') ? 'Windows' : 
+                 userAgent.includes('Mac') ? 'Mac' : 
+                 userAgent.includes('Linux') ? 'Linux' : 'Unknown',
+        lastHeartbeat: now,
+        metadata: {
+          source: 'extension',
+          event: 'heartbeat_new_session'
+        }
+      });
 
-    // Update user's node status if it wasn't already running
-    if (!user.nodeStatus) {
-      user.nodeStatus = true;
-      user.nodeStartTime = now;
-      await user.save();
+      // Update user's node status if it wasn't already running
+      if (!user.nodeStatus) {
+        user.nodeStatus = true;
+        user.nodeStartTime = now;
+        await user.save();
+      }
+      
+      return NextResponse.json({
+        success: true,
+        message: 'New session created with heartbeat',
+        sessionId: newSession.sessionId,
+        lastHeartbeat: newSession.lastHeartbeat
+      });
     }
-
+    
+    // If we get here, no active session was found and the request is not from the extension
     return NextResponse.json({
-      success: true,
-      message: 'New session created with heartbeat',
-      sessionId: newSession.sessionId,
-      lastHeartbeat: newSession.lastHeartbeat
-    });
+      success: false,
+      message: 'No active session found and request is not from extension',
+    }, { status: 400 });
+
+    /* Unreachable code removed */
 
   } catch (error) {
     console.error('Error processing heartbeat:', error);

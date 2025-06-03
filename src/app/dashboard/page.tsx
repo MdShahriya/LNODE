@@ -7,6 +7,8 @@ import React from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ProcessedNodeSession } from '@/app/api/user/node-sessions/helpers';
 
+// TOPAY Node Extension types are defined in global.d.ts
+
 interface NodeStats {
   uptime: number
   points: number
@@ -64,110 +66,20 @@ interface ChartDataPoint {
   };
 }
 
-// Sample data for charts - in a real implementation, this would come from API
-const generateSampleData = (days = 7): ChartDataPoint[] => {
-  return Array.from({ length: days }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (days - i - 1));
-    return {
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      points: 0,
-      uptime: 0,
-      sources: {
-        node: 0,
-        referral: 0,
-        task: 0,
-        checkin: 0,
-        other: 0
-      },
-      connectionTypes: {
-        login: 0,
-        node_start: 0,
-        node_stop: 0,
-        dashboard_view: 0,
-        other: 0
-      }
-    };
-  });
-};
-
-// Fallback function to generate historical data based on user's current stats
-const generateHistoricalData = (user: User | null, days = 7) => {
-  if (!user) return generateSampleData(days);
-  
-  // Create an array of dates for the past 'days' days
-  const dates = Array.from({ length: days }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (days - i - 1));
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  });
-  
-  // For the last entry (today), use the current user stats
-  const result = dates.map((date, index) => {
-    // For the last day (today), use actual data
-    if (index === dates.length - 1) {
-      return {
-        date,
-        points: user.points,
-        uptime: Math.floor(user.uptime / 3600), // Convert seconds to hours
-        sources: {
-          node: Math.floor(user.points * 0.8), // Assume 80% from node
-          referral: Math.floor(user.points * 0.1), // Assume 10% from referrals
-          task: Math.floor(user.points * 0.05), // Assume 5% from tasks
-          checkin: Math.floor(user.points * 0.05), // Assume 5% from check-ins
-          other: 0
-        },
-        connectionTypes: {
-          login: 1,
-          node_start: 0,
-          node_stop: 0,
-          dashboard_view: 1,
-          other: 0
-        }
-      };
-    }
-    
-    // For previous days, calculate a reasonable progression
-    // This creates a more realistic progression instead of random data
-    const pointsRatio = (index + 1) / dates.length;
-    const uptimeRatio = (index + 1) / dates.length;
-    
-    return {
-      date,
-      points: Math.floor(user.points * pointsRatio),
-      uptime: Math.floor((user.uptime / 3600) * uptimeRatio), // Convert seconds to hours
-      sources: {
-        node: Math.floor((user.points * pointsRatio) * 0.8),
-        referral: Math.floor((user.points * pointsRatio) * 0.1),
-        task: Math.floor((user.points * pointsRatio) * 0.05),
-        checkin: Math.floor((user.points * pointsRatio) * 0.05),
-        other: 0
-      },
-      connectionTypes: {
-        login: 1,
-        node_start: 0,
-        node_stop: 0,
-        dashboard_view: 1,
-        other: 0
-      }
-    };
-  });
-  
-  return result;
-};
+// No sample data generation functions - removed to clean up code
 
 export default function Dashboard() {
   const { address, isConnected } = useAccount()
   const [nodeStats, setNodeStats] = useState<NodeStats>({
-    uptime: 0,
+    uptime: 0.00,
     points: 0,
     tasksCompleted: 0
   })
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
   
-  // Sample data for charts
-  const [activityData, setActivityData] = useState<ChartDataPoint[]>(generateSampleData())
+  // State for chart data
+  const [activityData, setActivityData] = useState<ChartDataPoint[]>([])
   // State to toggle between different chart views
   const [activeChart, setActiveChart] = useState('points')
   // Add state for referral link
@@ -235,8 +147,8 @@ export default function Dashboard() {
   }, [address]); 
 
   // Function to safely fetch historical data with type checking
-  const fetchHistoricalDataSafe = async (walletAddress: string | undefined, days = 7, dataType = 'points') => {
-    if (!walletAddress) return generateSampleData(days);
+  const fetchHistoricalDataSafe = useCallback(async (walletAddress: string | undefined, days = 7, dataType = 'points') => {
+    if (!walletAddress) return createEmptyChartData(days, dataType);
     
     try {
       const response = await fetch(`/api/user/node-sessions?walletAddress=${walletAddress}&days=${days}`);
@@ -354,12 +266,49 @@ export default function Dashboard() {
         return result;
       }
       
-      // If there's an error, return sample data
-      return generateSampleData(days);
+      // If there's an error, return empty chart data
+      return createEmptyChartData(days, dataType);
     } catch (error) {
       console.error('Error fetching session data:', error);
-      return generateSampleData(days);
+      return createEmptyChartData(days, dataType);
     }
+  }, []);
+  
+  // Helper function to create empty chart data
+  const createEmptyChartData = (days = 7, dataType = 'points'): ChartDataPoint[] => {
+    const dates = Array.from({ length: days }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (days - i - 1));
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    
+    return dates.map(date => {
+      if (dataType === 'points') {
+        return {
+          date,
+          points: 0,
+          sources: {
+            node: 0,
+            referral: 0,
+            task: 0,
+            checkin: 0,
+            other: 0
+          }
+        } as ChartDataPoint;
+      } else { // connections
+        return {
+          date,
+          uptime: 0,
+          connectionTypes: {
+            login: 0,
+            node_start: 0,
+            node_stop: 0,
+            dashboard_view: 0,
+            other: 0
+          }
+        } as ChartDataPoint;
+      }
+    });
   };
 
   useEffect(() => {
@@ -392,7 +341,7 @@ export default function Dashboard() {
             
             // Fetch real historical data from API
             const historyData = await fetchHistoricalDataSafe(address, 7, chartDataType);
-            setActivityData(historyData.length > 0 ? historyData : generateHistoricalData(data.user));
+            setActivityData(historyData);
           }
         } else if (response.ok) {
           // User exists
@@ -406,37 +355,40 @@ export default function Dashboard() {
           
           // Fetch real historical data from API
           const historyData = await fetchHistoricalDataSafe(address, 7, chartDataType);
-          setActivityData(historyData.length > 0 ? historyData : generateHistoricalData(data.user));
+          setActivityData(historyData);
         }
         
         // Store wallet address for access
         if (address) {
           localStorage.setItem('walletAddress', address);
           
-          // Track device information for analytics
-          try {
-            const deviceInfo = {
-              userAgent: navigator.userAgent,
-              language: navigator.language,
-              platform: navigator.platform,
-              screenWidth: window.screen.width,
-              screenHeight: window.screen.height,
-              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-            };
-            
-            await fetch('/api/user/track-device', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                walletAddress: address,
-                deviceInfo: JSON.stringify(deviceInfo)
-              }),
-            });
-          } catch (error) {
-            console.log('Error tracking device:', error);
+          // Connect wallet address to TOPAY Node Extension if installed
+          if (window.topayNodeExtensionDetected && window.topayNodeExtension) {
+            try {
+              console.log('TOPAY Node Extension detected, connecting wallet...');
+              // Add a delay before connecting to ensure the extension is ready
+              setTimeout(() => {
+                // Add type check to ensure topayNodeExtension exists
+                if (window.topayNodeExtension && typeof window.topayNodeExtension.connectWallet === 'function') {
+                  window.topayNodeExtension.connectWallet(address)
+                    .then(() => {
+                      console.log('Wallet connected to TOPAY Node Extension successfully');
+                    })
+                    .catch((error: Error) => {
+                      console.error('Error connecting wallet to TOPAY Node Extension:', error);
+                      // Don't throw the error, just log it to prevent UI disruption
+                    });
+                } else {
+                  console.warn('TOPAY Node Extension detected but connectWallet method is not available');
+                }
+              }, 500);
+            } catch (error) {
+              console.error('Error connecting to TOPAY Node Extension:', error);
+              // Don't throw the error, just log it to prevent UI disruption
+            }
           }
+          
+          // Device tracking and session creation removed as requested
         }
       } catch (error) {
         console.error('Error registering/fetching user:', error);
@@ -446,7 +398,7 @@ export default function Dashboard() {
     };
     
     registerOrFetchUser();
-  }, [isConnected, address, chartDataType]);
+  }, [isConnected, address, chartDataType, fetchHistoricalDataSafe]);
 
   // Effect to refresh history data periodically
   useEffect(() => {
@@ -471,7 +423,7 @@ export default function Dashboard() {
     
     // Clean up interval on unmount
     return () => clearInterval(intervalId);
-  }, [address, isConnected, chartDataType]);
+  }, [address, isConnected, chartDataType, fetchHistoricalDataSafe]);
 
   // Update activity data when node stats change
   useEffect(() => {

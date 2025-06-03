@@ -7,7 +7,22 @@ import PointsHistory from '@/models/PointsHistory';
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
-    const { walletAddress, isRunning } = await request.json();
+    
+    // Safely parse the request body
+    let walletAddress, isRunning, sessionData;
+    try {
+      const body = await request.json();
+      walletAddress = body.walletAddress;
+      isRunning = body.isRunning;
+      sessionData = body.sessionData;
+      console.log('Request body parsed successfully:', { walletAddress, isRunning, sessionData });
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid request body', message: 'Could not parse JSON body' },
+        { status: 400 }
+      );
+    }
     
     if (!walletAddress) {
       return NextResponse.json(
@@ -41,48 +56,94 @@ export async function POST(request: NextRequest) {
       const now = new Date();
       user.nodeStartTime = now;
       
-      // Generate a unique session ID
-      const sessionId = `${user._id}-${Date.now()}`;
+      // Check if the request is coming from the extension
+      // This API should only be called by the extension, but we'll add an extra check
+      const isExtension = userAgent.toLowerCase().includes('extension') || 
+                         request.headers.get('x-source') === 'extension';
       
-      // Create a new node session
-      await NodeSession.create({
-        user: user._id,
-        walletAddress: user.walletAddress,
-        deviceIP: clientIP,
-        status: 'active',
-        startTime: now,
-        sessionId: sessionId,
-        deviceInfo: userAgent,
-        // Additional fields can be populated from request headers or client data
-      });
+      if (isExtension) {
+        // Use the session ID from the extension or generate one
+        const sessionId = sessionData?.sessionId || `${user._id}-${Date.now()}`;
+        
+        // Create a new node session
+        await NodeSession.create({
+          user: user._id,
+          walletAddress: user.walletAddress,
+          deviceIP: sessionData?.deviceIP || clientIP,
+          status: 'active',
+          startTime: now,
+          sessionId: sessionId,
+          deviceInfo: 'TOPAY Browser Extension',
+          deviceType: 'browser',
+          browser: userAgent.includes('Chrome') ? 'Chrome' : 
+                  userAgent.includes('Firefox') ? 'Firefox' : 
+                  userAgent.includes('Safari') ? 'Safari' : 
+                  userAgent.includes('Edge') ? 'Edge' : 'Unknown',
+          platform: userAgent.includes('Windows') ? 'Windows' : 
+                   userAgent.includes('Mac') ? 'Mac' : 
+                   userAgent.includes('Linux') ? 'Linux' : 
+                   userAgent.includes('Android') ? 'Android' : 
+                   userAgent.includes('iOS') ? 'iOS' : 'Unknown',
+          userAgent: userAgent,
+          pointsPerSecond: sessionData?.pointsPerSecond || 0.2,
+          metadata: {
+            source: 'extension',
+            event: 'node_started'
+          }
+        });
+      }
     } else if (user.nodeStartTime) {
       // If node is being turned off and we have a start time, calculate uptime and points
       const now = new Date();
-      const startTime = new Date(user.nodeStartTime);
       
-      // Calculate elapsed time in seconds, minutes and hours (for different purposes)
-      const elapsedMilliseconds = now.getTime() - startTime.getTime();
-      const elapsedSeconds = Math.floor(elapsedMilliseconds / 1000);
-      const elapsedMinutes = elapsedSeconds / 60;
+      // Use uptime and points from extension if available, otherwise calculate
+      let elapsedSeconds, pointsEarned, elapsedMinutes;
       
-      // Calculate points at 30 points per minute (1800 per hour)
-      const pointsEarned = elapsedMinutes * 12;
+      if (sessionData && sessionData.uptime && sessionData.pointsEarned) {
+        // Use the values from the extension
+        elapsedSeconds = sessionData.uptime;
+        pointsEarned = sessionData.pointsEarned;
+        elapsedMinutes = elapsedSeconds / 60;
+        console.log(`Using extension-provided values: ${elapsedSeconds} seconds, ${pointsEarned} points`);
+      } else {
+        // Calculate based on stored start time
+        const startTime = new Date(user.nodeStartTime);
+        const elapsedMilliseconds = now.getTime() - startTime.getTime();
+        elapsedSeconds = Math.floor(elapsedMilliseconds / 1000);
+        elapsedMinutes = elapsedSeconds / 60;
+        
+        // Calculate points at 30 points per minute (1800 per hour)
+        pointsEarned = elapsedMinutes * 12;
+        console.log(`Calculated values: ${elapsedSeconds} seconds, ${pointsEarned} points`);
+      }
       
       // Update user points
       user.points += pointsEarned;
       
-      // Update uptime (now in seconds)
+      // Update uptime (in seconds)
       user.uptime += elapsedSeconds;
       
       // Reset the start time
       user.nodeStartTime = null;
       
       // Find and update the active session
-      const activeSession = await NodeSession.findOne({
-        walletAddress: user.walletAddress,
-        status: 'active',
-        endTime: { $exists: false }
-      }).sort({ startTime: -1 });
+      let activeSession;
+      
+      // If we have a session ID from the extension, use it to find the session
+      if (sessionData && sessionData.sessionId) {
+        activeSession = await NodeSession.findOne({
+          sessionId: sessionData.sessionId
+        });
+      }
+      
+      // If no session found with the provided ID, fall back to finding the most recent active session
+      if (!activeSession) {
+        activeSession = await NodeSession.findOne({
+          walletAddress: user.walletAddress,
+          status: 'active',
+          endTime: { $exists: false }
+        }).sort({ startTime: -1 });
+      }
       
       if (activeSession) {
         activeSession.status = 'inactive';
@@ -99,7 +160,8 @@ export async function POST(request: NextRequest) {
         points: pointsEarned,
         source: 'node',
         description: `Earned for ${elapsedMinutes.toFixed(2)} minutes of node uptime`,
-        timestamp: now
+        timestamp: now,
+        transactionType: 'credit' // Adding the required transactionType field
       });
       
       console.log(`User ${user.walletAddress} earned ${pointsEarned.toFixed(3)} points for ${elapsedMinutes.toFixed(2)} minutes (${elapsedSeconds} seconds) of uptime`);
@@ -115,8 +177,20 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Error updating node status:', error);
+    console.error('Request details:', {
+      walletAddress: request.body ? 'Present' : 'Missing',
+      userAgent: request.headers.get('user-agent'),
+      source: request.headers.get('x-source'),
+      clientIP: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '0.0.0.0'
+    });
+    
+    // Return more detailed error information
     return NextResponse.json(
-      { error: 'Failed to update node status' },
+      { 
+        error: 'Failed to update node status', 
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : '') : undefined
+      },
       { status: 500 }
     );
   }

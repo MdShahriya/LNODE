@@ -88,6 +88,52 @@ window.topayNodeExtension = {
         reject(new Error('Timeout waiting for connection history'));
       }, 5000);
     });
+  },
+  
+  // Connect wallet to the extension
+  connectWallet: (walletAddress) => {
+    return new Promise((resolve, reject) => {
+      if (!walletAddress || !walletAddress.startsWith('0x')) {
+        reject(new Error('Invalid wallet address'));
+        return;
+      }
+      
+      // Create a unique message ID for this request
+      const messageId = 'connect_wallet_' + Date.now();
+      
+      // Send a message to the extension to connect the wallet
+      window.postMessage({
+        type: 'FROM_DASHBOARD',
+        action: 'CONNECT_WALLET',
+        walletAddress,
+        messageId
+      }, '*');
+      
+      // Set up a listener for the response
+      const listener = (event) => {
+        // Only process messages from the extension with the matching message ID or general connect wallet responses
+        if (event.data.type === 'FROM_EXTENSION' && 
+            (event.data.action === 'CONNECT_WALLET_RESPONSE' || 
+             (event.data.messageId && event.data.messageId === messageId))) {
+          window.removeEventListener('message', listener);
+          if (event.data.success) {
+            resolve(true);
+          } else {
+            reject(new Error(event.data.error || 'Failed to connect wallet'));
+          }
+        }
+      };
+      
+      window.addEventListener('message', listener);
+      
+      // Set a timeout to reject the promise if no response is received
+      setTimeout(() => {
+        window.removeEventListener('message', listener);
+        // Don't reject with error, just resolve with a warning
+        console.warn('Timeout waiting for wallet connection response, but continuing anyway');
+        resolve(false); // Resolve with false instead of rejecting
+      }, 5000);
+    });
   }
 };
 

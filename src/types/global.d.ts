@@ -14,6 +14,24 @@ declare global {
     interface Global {
       mongoose: MongooseCache;
     }
+
+    // Environment variables
+    interface ProcessEnv {
+      NEXT_MONGO_URI?: string;
+      NEXT_PUBLIC_REOWN_PROJECT_ID?: string;
+      NEXT_PUBLIC_BASE_URL?: string;
+    }
+  }
+
+  // TOPAY Node Extension types
+  interface Window {
+    topayNodeExtensionDetected?: boolean;
+    topayNodeExtension?: {
+      getNodeStatus: () => Promise<unknown>;
+      toggleNode: () => Promise<unknown>;
+      getConnectionHistory: () => Promise<unknown[]>;
+      connectWallet: (walletAddress: string) => Promise<boolean>;
+    };
   }
 }
 

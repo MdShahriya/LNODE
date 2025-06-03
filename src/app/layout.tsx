@@ -4,7 +4,6 @@ import type { Metadata } from "next";
 import "./layout.css"
 import { headers } from "next/headers"; // added
 import ContextProvider from '@/context'
-import Footer from '@/components/Footer'
 
 export const metadata: Metadata = {
   title: "TOPAY NODE | Dashboard",
@@ -24,7 +23,6 @@ export default async function RootLayout({
       <body>
         <ContextProvider cookies={cookies}>
           <main>{children}</main>
-          <Footer />
         </ContextProvider>
       </body>
     </html>
