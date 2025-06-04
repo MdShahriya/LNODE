@@ -5,14 +5,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import { FaBars, FaTimes, FaHome, FaTasks, FaTrophy, FaChartLine, FaUserFriends, FaCalendarCheck } from 'react-icons/fa'
+import { FaBars, FaTimes, FaHome, FaChartLine, FaUserFriends, FaGift } from 'react-icons/fa'
 import './Sidebar.css'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: <FaHome /> },
-  { name: 'Tasks', href: '/dashboard/tasks', icon: <FaTasks /> },
-  { name: 'Check-in', href: '/dashboard/check-in', icon: <FaCalendarCheck /> },
-  { name: 'Achievements', href: '/dashboard/achievements', icon: <FaTrophy /> },
+  { name: 'Rewards', href: '/dashboard/rewards', icon: <FaGift /> },
   { name: 'Leaderboard', href: '/dashboard/leaderboard', icon: <FaChartLine /> },
   { name: 'Referral', href: '/dashboard/referral', icon: <FaUserFriends /> },
 ]
@@ -91,7 +89,7 @@ export default function Sidebar() {
               <li key={item.name} className="sidebar__nav-item">
                 <Link
                   href={item.href}
-                  className={`sidebar__nav-link ${pathname === item.href ? 'active' : ''}`}
+                  className={`sidebar__nav-link${pathname === item.href ? ' active' : ''}`}
                 >
                   <span className="sidebar__nav-icon">{item.icon}</span>
                   <span className="sidebar__nav-text">{item.name}</span>

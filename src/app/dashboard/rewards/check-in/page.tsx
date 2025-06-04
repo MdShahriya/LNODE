@@ -6,12 +6,6 @@ import { toast } from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import './check-in.css'
 
-interface CheckInHistory {
-  date: string
-  points: number
-  streak: number
-}
-
 interface CheckInStats {
   lastCheckIn: string | null
   currentStreak: number
@@ -42,20 +36,9 @@ export default function DailyCheckIn() {
     totalCheckIns: 0,
     totalPointsEarned: 0
   })
-  const [history, setHistory] = useState<CheckInHistory[]>([])
   const [loading, setLoading] = useState(true)
   const [checkingIn, setCheckingIn] = useState(false)
   const [canCheckInToday, setCanCheckInToday] = useState(false)
-  
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    })
-  }
   
   // Check if user can check in today
   const checkIfCanCheckInToday = useCallback((lastCheckIn: string | null) => {
@@ -86,7 +69,6 @@ export default function DailyCheckIn() {
       
       const data = await response.json()
       setCheckInStats(data.stats)
-      setHistory(data.history || [])
       setCanCheckInToday(checkIfCanCheckInToday(data.stats.lastCheckIn))
     } catch (error) {
       console.error('Error fetching check-in data:', error)
@@ -121,7 +103,6 @@ export default function DailyCheckIn() {
       
       // Update local state with new data
       setCheckInStats(data.stats)
-      setHistory(data.history || [])
       setCanCheckInToday(false)
       
       // Show success message with points earned
@@ -140,6 +121,17 @@ export default function DailyCheckIn() {
     }
   }, [isConnected, address, fetchCheckInData])
   
+  // Daily rewards data
+  const dailyRewards = [
+    { day: 1, points: 250 },
+    { day: 2, points: 500 },
+    { day: 3, points: 750 },
+    { day: 4, points: 1000 },
+    { day: 5, points: 1250 },
+    { day: 6, points: 1500 },
+    { day: 7, points: 1750 }
+  ]
+  
   if (!isConnected) {
     return (
       <div className="check-in">
@@ -150,7 +142,7 @@ export default function DailyCheckIn() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            Daily Check-In
+            Daily Check
           </motion.h1>
           <motion.div 
             className="check-in__message"
@@ -174,7 +166,7 @@ export default function DailyCheckIn() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          Daily Check-In
+          Daily Check
         </motion.h1>
         
         {loading ? (
@@ -188,155 +180,40 @@ export default function DailyCheckIn() {
             <p>Loading check-in data...</p>
           </motion.div>
         ) : (
-          <>
-            {/* Check-in Button */}
-            <motion.div 
-              className="check-in__action"
-              variants={itemVariants}
-              initial="hidden"
-              animate="visible"
-            >
+          <motion.div 
+            className="check-in__calendar"
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <div className="check-in__calendar-header">
               <button 
                 className={`check-in__button ${!canCheckInToday ? 'check-in__button--disabled' : ''}`}
                 onClick={performCheckIn}
                 disabled={!canCheckInToday || checkingIn}
               >
-                {checkingIn ? 'Checking in...' : 
-                 canCheckInToday ? 'Check In Now' : 'Already Checked In Today'}
+                {checkingIn ? 'CHECKING...' : 'CHECK'}
               </button>
-              
-              {!canCheckInToday && checkInStats.lastCheckIn && (
-                <p className="check-in__next-time">
-                  You&apos;ve already checked in today. Come back tomorrow!
-                </p>
-              )}
-            </motion.div>
+            </div>
             
-            {/* Stats */}
-            <motion.div 
-              className="check-in__stats-grid"
-              variants={itemVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <motion.div 
-                className="check-in__stat-card"
-                whileHover={{ y: -5, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <h3 className="check-in__stat-title">Current Streak</h3>
-                <p className="check-in__stat-value">{checkInStats.currentStreak} days</p>
-              </motion.div>
-              <motion.div 
-                className="check-in__stat-card"
-                whileHover={{ y: -5, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <h3 className="check-in__stat-title">Longest Streak</h3>
-                <p className="check-in__stat-value">{checkInStats.longestStreak} days</p>
-              </motion.div>
-              <motion.div 
-                className="check-in__stat-card"
-                whileHover={{ y: -5, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <h3 className="check-in__stat-title">Total Check-ins</h3>
-                <p className="check-in__stat-value">{checkInStats.totalCheckIns}</p>
-              </motion.div>
-              <motion.div 
-                className="check-in__stat-card"
-                whileHover={{ y: -5, boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <h3 className="check-in__stat-title">Points Earned</h3>
-                <p className="check-in__stat-value">{checkInStats.totalPointsEarned}</p>
-              </motion.div>
-            </motion.div>
-            
-            {/* Rewards Info */}
-            <motion.div 
-              className="check-in__rewards-info"
-              variants={itemVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <h2 className="check-in__rewards-title">Streak Rewards</h2>
-              <div className="check-in__rewards-grid">
-                <motion.div 
-                  className="check-in__reward-item"
-                  whileHover={{ scale: 1.03, backgroundColor: 'rgba(13, 124, 233, 0.15)' }}
+            <div className="check-in__calendar-days">
+              {dailyRewards.map((reward, index) => (
+                <div 
+                  key={index} 
+                  className={`check-in__day ${checkInStats.currentStreak >= reward.day ? 'check-in__day--active' : ''}`}
                 >
-                  <div className="check-in__reward-icon">🔄</div>
-                  <div className="check-in__reward-details">
-                    <h4>Daily Check-in</h4>
-                    <p>100 points</p>
-                  </div>
-                </motion.div>
-                <motion.div 
-                  className="check-in__reward-item"
-                  whileHover={{ scale: 1.03, backgroundColor: 'rgba(13, 124, 233, 0.15)' }}
-                >
-                  <div className="check-in__reward-icon">🔥</div>
-                  <div className="check-in__reward-details">
-                    <h4>3-Day Streak</h4>
-                    <p>+500 bonus points</p>
-                  </div>
-                </motion.div>
-                <motion.div 
-                  className="check-in__reward-item"
-                  whileHover={{ scale: 1.03, backgroundColor: 'rgba(13, 124, 233, 0.15)' }}
-                >
-                  <div className="check-in__reward-icon">⚡</div>
-                  <div className="check-in__reward-details">
-                    <h4>7-Day Streak</h4>
-                    <p>+2000 bonus points</p>
-                  </div>
-                </motion.div>
-                <motion.div 
-                  className="check-in__reward-item"
-                  whileHover={{ scale: 1.03, backgroundColor: 'rgba(13, 124, 233, 0.15)' }}
-                >
-                  <div className="check-in__reward-icon">🌟</div>
-                  <div className="check-in__reward-details">
-                    <h4>30-Day Streak</h4>
-                    <p>+50000 bonus points</p>
-                  </div>
-                </motion.div>
-              </div>
-            </motion.div>
-            
-            {/* History */}
-            <motion.div 
-              className="check-in__history"
-              variants={itemVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <h2 className="check-in__history-title">Check-in History</h2>
-              {history.length === 0 ? (
-                <div className="check-in__empty-message">
-                  No check-in history yet. Start checking in daily!
+                  <div className="check-in__day-label">DAY {reward.day}</div>
+                  <div className="check-in__day-points">{reward.points} pt</div>
                 </div>
-              ) : (
-                <div className="check-in__history-list">
-                  {history.map((entry, index) => (
-                    <motion.div 
-                      key={index} 
-                      className="check-in__history-item"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      whileHover={{ backgroundColor: 'rgba(13, 124, 233, 0.2)' }}
-                    >
-                      <div className="check-in__history-date">{formatDate(entry.date)}</div>
-                      <div className="check-in__history-streak">{entry.streak} day streak</div>
-                      <div className="check-in__history-points">+{entry.points} pts</div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          </>
+              ))}
+            </div>
+            
+            {!canCheckInToday && checkInStats.lastCheckIn && (
+              <p className="check-in__next-time">
+                You&apos;ve already checked in today. Come back tomorrow!
+              </p>
+            )}
+          </motion.div>
         )}
       </div>
     </div>

@@ -73,7 +73,9 @@ export async function POST(request: NextRequest) {
         description: task.description,
         rewards: task.rewards,
         requirements: task.requirements,
-        status: userTask.status
+        status: userTask.status,
+        taskUrl: task.taskUrl,
+        verificationMethod: task.verificationMethod
       }
     });
   } catch (error) {

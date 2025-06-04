@@ -309,26 +309,36 @@ function startPointsAnimation() {
     displayedPoints = totalPoints;
   }
   
+  // Track the last increment time
+  let lastIncrementTime = Date.now();
+  
   // Start a new interval to animate the points
   pointsAnimationInterval = setInterval(() => {
     // If the node is running, increment the displayed points
     if (isNodeRunning) {
-      // Increment by a small amount for smooth animation (using pointsRate)
-      displayedPoints += pointsRate / 10;
+      const currentTime = Date.now();
+      const elapsedSeconds = (currentTime - lastIncrementTime) / 1000;
       
-      // Ensure displayed points don't exceed actual points by too much
-      if (displayedPoints > totalPoints + 0.5) {
-        displayedPoints = totalPoints;
+      // Only increment when a full second has passed
+      if (elapsedSeconds >= 1) {
+        // Increment by exactly POINTS_PER_SECOND (0.2)
+        displayedPoints += POINTS_PER_SECOND;
+        lastIncrementTime = currentTime;
+        
+        // Ensure displayed points don't exceed actual points by too much
+        if (displayedPoints > totalPoints + 0.5) {
+          displayedPoints = totalPoints;
+        }
+        
+        // Update the display with exact increments (0.2, 0.4, 0.6, etc.)
+        totalRewardsElement.textContent = displayedPoints.toFixed(2) + ' pt';
+        totalRewardsElement.classList.add('points-animating');
       }
-      
-      // Update the display
-      totalRewardsElement.textContent = displayedPoints.toFixed(2) + ' pt';
-      totalRewardsElement.classList.add('points-animating');
     } else {
       // If node is stopped, stop the animation
       stopPointsAnimation();
     }
-  }, 100); // Update every 100ms for smooth animation
+  }, 100); // Check every 100ms but only increment at 1-second intervals
 }
 
 // Function to stop the points animation
@@ -382,13 +392,25 @@ function setWalletAddressFromDashboard(address) {
     walletAddress = address;
     
     // Save the wallet address to storage
-    chrome.storage.local.set({ walletAddress });
-    
-    // Notify the dashboard of the connection
-    notifyDashboard('WALLET_CONNECTED', { walletAddress });
-    
-    // Update the UI
-    updateUI();
+    chrome.storage.local.set({ walletAddress }, () => {
+      // Send a message to the background script to fetch the balance
+      chrome.runtime.sendMessage({
+        action: 'CONNECT_WALLET',
+        walletAddress: address
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error connecting wallet:', chrome.runtime.lastError);
+        } else if (response && response.success) {
+          console.log('Wallet connected successfully');
+        }
+      });
+      
+      // Notify the dashboard of the connection
+      notifyDashboard('WALLET_CONNECTED', { walletAddress });
+      
+      // Update the UI
+      updateUI();
+    });
     
     return true;
   }

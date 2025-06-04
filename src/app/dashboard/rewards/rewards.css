@@ -1,0 +1,168 @@
+.rewards-page {
+  padding: 2rem;
+  background: transparent;
+  min-height: 100vh;
+  color: #FFFFFF;
+  position: relative;
+  overflow-x: hidden;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rewards-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(180deg, rgba(13, 124, 233, 0.1) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.rewards-page__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.rewards-page__title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(90deg, #FFFFFF, #15CFF1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .rewards-page__stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .rewards-page__stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.rewards-page__stat-card {
+  background: rgba(37, 40, 51, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border-left: 4px solid #0D7CE9;
+  transition: all 0.3s ease;
+}
+
+.rewards-page__stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 15px rgba(13, 124, 233, 0.3);
+}
+
+.rewards-page__stat-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.5rem;
+}
+
+.rewards-page__stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+/* Check-in section styling */
+.rewards-page__check-in-section {
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+/* Hide the check-in title since we have the rewards center title */
+.rewards-page__check-in-section .check-in__title {
+  display: none;
+}
+
+/* Adjust check-in container to fit within rewards page */
+.rewards-page__check-in-section .check-in {
+  padding: 0;
+  min-height: auto;
+  background: transparent;
+}
+
+.rewards-page__check-in-section .check-in__container {
+  padding: 0;
+}
+
+/* Tabs styling */
+.rewards-page__tabs {
+  display: flex;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 2rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.rewards-page__tab {
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0.5rem;
+}
+
+.rewards-page__tab:hover {
+  color: #FFFFFF;
+  background-color: rgba(13, 124, 233, 0.1);
+}
+
+.rewards-page__tab.active {
+  border-bottom-color: #0D7CE9;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.rewards-page__content {
+  width: 100%;
+  min-height: 50vh;
+}
+
+/* Ensure child components don't add extra padding */
+.rewards-page__content .task-center,
+.rewards-page__content .achievements {
+  padding-top: 0;
+  min-height: auto;
+}
+
+/* Hide child component titles since we have tabs */
+.rewards-page__content .task-center__heading,
+.rewards-page__content .achievements__title {
+  display: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .rewards-page__tabs {
+    flex-wrap: wrap;
+  }
+  
+  .rewards-page__tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+}

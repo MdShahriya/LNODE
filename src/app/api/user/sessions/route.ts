@@ -145,8 +145,8 @@ export async function GET(request: NextRequest) {
       const qualityMultiplier = getQualityMultiplier(nodeQuality);
       const currentPointsPerHour = basePointsPerHour * qualityMultiplier;
       
-      // Generate enhanced unique ID
-      const uniqueId = sessionId.substring(0, 8) + '_' + index.toString().padStart(2, '0');
+      // Use the original sessionId as the unique ID
+      const uniqueId = sessionId;
       
       return {
         id: uniqueId,

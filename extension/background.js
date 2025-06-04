@@ -90,9 +90,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // Set up alarms for periodic tasks
-chrome.alarms.create('updatePoints', { periodInMinutes: 1 });
+chrome.alarms.create('updatePoints', { periodInMinutes: 1/6 }); // Changed to 10 seconds (1/6 minute)
 chrome.alarms.create('refreshIP', { periodInMinutes: 0.25 });
-chrome.alarms.create('syncPointsWithServer', { periodInMinutes: 1 }); // New alarm for syncing points with server
+chrome.alarms.create('syncPointsWithServer', { periodInMinutes: 1/6 }); // Changed to 10 seconds (1/6 minute)
 
 // Listen for alarm events
 chrome.alarms.onAlarm.addListener((alarm) => {
@@ -142,21 +142,33 @@ async function syncPointsWithServer() {
       console.log('Error determining API URL from tabs, using default:', error);
     }
     
-    // Add a custom header to identify this as an extension request
-    const response = await fetch(`${apiBaseUrl}/api/user/update-node-points`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Source': 'extension'
-      },
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
+    // First, try to register the user if they don't exist
+     try {
+       await registerUserIfNeeded(walletAddress, apiBaseUrl);
+       
+       // Then sync points with the server
+       const response = await fetch(`${apiBaseUrl}/api/user/update-node-points`, {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'X-Source': 'extension'
+         },
+         body: JSON.stringify(data)
+       });
+     
+       if (!response.ok) {
       // Try to get more detailed error information from the response
       try {
-        const errorData = await response.json();
-        throw new Error(`Server responded with status: ${response.status}, message: ${errorData.message || errorData.error || 'Unknown error'}`);
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(`Server responded with status: ${response.status}, message: ${errorData.message || errorData.error || 'Unknown error'}`);
+        } else {
+          // Handle non-JSON responses
+          const textResponse = await response.text();
+          console.log('Non-JSON error response:', textResponse.substring(0, 100) + '...');
+          throw new Error(`Server responded with status: ${response.status}`);
+        }
       } catch (jsonError) {
         // If we can't parse the error response, just use the status code
         console.error('Error parsing error response:', jsonError);
@@ -167,7 +179,14 @@ async function syncPointsWithServer() {
     // Safely parse the response body
     let result;
     try {
-      result = await response.json();
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const textResponse = await response.text();
+        console.log('Unexpected non-JSON response:', textResponse.substring(0, 100) + '...');
+        throw new Error('Server responded with non-JSON content');
+      }
     } catch (jsonError) {
       console.error('Error parsing response JSON:', jsonError);
       throw new Error(`Failed to parse server response: ${jsonError.message}`);
@@ -188,12 +207,15 @@ async function syncPointsWithServer() {
       
       // Notify all tabs about the updated points
       notifyTabsAboutStateUpdate();
-    } else {
-      console.error('Failed to sync points with server:', result.error);
+        } else {
+          console.error('Failed to sync points with server:', result.error);
+        }
+      } catch (innerError) {
+        console.error('Error in sync points process:', innerError);
+      }
+    } catch (error) {
+      console.error('Error syncing points with server:', error);
     }
-  } catch (error) {
-    console.error('Error syncing points with server:', error);
-  }
 }
 
 // Function to notify all tabs about state updates
@@ -282,7 +304,8 @@ async function toggleNode(sendResponse) {
         lastPointsUpdate: currentTime,
         nodeStartTime: null,
         lastSessionUptime: uptime,
-        lastSessionPointsEarned: pointsEarned
+        lastSessionPointsEarned: pointsEarned,
+        doNotUpdatePointsOnNextSync: true // Add flag to prevent points update when stopping
       });
       
       stopPointsAccumulation();
@@ -371,17 +394,21 @@ async function updateNodeStatusOnServer(isRunning) {
       console.log('Error determining API URL from tabs, using default:', error);
     }
     
-    // Add a custom header to identify this as an extension request
-    const response = await fetch(`${apiBaseUrl}/api/user/update-node-status`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Source': 'extension'
-      },
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
+    // First, try to register the user if they don't exist
+     try {
+       await registerUserIfNeeded(walletAddress, apiBaseUrl);
+       
+       // Then update the node status
+       const response = await fetch(`${apiBaseUrl}/api/user/update-node-status`, {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'X-Source': 'extension'
+         },
+         body: JSON.stringify(data)
+       });
+     
+       if (!response.ok) {
       // Try to get more detailed error information from the response
       try {
         const errorData = await response.json();
@@ -405,26 +432,38 @@ async function updateNodeStatusOnServer(isRunning) {
     if (result.success) {
       console.log(`Node status updated on server: ${isRunning ? 'Running' : 'Stopped'}`);
       
-      // If the server returned updated points, update our local value
-      if (result.user && result.user.points !== undefined) {
-        totalPoints = result.user.points;
+      // Check if we should update points
+      chrome.storage.local.get(['doNotUpdatePointsOnNextSync'], (storageResult) => {
+        const doNotUpdatePoints = storageResult.doNotUpdatePointsOnNextSync;
         
-        // Save to storage
-        chrome.storage.local.set({ 
-          totalPoints,
-          lastPointsUpdate: Date.now(),
-          lastServerSync: Date.now()
-        });
-        
-        // Notify all tabs about the updated points
-        notifyTabsAboutStateUpdate();
+        // Only update points if the node is running or if the flag is not set
+        if ((isRunning || !doNotUpdatePoints) && result.user && result.user.points !== undefined) {
+          totalPoints = result.user.points;
+          
+          // Save to storage and clear the flag
+          chrome.storage.local.set({ 
+            totalPoints,
+            lastPointsUpdate: Date.now(),
+            lastServerSync: Date.now(),
+            doNotUpdatePointsOnNextSync: false // Clear the flag
+          });
+          
+          // Notify all tabs about the updated points
+          notifyTabsAboutStateUpdate();
+        } else if (doNotUpdatePoints) {
+          // Clear the flag if it was set
+          chrome.storage.local.set({ doNotUpdatePointsOnNextSync: false });
+        }
+      });
+        } else {
+          console.error('Failed to update node status on server:', result.error);
+        }
+      } catch (innerError) {
+        console.error('Error in update node status process:', innerError);
       }
-    } else {
-      console.error('Failed to update node status on server:', result.error);
+    } catch (error) {
+      console.error('Error updating node status on server:', error);
     }
-  } catch (error) {
-    console.error('Error updating node status on server:', error);
-  }
 }
 
 // Function to start accumulating points
@@ -457,16 +496,55 @@ function stopPointsAccumulation() {
 }
 
 // Function to fetch the device's public IP address
-function fetchDeviceIP() {
-  fetch('https://api.ipify.org?format=json')
-    .then(response => response.json())
-    .then(data => {
-      deviceIP = data.ip;
-      chrome.storage.local.set({ deviceIP });
-    })
-    .catch(error => {
-      console.error('Error fetching IP:', error);
-    });
+async function fetchDeviceIP() {
+  // Try multiple IP services in case one fails
+  const ipServices = [
+    'https://api.ipify.org?format=json',
+    'https://api.ipify.org',  // Plain text fallback
+    'https://api64.ipify.org?format=json',
+    'https://icanhazip.com',  // Plain text fallback
+  ];
+  
+  let success = false;
+  
+  for (const service of ipServices) {
+    if (success) break;
+    
+    try {
+      const response = await fetch(service, { timeout: 5000 });
+      
+      if (!response.ok) {
+        console.warn(`IP service ${service} responded with status: ${response.status}`);
+        continue;
+      }
+      
+      // Check if the response is JSON or plain text
+      const contentType = response.headers.get('content-type');
+      let ip;
+      
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        ip = data.ip;
+      } else {
+        // Handle plain text response
+        const text = await response.text();
+        ip = text.trim();
+      }
+      
+      if (ip) {
+        deviceIP = ip;
+        chrome.storage.local.set({ deviceIP });
+        console.log(`Successfully fetched IP: ${ip} from ${service}`);
+        success = true;
+      }
+    } catch (error) {
+      console.warn(`Error fetching IP from ${service}:`, error);
+    }
+  }
+  
+  if (!success) {
+    console.error('Failed to fetch IP from all services');
+  }
 }
 
 // Function to add a connection record to the history
@@ -495,12 +573,8 @@ chrome.storage.onChanged.addListener((changes) => {
   if (changes.walletAddress) {
     walletAddress = changes.walletAddress.newValue;
     
-    // If the wallet was connected, add a record to the history
-    if (walletAddress) {
-      addConnectionRecord('WALLET_CONNECTED');
-    } else {
-      addConnectionRecord('WALLET_DISCONNECTED');
-    }
+    // We'll no longer add connection records for wallet connections here
+    // This ensures sessions are only created when the node starts
   }
 });
 
@@ -531,12 +605,21 @@ function setWalletAddress(address, sendResponse) {
         return;
       }
       
-      // Add connection record
-      addConnectionRecord(isConnected ? 'WALLET_CONNECTED' : 'WALLET_DISCONNECTED');
+      // If a new wallet is connected, fetch the balance from the server
+      if (address && (!previousWalletAddress || previousWalletAddress !== address)) {
+        fetchUserBalanceFromServer(address);
+      }
       
-      // If wallet is being disconnected (was connected before but not now), notify the server
+      // No longer add connection records for wallet connections
+      // Only notify server about disconnection
       if (previousWalletAddress && !address) {
         notifyServerAboutWalletDisconnection(previousWalletAddress);
+        
+        // When disconnecting wallet, don't update points from server response
+        // We'll just keep the current points in local storage
+        chrome.storage.local.set({
+          doNotUpdatePointsOnNextSync: true
+        });
       }
       
       // Notify all tabs about state update
@@ -554,13 +637,172 @@ function setWalletAddress(address, sendResponse) {
   return true;
 }
 
+// Function to fetch user balance from server
+async function fetchUserBalanceFromServer(address) {
+  try {
+    if (!address) {
+      console.log('Cannot fetch balance: Wallet not connected');
+      return;
+    }
+    
+    // Determine the API URL based on the environment
+    let apiBaseUrl = 'http://localhost:3000';
+    
+    try {
+      const tabs = await chrome.tabs.query({active: true, currentWindow: true});
+      if (tabs && tabs.length > 0 && tabs[0].url) {
+        const tabUrl = new URL(tabs[0].url);
+        if (tabUrl.hostname.includes('topay') || tabUrl.hostname === 'localhost') {
+          apiBaseUrl = `${tabUrl.protocol}//${tabUrl.host}`;
+        }
+      }
+    } catch (error) {
+      console.log('Error determining API URL from tabs, using default:', error);
+    }
+    
+    console.log(`Fetching balance for wallet ${address}`);
+    
+    try {
+      // First, try to register the user if they don't exist
+      await registerUserIfNeeded(address, apiBaseUrl);
+      
+      // Then fetch the balance
+      const response = await fetch(`${apiBaseUrl}/api/user/get-balance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Source': 'extension'
+        },
+        body: JSON.stringify({ walletAddress: address })
+      });
+      
+      if (!response.ok) {
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(`Server responded with status: ${response.status}, message: ${errorData.message || errorData.error || 'Unknown error'}`);
+        } else {
+          const textResponse = await response.text();
+          console.log('Non-JSON error response:', textResponse.substring(0, 100) + '...');
+          throw new Error(`Server responded with status: ${response.status}`);
+        }
+      } catch (jsonError) {
+        console.error('Error parsing error response:', jsonError);
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+    }
+    
+    // Safely parse the response body
+    let result;
+    try {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const textResponse = await response.text();
+        console.log('Unexpected non-JSON response:', textResponse.substring(0, 100) + '...');
+        throw new Error('Server responded with non-JSON content');
+      }
+    } catch (jsonError) {
+      console.error('Error parsing response JSON:', jsonError);
+      throw new Error(`Failed to parse server response: ${jsonError.message}`);
+    }
+    
+    if (result.success && result.user) {
+        // Update local points with the server value
+        totalPoints = result.user.points || 0;
+        
+        // Save to storage
+        chrome.storage.local.set({ 
+          totalPoints,
+          lastPointsUpdate: Date.now(),
+          lastServerSync: Date.now()
+        });
+        
+        console.log(`Balance fetched from server. Current balance: ${totalPoints}`);
+        
+        // Notify all tabs about the updated points
+        notifyTabsAboutStateUpdate();
+      } else {
+        console.error('Failed to fetch balance from server:', result.error || 'Unknown error');
+      }
+    } catch (error) {
+      console.error('Error in fetch balance process:', error);
+    }
+  } catch (error) {
+    console.error('Error fetching balance from server:', error);
+  }
+}
+
+// Function to register user if they don't exist
+async function registerUserIfNeeded(address, apiBaseUrl) {
+  try {
+    console.log(`Checking if user ${address} needs to be registered`);
+    
+    // Try to get the user first
+    const checkResponse = await fetch(`${apiBaseUrl}/api/user?walletAddress=${address}`, {
+      method: 'GET',
+      headers: {
+        'X-Source': 'extension'
+      }
+    });
+    
+    // If user doesn't exist (404), register them
+    if (checkResponse.status === 404) {
+      console.log(`User ${address} not found, registering...`);
+      
+      const registerResponse = await fetch(`${apiBaseUrl}/api/user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Source': 'extension'
+        },
+        body: JSON.stringify({ 
+          walletAddress: address,
+          preferences: {
+            notifications: true,
+            theme: 'dark',
+            language: 'en'
+          }
+        })
+      });
+      
+      if (!registerResponse.ok) {
+        const errorText = await registerResponse.text();
+        console.error(`Failed to register user: ${registerResponse.status}`, errorText);
+        throw new Error(`Failed to register user: ${registerResponse.status}`);
+      }
+      
+      const result = await registerResponse.json();
+      console.log('User registration successful:', result.success);
+      return result;
+    } else if (!checkResponse.ok) {
+      console.error(`Error checking user existence: ${checkResponse.status}`);
+    } else {
+      console.log(`User ${address} already exists`);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error in registerUserIfNeeded:', error);
+    throw error;
+  }
+}
+
 // Connect wallet (wrapper for setWalletAddress)
 function connectWallet(walletAddress, sendResponse) {
   try {
     return setWalletAddress(walletAddress, (response) => {
       // After setting the wallet address, sync with the server if node is running
-      if (response && response.success && isNodeRunning) {
-        updateNodeStatusOnServer(true);
+      if (response && response.success) {
+        // Always fetch the balance when connecting a wallet
+        fetchUserBalanceFromServer(walletAddress);
+        
+        // Update node status on server if node is running
+        if (isNodeRunning) {
+          updateNodeStatusOnServer(true);
+        }
       }
       
       // Forward the response to the original callback
@@ -654,6 +896,9 @@ async function notifyServerAboutWalletDisconnection(walletAddressToDisconnect) {
     
     if (result.success) {
       console.log(`Wallet disconnection notified to server: ${walletAddressToDisconnect}`);
+      
+      // Don't update points when disconnecting wallet
+      // We'll just keep the current points in local storage
     } else {
       console.error('Failed to notify server about wallet disconnection:', result.error);
     }

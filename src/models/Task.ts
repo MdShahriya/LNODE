@@ -5,11 +5,17 @@ export interface ITask extends Document {
   description: string;
   rewards: {
     points: number;
-    tokens?: number;
   };
   requirements: string[];
   isActive: boolean;
   taskUrl?: string;
+  verificationMethod?: {
+    type: 'auto' | 'manual';
+    urlParam?: string;
+    apiEndpoint?: string;
+    apiMethod?: 'GET' | 'POST';
+    apiParams?: Record<string, string>;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,9 +35,6 @@ const TaskSchema: Schema = new Schema(
         type: Number,
         required: true,
       },
-      tokens: {
-        type: Number,
-      },
     },
     requirements: {
       type: [String],
@@ -50,6 +53,23 @@ const TaskSchema: Schema = new Schema(
           return /^https?:\/\/.+/.test(v); // Basic URL validation
         },
         message: 'Task URL must be a valid URL starting with http:// or https://'
+      }
+    },
+    verificationMethod: {
+      type: {
+        type: String,
+        enum: ['auto', 'manual'],
+        default: 'manual'
+      },
+      urlParam: String,
+      apiEndpoint: String,
+      apiMethod: {
+        type: String,
+        enum: ['GET', 'POST'],
+      },
+      apiParams: {
+        type: Map,
+        of: String
       }
     },
   },

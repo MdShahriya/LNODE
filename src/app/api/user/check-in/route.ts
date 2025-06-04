@@ -25,48 +25,58 @@ const isConsecutiveDay = (prevDate: Date, currentDate: Date) => {
 
 // Helper function to calculate points and rewards based on streak
 const calculateRewards = (streak: number, previousStreak: number, maxStreak: number) => {
-  // Base points for check-in
-  const basePoints = 100;
+  // Points based on streak day (matching the frontend display)
+  let totalPoints = 0;
   
-  // Bonus points for streaks
-  let bonusPoints = 0;
-  let multiplier = 1;
+  // Match the exact points shown in the UI based on streak day
+  if (streak === 1) totalPoints = 250;
+  else if (streak === 2) totalPoints = 500;
+  else if (streak === 3) totalPoints = 750;
+  else if (streak === 4) totalPoints = 1000;
+  else if (streak === 5) totalPoints = 1250;
+  else if (streak === 6) totalPoints = 1500;
+  else if (streak === 7) totalPoints = 1750;
+  else if (streak > 7) {
+    // For streaks beyond 7 days, restart the cycle
+    const dayInCycle = streak % 7 || 7; // If streak % 7 is 0, use 7
+    if (dayInCycle === 1) totalPoints = 250;
+    else if (dayInCycle === 2) totalPoints = 500;
+    else if (dayInCycle === 3) totalPoints = 750;
+    else if (dayInCycle === 4) totalPoints = 1000;
+    else if (dayInCycle === 5) totalPoints = 1250;
+    else if (dayInCycle === 6) totalPoints = 1500;
+    else if (dayInCycle === 7) totalPoints = 1750;
+  }
+  
+  // Determine reward tier and special rewards
   let rewardTier = 'bronze';
   let specialReward = null;
+  const multiplier = 1;
   
   if (streak >= 365) {
-    bonusPoints = 500;
-    multiplier = 5;
     rewardTier = 'legendary';
     specialReward = 'yearly_champion';
   } else if (streak >= 100) {
-    bonusPoints = 200;
-    multiplier = 3;
     rewardTier = 'diamond';
     specialReward = 'centurion';
   } else if (streak >= 30) {
-    bonusPoints = 50;
-    multiplier = 2;
     rewardTier = 'gold';
     specialReward = 'monthly_warrior';
   } else if (streak >= 7) {
-    bonusPoints = 20;
-    multiplier = 1.5;
     rewardTier = 'silver';
     specialReward = 'weekly_champion';
   } else if (streak >= 3) {
-    bonusPoints = 5;
-    multiplier = 1.2;
     rewardTier = 'bronze';
   }
   
   // Special milestone rewards
   if (streak > maxStreak) {
-    bonusPoints += 25; // Personal best bonus
     specialReward = specialReward ? `${specialReward}_personal_best` : 'personal_best';
   }
   
-  const totalPoints = Math.floor((basePoints + bonusPoints) * multiplier);
+  // For accounting purposes, consider base points as 100
+  const basePoints = 100;
+  const bonusPoints = totalPoints - basePoints;
   
   return {
     basePoints,

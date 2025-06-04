@@ -19,9 +19,6 @@ const TaskSchema = new Schema(
         type: Number,
         required: true,
       },
-      tokens: {
-        type: Number,
-      },
     },
     requirements: {
       type: [String],
@@ -50,10 +47,9 @@ connect(process.env.NEXT_MONGO_URI)
 const initialTasks = [
   {
     title: 'Maintain Node Uptime',
-    description: 'Keep your node running for 24 hours straight to earn points and tokens.',
+    description: 'Keep your node running for 24 hours straight to earn points.',
     rewards: {
       points: 100,
-      tokens: 10,
     },
     requirements: ['Node must be active', 'Wallet must be connected'],
     isActive: true,
@@ -72,7 +68,6 @@ const initialTasks = [
     description: 'Invite a friend to join the TOPAY network and earn points when they sign up.',
     rewards: {
       points: 200,
-      tokens: 20,
     },
     requirements: ['Friend must sign up using your referral link', 'Friend must connect wallet'],
     isActive: true,

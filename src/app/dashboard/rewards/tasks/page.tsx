@@ -36,11 +36,17 @@ interface Task {
   description: string
   rewards: {
     points: number
-    tokens?: number
   }
   requirements: string[]
   status: 'available' | 'in_progress' | 'completed'
   taskUrl?: string
+  verificationMethod?: {
+    type: 'auto' | 'manual'
+    urlParam?: string
+    apiEndpoint?: string
+    apiMethod?: 'GET' | 'POST'
+    apiParams?: Record<string, string>
+  }
 }
 
 export default function TaskCenter() {
@@ -49,6 +55,7 @@ export default function TaskCenter() {
   const [loading, setLoading] = useState(false)
   const [updating, setUpdating] = useState<string | null>(null)
   const [redirecting, setRedirecting] = useState(false)
+  const [verifying, setVerifying] = useState<string | null>(null)
 
   // Update task status
   const updateTaskStatus = useCallback(async (taskId: string, status: 'in_progress' | 'completed') => {
@@ -87,8 +94,65 @@ export default function TaskCenter() {
     } finally {
       setUpdating(null)
       setRedirecting(false)
+      setVerifying(null)
     }
   }, [address, isConnected, tasks])
+
+  // Verify task completion via API
+  const verifyTaskViaApi = useCallback(async (task: Task) => {
+    if (!task.verificationMethod?.apiEndpoint || !task.verificationMethod?.apiMethod) {
+      return false
+    }
+
+    try {
+      setVerifying(task.id)
+      
+      // Prepare API parameters
+      const apiParams = task.verificationMethod.apiParams || {}
+      
+      // Make the API call based on the method
+      let response;
+      if (task.verificationMethod.apiMethod === 'GET') {
+        // Build query string
+        const queryParams = new URLSearchParams()
+        Object.entries(apiParams).forEach(([key, value]) => {
+          queryParams.append(key, value)
+        })
+        // Add wallet address as a parameter
+        if (address) {
+          queryParams.append('walletAddress', address)
+        }
+        
+        response = await fetch(`${task.verificationMethod.apiEndpoint}?${queryParams.toString()}`)
+      } else { // POST
+        response = await fetch(task.verificationMethod.apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...apiParams,
+            walletAddress: address,
+            taskId: task.id
+          }),
+        })
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Verification failed')
+      }
+      
+      const data = await response.json().catch(() => ({ verified: false }))
+      return data.verified === true
+    } catch (error) {
+      console.error('Error verifying task via API:', error)
+      toast.error(error instanceof Error ? error.message : 'Verification failed')
+      return false
+    } finally {
+      setVerifying(null)
+    }
+  }, [address])
 
   const startTask = useCallback(async (taskId: string, taskUrl?: string) => {
     try {
@@ -125,9 +189,24 @@ export default function TaskCenter() {
     }
   }, [updateTaskStatus])
   
-  const completeTask = useCallback((taskId: string) => {
-    updateTaskStatus(taskId, 'completed')
-  }, [updateTaskStatus])
+  const completeTask = useCallback(async (taskId: string) => {
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) return
+
+    // If task has API verification, try that first
+    if (task.verificationMethod?.type === 'auto' && task.verificationMethod.apiEndpoint) {
+      const verified = await verifyTaskViaApi(task)
+      if (verified) {
+        await updateTaskStatus(taskId, 'completed')
+      } else {
+        toast.error('Task verification failed. Please try again or contact support.')
+      }
+      return
+    }
+
+    // Otherwise, proceed with manual verification
+    await updateTaskStatus(taskId, 'completed')
+  }, [tasks, updateTaskStatus, verifyTaskViaApi])
 
   // Fetch tasks from API
   const fetchTasks = useCallback(async () => {
@@ -159,11 +238,26 @@ export default function TaskCenter() {
     const autoComplete = urlParams.get('autoComplete')
 
     if (taskId && autoComplete === 'true' && !redirecting) {
-      completeTask(taskId)
+      // Find the task to check if it has a URL parameter for verification
+      const task = tasks.find(t => t.id === taskId)
+      
+      if (task && task.verificationMethod?.type === 'auto' && task.verificationMethod.urlParam) {
+        // Check if the specified URL parameter exists and has the expected value
+        const paramValue = urlParams.get(task.verificationMethod.urlParam)
+        if (paramValue === 'true' || paramValue === '1' || paramValue === 'yes') {
+          completeTask(taskId)
+        } else {
+          toast.error('Task verification failed. Missing or invalid verification parameter.')
+        }
+      } else {
+        // Fall back to regular completion if no specific verification parameter is defined
+        completeTask(taskId)
+      }
+      
       // Clear URL parameters
       window.history.replaceState({}, '', window.location.pathname)
     }
-  }, [completeTask, redirecting])
+  }, [completeTask, redirecting, tasks])
 
   useEffect(() => {
     if (isConnected && address) {
@@ -281,16 +375,19 @@ export default function TaskCenter() {
                     >
                       {task.rewards.points} Points
                     </motion.span>
-                    {task.rewards.tokens && task.rewards.tokens > 0 && (
-                      <motion.span 
-                        className="task-card__tokens"
-                        whileHover={{ scale: 1.05, y: -2 }}
-                      >
-                        {task.rewards.tokens} Tokens
-                      </motion.span>
-                    )}
                   </div>
                 </motion.div>
+
+                {task.verificationMethod?.type === 'auto' && (
+                  <motion.div 
+                    className="task-card__section task-card__verification"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <span className="task-card__verification-badge">Auto-verified</span>
+                  </motion.div>
+                )}
 
                 {task.status === 'available' ? (
                   <motion.button
@@ -310,7 +407,7 @@ export default function TaskCenter() {
                 ) : task.status === 'in_progress' ? (
                   <motion.button
                     onClick={() => completeTask(task.id)}
-                    disabled={updating === task.id}
+                    disabled={updating === task.id || verifying === task.id}
                     className="task-card__button task-card__button--in-progress"
                     whileTap={{ scale: 0.95 }}
                     whileHover={{ y: -2, boxShadow: '0 8px 20px rgba(245, 158, 11, 0.5)' }}
@@ -318,7 +415,9 @@ export default function TaskCenter() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    {updating === task.id ? 'Completing...' : 'Verify'}
+                    {updating === task.id ? 'Completing...' : 
+                     verifying === task.id ? 'Verifying...' : 
+                     task.verificationMethod?.type === 'auto' ? 'Auto-verify' : 'Verify'}
                   </motion.button>
                 ) : (
                   <motion.button

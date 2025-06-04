@@ -10,11 +10,17 @@ interface Task {
   description: string
   rewards: {
     points: number
-    tokens?: number
   }
   requirements: string[]
   isActive: boolean
   taskUrl?: string
+  verificationMethod?: {
+    type: 'auto' | 'manual'
+    urlParam?: string
+    apiEndpoint?: string
+    apiMethod?: 'GET' | 'POST'
+    apiParams?: Record<string, string>
+  }
 }
 
 export default function AdminTasksPage() {
@@ -26,12 +32,17 @@ export default function AdminTasksPage() {
     description: '',
     rewards: {
       points: 0,
-      tokens: 0,
     },
     requirements: [''],
     isActive: true,
-    taskUrl: ''
+    taskUrl: '',
+    verificationMethod: {
+      type: 'manual'
+    }
   })
+  
+  // Add new API param field
+  const [apiParams, setApiParams] = useState<{key: string, value: string}[]>([{key: '', value: ''}])
 
   // Fetch all tasks
   const fetchTasks = async () => {
@@ -51,11 +62,17 @@ export default function AdminTasksPage() {
         description: string;
         rewards: {
           points: number;
-          tokens?: number;
         };
         requirements: string[];
         isActive: boolean;
         taskUrl?: string;
+        verificationMethod?: {
+          type: 'auto' | 'manual';
+          urlParam?: string;
+          apiEndpoint?: string;
+          apiMethod?: 'GET' | 'POST';
+          apiParams?: Record<string, string>;
+        };
       }) => ({
         id: task._id,
         title: task.title,
@@ -63,7 +80,8 @@ export default function AdminTasksPage() {
         rewards: task.rewards,
         requirements: task.requirements,
         isActive: task.isActive,
-        taskUrl: task.taskUrl
+        taskUrl: task.taskUrl,
+        verificationMethod: task.verificationMethod
       }))
       setTasks(formattedTasks)
     } catch (error) {
@@ -79,15 +97,50 @@ export default function AdminTasksPage() {
   }, [])
 
   // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     
-    if (name === 'points' || name === 'tokens') {
+    if (name === 'rewards.points') {
       setNewTask({
         ...newTask,
         rewards: {
           ...newTask.rewards,
-          [name]: parseInt(value) || 0,
+          points: parseInt(value) || 0,
+        },
+      })
+    } else if (name === 'verificationMethod.type') {
+      setNewTask({
+        ...newTask,
+        verificationMethod: {
+          ...newTask.verificationMethod,
+          type: value as 'auto' | 'manual',
+        },
+      })
+    } else if (name === 'verificationMethod.urlParam') {
+      setNewTask({
+        ...newTask,
+        verificationMethod: {
+          type: newTask.verificationMethod?.type || 'manual',
+          ...newTask.verificationMethod,
+          urlParam: value,
+        },
+      })
+    } else if (name === 'verificationMethod.apiEndpoint') {
+      setNewTask({
+        ...newTask,
+        verificationMethod: {
+          type: newTask.verificationMethod?.type || 'manual',
+          ...newTask.verificationMethod,
+          apiEndpoint: value,
+        },
+      })
+    } else if (name === 'verificationMethod.apiMethod') {
+      setNewTask({
+        ...newTask,
+        verificationMethod: {
+          type: newTask.verificationMethod?.type || 'manual',
+          ...newTask.verificationMethod,
+          apiMethod: value as 'GET' | 'POST',
         },
       })
     } else {
@@ -130,6 +183,53 @@ export default function AdminTasksPage() {
     })
   }
 
+  // Handle API params changes
+  const handleApiParamChange = (key: string, value: string) => {
+    setNewTask({
+      ...newTask,
+      verificationMethod: {
+        type: newTask.verificationMethod?.type || 'manual',
+        ...newTask.verificationMethod,
+        apiParams: {
+          ...newTask.verificationMethod?.apiParams,
+          [key]: value
+        }
+      }
+    })
+  }
+
+  // Add new API param field
+  const addApiParam = () => {
+    setApiParams([...apiParams, {key: '', value: ''}])
+  }
+
+  // Remove API param field
+  const removeApiParam = (index: number) => {
+    if (apiParams.length <= 1) return
+    
+    const updatedParams = [...apiParams]
+    updatedParams.splice(index, 1)
+    
+    setApiParams(updatedParams)
+
+    // Update task state with new params
+    const newParams: Record<string, string> = {}
+    updatedParams.forEach(param => {
+      if (param.key.trim() !== '') {
+        newParams[param.key] = param.value
+      }
+    })
+
+    setNewTask({
+      ...newTask,
+      verificationMethod: {
+        type: newTask.verificationMethod?.type || 'manual',
+        ...newTask.verificationMethod,
+        apiParams: newParams
+      }
+    })
+  }
+
   // Create new task
   const createTask = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -147,6 +247,26 @@ export default function AdminTasksPage() {
       toast.error('Please add at least one requirement')
       return
     }
+
+    // Process API params if auto verification is selected
+    let processedTask = { ...newTask }
+    if (newTask.verificationMethod?.type === 'auto' && apiParams.length > 0) {
+      const validParams: Record<string, string> = {}
+      apiParams.forEach(param => {
+        if (param.key.trim() !== '') {
+          validParams[param.key] = param.value
+        }
+      })
+      
+      processedTask = {
+        ...processedTask,
+        verificationMethod: {
+          type: newTask.verificationMethod.type,
+          ...processedTask.verificationMethod,
+          apiParams: validParams
+        }
+      }
+    }
     
     try {
       const response = await fetch('/api/admin/tasks', {
@@ -155,7 +275,7 @@ export default function AdminTasksPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...newTask,
+          ...processedTask,
           requirements: filteredRequirements,
         }),
       })
@@ -174,11 +294,17 @@ export default function AdminTasksPage() {
         description: '',
         rewards: {
           points: 0,
-          tokens: 0,
         },
         requirements: [''],
         isActive: true,
+        taskUrl: '',
+        verificationMethod: {
+          type: 'manual'
+        }
       })
+      
+      // Reset API params
+      setApiParams([{key: '', value: ''}])
       
       // Refresh tasks list
       fetchTasks()
@@ -288,23 +414,11 @@ export default function AdminTasksPage() {
                 <input
                   type="number"
                   id="points"
-                  name="points"
+                  name="rewards.points"
                   value={newTask.rewards.points}
                   onChange={handleInputChange}
                   min="0"
                   required
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="tokens">Tokens</label>
-                <input
-                  type="number"
-                  id="tokens"
-                  name="tokens"
-                  value={newTask.rewards.tokens}
-                  onChange={handleInputChange}
-                  min="0"
                 />
               </div>
             </div>
@@ -352,6 +466,110 @@ export default function AdminTasksPage() {
                 title="Enter a valid URL starting with http:// or https://"
               />
             </div>
+            
+            <div className="form-group">
+              <label htmlFor="verificationType">Verification Method</label>
+              <select
+                id="verificationType"
+                name="verificationMethod.type"
+                value={newTask.verificationMethod?.type || 'manual'}
+                onChange={handleInputChange}
+              >
+                <option value="manual">Manual Verification</option>
+                <option value="auto">Automatic Verification</option>
+              </select>
+            </div>
+            
+            {newTask.verificationMethod?.type === 'auto' && (
+              <>
+                <div className="form-group">
+                  <label htmlFor="urlParam">URL Parameter for Verification</label>
+                  <input
+                    type="text"
+                    id="urlParam"
+                    name="verificationMethod.urlParam"
+                    value={newTask.verificationMethod?.urlParam || ''}
+                    onChange={handleInputChange}
+                    placeholder="e.g., verified"
+                  />
+                  <small>Parameter that will be checked in the return URL</small>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="apiEndpoint">API Endpoint for Verification (Optional)</label>
+                  <input
+                    type="text"
+                    id="apiEndpoint"
+                    name="verificationMethod.apiEndpoint"
+                    value={newTask.verificationMethod?.apiEndpoint || ''}
+                    onChange={handleInputChange}
+                    placeholder="e.g., /api/verify-task"
+                  />
+                </div>
+                
+                {newTask.verificationMethod?.apiEndpoint && (
+                  <>
+                    <div className="form-group">
+                      <label htmlFor="apiMethod">API Method</label>
+                      <select
+                        id="apiMethod"
+                        name="verificationMethod.apiMethod"
+                        value={newTask.verificationMethod?.apiMethod || 'GET'}
+                        onChange={handleInputChange}
+                      >
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                      </select>
+                    </div>
+                    
+                    <div className="form-group">
+                      <label>API Parameters</label>
+                      {apiParams.map((param, index) => (
+                        <div key={index} className="api-param-row">
+                          <input
+                            type="text"
+                            value={param.key}
+                            onChange={(e) => {
+                              const updatedParams = [...apiParams]
+                              updatedParams[index].key = e.target.value
+                              setApiParams(updatedParams)
+                              handleApiParamChange(e.target.value, param.value)
+                            }}
+                            placeholder="Parameter name"
+                          />
+                          <input
+                            type="text"
+                            value={param.value}
+                            onChange={(e) => {
+                              const updatedParams = [...apiParams]
+                              updatedParams[index].value = e.target.value
+                              setApiParams(updatedParams)
+                              handleApiParamChange(param.key, e.target.value)
+                            }}
+                            placeholder="Parameter value"
+                          />
+                          <button
+                            type="button"
+                            className="btn-icon"
+                            onClick={() => removeApiParam(index)}
+                            disabled={apiParams.length <= 1}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={addApiParam}
+                      >
+                        Add Parameter
+                      </button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
             
             <div className="form-group">
               <label htmlFor="isActive">Status</label>
@@ -428,9 +646,6 @@ export default function AdminTasksPage() {
                     <h4 className="admin-task-card__section-heading">Rewards:</h4>
                     <div className="admin-task-card__rewards">
                       <span className="admin-task-card__points">{task.rewards.points} Points</span>
-                      {task.rewards.tokens && task.rewards.tokens > 0 && (
-                        <span className="admin-task-card__tokens">{task.rewards.tokens} Tokens</span>
-                      )}
                     </div>
                   </div>
                   
@@ -443,6 +658,20 @@ export default function AdminTasksPage() {
                         </li>
                       ))}
                     </ul>
+                  </div>
+
+                  <div className="admin-task-card__section">
+                    <h4 className="admin-task-card__section-heading">Verification Method:</h4>
+                    <div className="admin-task-card__verification">
+                      <span className="admin-task-card__verification-type">
+                        {task.verificationMethod?.type === 'auto' ? 'Automatic' : 'Manual'}
+                      </span>
+                      {task.verificationMethod?.type === 'auto' && task.verificationMethod?.urlParam && (
+                        <div className="admin-task-card__verification-detail">
+                          <strong>URL Parameter:</strong> {task.verificationMethod.urlParam}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

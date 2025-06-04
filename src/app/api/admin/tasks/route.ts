@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
       description: data.description,
       rewards: {
         points: data.rewards.points,
-        tokens: data.rewards.tokens || 0,
       },
       requirements: data.requirements || [],
       isActive: data.isActive !== undefined ? data.isActive : true,
@@ -75,7 +74,6 @@ export async function PATCH(request: NextRequest) {
     if (data.description !== undefined) task.description = data.description;
     if (data.rewards !== undefined) {
       if (data.rewards.points !== undefined) task.rewards.points = data.rewards.points;
-      if (data.rewards.tokens !== undefined) task.rewards.tokens = data.rewards.tokens;
     }
     if (data.requirements !== undefined) task.requirements = data.requirements;
     if (data.isActive !== undefined) task.isActive = data.isActive;

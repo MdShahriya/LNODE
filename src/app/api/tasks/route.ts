@@ -40,7 +40,8 @@ export async function GET(request: NextRequest) {
         rewards: task.rewards,
         requirements: task.requirements,
         status: userTask ? userTask.status : 'available',
-        taskUrl: task.taskUrl
+        taskUrl: task.taskUrl,
+        verificationMethod: task.verificationMethod
       };
     });
     

@@ -7,7 +7,7 @@ import ContextProvider from '@/context'
 
 export const metadata: Metadata = {
   title: "TOPAY NODE | Dashboard",
-  description: "Powered by TOPAY Foundation | A Decentralized Payment Gateway",
+  description: "Powered by TOPAY Foundation | A Decentralized secure life",
   icons: './favicon.ico'
 };
 

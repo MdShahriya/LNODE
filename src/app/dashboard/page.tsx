@@ -135,7 +135,18 @@ export default function Dashboard() {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          setUserSessions(data.sessions || []);
+          // Sort sessions with latest on top based on lastConnection date
+          const sortedSessions = [...(data.sessions || [])].sort((a, b) => {
+            // First sort by connection status (connected sessions first)
+            if (a.status === 'Connected' && b.status !== 'Connected') return -1;
+            if (a.status !== 'Connected' && b.status === 'Connected') return 1;
+            
+            // Then sort by lastConnection date (newest first)
+            const dateA = new Date(a.lastConnection);
+            const dateB = new Date(b.lastConnection);
+            return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+          });
+          setUserSessions(sortedSessions);
         }
       })
       .catch(error => {
@@ -151,119 +162,101 @@ export default function Dashboard() {
     if (!walletAddress) return createEmptyChartData(days, dataType);
     
     try {
-      const response = await fetch(`/api/user/node-sessions?walletAddress=${walletAddress}&days=${days}`);
+      // Use the daily-earnings API endpoint instead of node-sessions for more accurate data
+      const response = await fetch(`/api/user/daily-earnings?walletAddress=${walletAddress}&includeDetails=true`);
       
       if (response.ok) {
         const data = await response.json();
         
-        // Transform the node sessions data into the format expected by the charts
-        const chartData = data.sessions.map((session: ProcessedNodeSession) => {
-          const date = new Date(session.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          
-          // Create data point based on the requested data type
-          if (dataType === 'points') {
-            return {
-              date,
-              points: parseFloat(session.pointsEarned.toString()) || 0,
-              sources: {
-                node: parseFloat(session.pointsEarned.toString()) || 0,
-                referral: 0,
-                task: 0,
-                checkin: 0,
-                other: 0
-              }
-            } as ChartDataPoint;
-          } else { // connections
-            return {
-              date,
-              uptime: parseFloat(session.uptime.toString()) / 3600 || 0, // Convert seconds to hours
-              connectionTypes: {
-                login: 1,
-                node_start: session.status === 'active' ? 1 : 0,
-                node_stop: session.status !== 'active' ? 1 : 0,
-                dashboard_view: 1,
-                other: 0
-              }
-            } as ChartDataPoint;
-          }
-        });
-        
-        // Group by date and aggregate values
-        const groupedData = chartData.reduce((acc: ChartDataPoint[], item: ChartDataPoint) => {
-          const existingItem = acc.find((i: ChartDataPoint) => i.date === item.date);
-          
-          if (existingItem) {
-            // Update existing item
-            if (dataType === 'points') {
-              existingItem.points += item.points;
-              if (existingItem.sources && item.sources) {
-                existingItem.sources.node += item.sources.node;
-              }
-            } else { // connections
-              existingItem.uptime += item.uptime;
-              if (existingItem.connectionTypes && item.connectionTypes) {
-                existingItem.connectionTypes.node_start += item.connectionTypes.node_start;
-                existingItem.connectionTypes.node_stop += item.connectionTypes.node_stop;
-              }
-            }
-          } else {
-            // Add new item
-            acc.push(item);
-          }
-          
-          return acc;
-        }, []);
-        
-        // Sort by date
-        groupedData.sort((a: ChartDataPoint, b: ChartDataPoint) => {
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          return dateA.getTime() - dateB.getTime();
-        });
-        
-        // Ensure we have data for all days
+        // Create an array of dates for the last 'days' days
         const dates = Array.from({ length: days }, (_, i) => {
           const date = new Date();
           date.setDate(date.getDate() - (days - i - 1));
           return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         });
         
-        const result = dates.map(date => {
-          const existingData = groupedData.find((item: ChartDataPoint) => item.date === date);
+        // Create chart data with proper date distribution
+        const chartData = dates.map(date => {
+          // Default empty data point
+          const dataPoint = {
+            date,
+            points: 0,
+            uptime: 0,
+            sources: {
+              node: 0,
+              referral: 0,
+              task: 0,
+              checkin: 0,
+              other: 0
+            },
+            connectionTypes: {
+              login: 0,
+              node_start: 0,
+              node_stop: 0,
+              dashboard_view: 0,
+              other: 0
+            }
+          } as ChartDataPoint;
           
-          if (existingData) {
-            return existingData;
-          } else {
-            // Create empty data point
-            if (dataType === 'points') {
-              return {
-                date,
-                points: 0,
-                sources: {
-                  node: 0,
-                  referral: 0,
-                  task: 0,
-                  checkin: 0,
-                  other: 0
-                }
-              } as ChartDataPoint;
-            } else { // connections
-              return {
-                date,
-                uptime: 0,
-                connectionTypes: {
-                  login: 0,
-                  node_start: 0,
-                  node_stop: 0,
-                  dashboard_view: 0,
-                  other: 0
-                }
-              };
+          // If this is today's date, use today's earnings from the API
+          const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          if (date === today) {
+            dataPoint.points = data.stats?.totalPoints || 0;
+            
+            // If we have source breakdown, use it
+            if (data.sourceBreakdown) {
+              Object.entries(data.sourceBreakdown).forEach(([source, details]: [string, unknown]) => {
+                // Ensure sources exists before accessing its properties
+                if (!dataPoint.sources) return;
+                
+                // Type assertion for details with proper null/undefined checks
+                const total = details && typeof details === 'object' ? (details as { total?: number }).total || 0 : 0;
+                
+                if (source === 'node') dataPoint.sources.node = total;
+                else if (source === 'referral') dataPoint.sources.referral = total;
+                else if (source === 'task') dataPoint.sources.task = total;
+                else if (source === 'checkin') dataPoint.sources.checkin = total;
+                else dataPoint.sources.other += total;
+              });
             }
           }
+          
+          return dataPoint;
         });
         
-        return result;
+        // For historical data (not today), fetch from node-sessions API
+        if (days > 1) {
+          const historyResponse = await fetch(`/api/user/node-sessions?walletAddress=${walletAddress}&days=${days}`);
+          
+          if (historyResponse.ok) {
+            const historyData = await historyResponse.json();
+            
+            // Process historical sessions and aggregate by date
+            historyData.sessions.forEach((session: ProcessedNodeSession) => {
+              const sessionDate = new Date(session.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              
+              // Skip today's data as we already have it from daily-earnings
+              if (sessionDate === today) return;
+              
+              // Find the matching date in our chart data
+              const dataPoint = chartData.find(item => item.date === sessionDate);
+              if (dataPoint) {
+                if (dataType === 'points') {
+                  dataPoint.points += parseFloat(session.pointsEarned.toString()) || 0;
+                  // Add null check for sources
+                  if (dataPoint.sources) {
+                    dataPoint.sources.node += parseFloat(session.pointsEarned.toString()) || 0;
+                  }
+                } else { // connections/uptime
+                  dataPoint.uptime += parseFloat(session.uptime.toString()) / 3600 || 0; // Convert seconds to hours
+                }
+              }
+            });
+          }
+        }
+        
+        return chartData;
       }
       
       // If there's an error, return empty chart data
@@ -428,55 +421,12 @@ export default function Dashboard() {
   // Update activity data when node stats change
   useEffect(() => {
     if (user && nodeStats) {
-      const currentDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const lastEntry = activityData[activityData.length - 1];
-
-      // Only update if the date or values have changed
-      if (!lastEntry || lastEntry.date !== currentDate || 
-          lastEntry.points !== nodeStats.points || 
-          lastEntry.uptime !== nodeStats.uptime) {
-        // Create a new array with the updated current day data
-        const newActivityData = [...activityData];
-        
-        // Find the index of today's entry
-        const todayIndex = newActivityData.findIndex(entry => entry.date === currentDate);
-        
-        if (todayIndex >= 0) {
-          // Update today's entry
-          newActivityData[todayIndex] = {
-            ...newActivityData[todayIndex],
-            date: currentDate,
-            points: nodeStats.points,
-            uptime: nodeStats.uptime
-          };
-        } else {
-          // If today's entry doesn't exist, add it by replacing the oldest entry
-          newActivityData.shift(); // Remove the oldest entry
-          newActivityData.push({
-            date: currentDate,
-            points: nodeStats.points,
-            uptime: nodeStats.uptime,
-            sources: {
-              node: Math.floor(nodeStats.points * 0.8),
-              referral: Math.floor(nodeStats.points * 0.1),
-              task: Math.floor(nodeStats.points * 0.05),
-              checkin: Math.floor(nodeStats.points * 0.05),
-              other: 0
-            },
-            connectionTypes: {
-              login: 1,
-              node_start: 0,
-              node_stop: 0,
-              dashboard_view: 1,
-              other: 0
-            }
-          });
-        }
-        
-        setActivityData(newActivityData);
-      }
+      // Don't modify the chart data here - this was causing the issue
+      // by overwriting historical data distribution
+      // The chart data should come from the API and remain as is
+      // Today's earnings are shown separately in the Today's Earnings card
     }
-  }, [nodeStats, user, activityData]); 
+  }, [nodeStats, user]); // Keep the dependency array but remove activityData to prevent unnecessary updates
 
   // Function to render the active chart
   const renderActiveChart = () => {
@@ -629,7 +579,6 @@ export default function Dashboard() {
             <div className="nodes-section">
               <div className="nodes-header">
                 <h2 className="section-title">Your Sessions</h2>
-                <button className="view-all-button">View All</button>
               </div>
               <div className="nodes-table">
                 <div className="table-header">
