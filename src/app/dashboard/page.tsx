@@ -104,8 +104,10 @@ export default function Dashboard() {
       
       if (response.ok) {
         const data = await response.json();
-        // Update today's earnings with actual data
-        setTodaysEarnings(data.points);
+        // Update today's earnings with actual data from stats.totalPoints
+        if (data.success && data.stats) {
+          setTodaysEarnings(data.stats.totalPoints);
+        }
       }
     } catch (error) {
       console.error('Error fetching today\'s earnings:', error);

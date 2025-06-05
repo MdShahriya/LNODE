@@ -3,12 +3,14 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IUser extends Document {
   walletAddress: string;
   points: number;
+  credits: number; // Opinion credits separate from points
   tasksCompleted: number;
   uptime: number; // Total uptime in seconds
   nodeStatus: boolean;
   nodeStartTime: Date | null;
   referredBy?: mongoose.Types.ObjectId;
   referralPointsEarned?: number;
+  verification?: string; // Only 'verified' or 'unverified'
   isActive?: boolean;
   // Enhanced tracking fields
   totalSessions: number;
@@ -37,15 +39,13 @@ export interface IUser extends Document {
   // Profile enhancements
   username?: string;
   email?: string;
-  profilePicture?: string;
+
   preferences?: {
     notifications: boolean;
     autoStart: boolean;
     theme: string;
   };
   // Security and verification
-  isVerified: boolean;
-  verificationLevel: number;
   lastLoginTime: Date | null;
   loginCount: number;
   createdAt: Date;
@@ -65,6 +65,12 @@ const UserSchema: Schema = new Schema(
       type: Number,
       default: 0,
       min: 0,
+    },
+    credits: {
+      type: Number,
+      default: 0,
+      min: 0,
+      description: 'Opinion credits separate from points',
     },
     tasksCompleted: {
       type: Number,
@@ -205,9 +211,11 @@ const UserSchema: Schema = new Schema(
       lowercase: true,
       sparse: true,
     },
-    profilePicture: {
+    // Verification information
+    verification: {
       type: String,
-      trim: true,
+      enum: ['verified', 'unverified'],
+      default: 'unverified'
     },
     preferences: {
       notifications: {
@@ -225,17 +233,6 @@ const UserSchema: Schema = new Schema(
       },
     },
     // Security and verification
-    isVerified: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    verificationLevel: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 5,
-    },
     lastLoginTime: {
       type: Date,
       default: null,
@@ -255,7 +252,6 @@ const UserSchema: Schema = new Schema(
 UserSchema.index({ nodeStatus: 1, isActive: 1 });
 UserSchema.index({ points: -1, totalEarnings: -1 });
 UserSchema.index({ lastCheckIn: -1, currentStreak: -1 });
-UserSchema.index({ isVerified: 1, verificationLevel: -1 });
 UserSchema.index({ createdAt: -1 });
 UserSchema.index({ totalSessions: -1, activeSessions: -1 });
 UserSchema.index({ dailyEarnings: -1, weeklyEarnings: -1, monthlyEarnings: -1 });

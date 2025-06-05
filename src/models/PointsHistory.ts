@@ -4,7 +4,7 @@ export interface IPointsHistory extends Document {
   user: mongoose.Types.ObjectId;
   walletAddress: string;
   points: number;
-  source: 'node' | 'referral' | 'task' | 'checkin' | 'bonus' | 'achievement' | 'daily_bonus' | 'weekly_bonus' | 'monthly_bonus' | 'penalty' | 'adjustment' | 'other';
+  source: 'node' | 'referral' | 'task' | 'checkin' | 'bonus' | 'achievement' | 'daily_bonus' | 'weekly_bonus' | 'monthly_bonus' | 'penalty' | 'adjustment' | 'other' | 'credits';
   subSource?: string; // More specific categorization
   description?: string;
   // Enhanced tracking
@@ -55,7 +55,7 @@ const PointsHistorySchema: Schema = new Schema(
     },
     source: {
       type: String,
-      enum: ['node', 'referral', 'task', 'checkin', 'bonus', 'achievement', 'daily_bonus', 'weekly_bonus', 'monthly_bonus', 'penalty', 'adjustment', 'other'],
+      enum: ['node', 'referral', 'task', 'checkin', 'bonus', 'achievement', 'daily_bonus', 'weekly_bonus', 'monthly_bonus', 'penalty', 'adjustment', 'other', 'credits'],
       required: true,
       index: true,
     },

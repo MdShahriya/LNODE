@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import { FaBars, FaTimes, FaHome, FaChartLine, FaUserFriends, FaGift } from 'react-icons/fa'
+import { FaBars, FaTimes, FaHome, FaChartLine, FaUserFriends, FaGift, FaUser } from 'react-icons/fa'
 import './Sidebar.css'
 
 const navigation = [
@@ -13,6 +13,7 @@ const navigation = [
   { name: 'Rewards', href: '/dashboard/rewards', icon: <FaGift /> },
   { name: 'Leaderboard', href: '/dashboard/leaderboard', icon: <FaChartLine /> },
   { name: 'Referral', href: '/dashboard/referral', icon: <FaUserFriends /> },
+  { name: 'Profile', href: '/dashboard/profile', icon: <FaUser />}
 ]
 
 export default function Sidebar() {
