@@ -10,7 +10,12 @@ export interface IUser extends Document {
   nodeStartTime: Date | null;
   referredBy?: mongoose.Types.ObjectId;
   referralPointsEarned?: number;
-  verification?: string; // Only 'verified' or 'unverified'
+  verification?: string; // 'verified', 'unverified', or 'pending'
+  verificationMethod?: string; // 'manual', 'nft', 'admin'
+  verifiedAt?: Date;
+  verificationRequestedAt?: Date;
+  nftContractAddress?: string;
+  nftBalance?: number;
   isActive?: boolean;
   // Enhanced tracking fields
   totalSessions: number;
@@ -214,8 +219,31 @@ const UserSchema: Schema = new Schema(
     // Verification information
     verification: {
       type: String,
-      enum: ['verified', 'unverified'],
+      enum: ['verified', 'unverified', 'pending'],
       default: 'unverified'
+    },
+    verificationMethod: {
+      type: String,
+      enum: ['manual', 'nft', 'admin'],
+      default: null
+    },
+    verifiedAt: {
+      type: Date,
+      default: null
+    },
+    verificationRequestedAt: {
+      type: Date,
+      default: null
+    },
+    nftContractAddress: {
+      type: String,
+      lowercase: true,
+      default: null
+    },
+    nftBalance: {
+      type: Number,
+      default: 0,
+      min: 0
     },
     preferences: {
       notifications: {

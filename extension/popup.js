@@ -85,6 +85,17 @@ function init() {
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'WALLET_ADDRESS_UPDATED') {
       setWalletAddressFromDashboard(message.walletAddress);
+    } else if (message.type === 'STATE_UPDATED') {
+      // Update local state from background script
+      if (message.state) {
+        walletAddress = message.state.walletAddress;
+        isNodeRunning = message.state.isNodeRunning;
+        totalPoints = message.state.totalPoints;
+        pointsRate = message.state.pointsRate || 0;
+        
+        // Update the UI
+        updateUI();
+      }
     }
     return true;
   });

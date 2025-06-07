@@ -634,7 +634,25 @@
 .author-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.5rem;
+}
+
+.author-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+.verified-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background-color: #0099ff;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  margin-left: 0.25rem;
 }
 
 .author-icon {

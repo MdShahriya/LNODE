@@ -9,7 +9,7 @@ import { SiTether } from 'react-icons/si'
 import { FUND_COLLECTION_POOL_CONTRACT_ADDRESS, FUND_COLLECTION_POOL_ABI, prepareUsdtApproval, prepareWithdrawFunds } from '@/lib/contracts/creditPackages'
 import './opinionfund.css'
 
-type ContractAction = 'deposit' | 'withdraw' | 'pause' | 'unpause'
+type ContractAction = 'deposit' | 'withdraw' | 'pause' | 'unpause' | ''
 
 
 
@@ -55,6 +55,7 @@ export default function AdminOpinionFund() {
     setAmount('')
     setRecipientAddress('')
     setStep('approval')
+    setActiveAction('')
   }
 
   const handleContractAction = useCallback(async () => {
@@ -122,12 +123,22 @@ export default function AdminOpinionFund() {
      }
   }, [address, amount, recipientAddress, activeAction, step, writeContract])
 
-  // Handle transaction confirmation
+  // Handle transaction confirmation - simplified logic matching credits page pattern
   useEffect(() => {
     if (isConfirmed) {
       if (step === 'approval' && activeAction === 'deposit') {
+        // Approval confirmed for deposit, proceed to transaction step
         setStep('transaction')
-      } else if (step === 'transaction' || (step === 'approval' && activeAction !== 'deposit')) {
+      } else if (step === 'transaction' && activeAction === 'deposit') {
+        // Deposit transaction confirmed, complete the process
+        setStep('complete')
+        toast.success('Deposit completed successfully!')
+        refetchTotalFunds()
+        refetchContributorCount()
+        refetchUserContribution()
+        resetForm()
+      } else if (step === 'approval' && activeAction !== 'deposit') {
+        // Non-deposit actions complete after approval
         setStep('complete')
         toast.success('Transaction completed successfully!')
         refetchTotalFunds()
@@ -139,18 +150,28 @@ export default function AdminOpinionFund() {
     }
   }, [isConfirmed, step, activeAction, refetchTotalFunds, refetchContributorCount, refetchPaused, refetchUserContribution])
 
-  // Handle step change for deposit flow
+  // Handle step change for deposit flow - removed circular dependency
   useEffect(() => {
     if (step === 'transaction' && activeAction === 'deposit') {
-      handleContractAction()
+      // Execute deposit transaction directly without dependency on handleContractAction
+      const amountInUsdt = parseUnits(amount || '0', 18)
+      writeContract({
+        address: FUND_COLLECTION_POOL_CONTRACT_ADDRESS as `0x${string}`,
+        abi: FUND_COLLECTION_POOL_ABI,
+        functionName: 'deposit',
+        args: [amountInUsdt]
+      })
     }
-  }, [step, activeAction, handleContractAction])
+  }, [step, activeAction, amount, writeContract])
 
-  // Handle contract errors
+  // Handle contract errors - improved error handling with proper state cleanup
   useEffect(() => {
     if (contractError) {
       toast.error(`Transaction failed: ${contractError.message}`)
+      // Reset all transaction-related state on error
       setStep('approval')
+      setAmount('')
+      setRecipientAddress('')
     }
   }, [contractError])
 
@@ -167,7 +188,7 @@ export default function AdminOpinionFund() {
   const getButtonText = () => {
     if (isPending || isConfirming) {
       if (activeAction === 'deposit') {
-        return step === 'approval' ? 'Approving USDT...' : 'Processing Deposit...'
+        return step === 'approval' ? 'Approving USDT...' : 'Processing purcharse...'
       }
       return 'Processing...'
     }

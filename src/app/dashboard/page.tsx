@@ -7,6 +7,27 @@ import React from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ProcessedNodeSession } from '@/app/api/user/node-sessions/helpers';
 
+// Interface for raw node session data from API
+interface RawNodeSession {
+  sessionId: string;
+  status: string;
+  endTime?: string;
+  nodeType?: string;
+  deviceIP?: string;
+  browser?: string;
+  platform?: string;
+  deviceInfo?: string;
+  uptime?: number; // API returns uptime in seconds as number
+  pointsEarned?: number; // API returns points as number
+  startTime: string;
+  lastHeartbeat?: string;
+  sessionDuration?: number;
+  performanceScore?: number;
+  nodeQuality?: string;
+  location?: string;
+  statusIcon?: string;
+}
+
 // TOPAY Node Extension types are defined in global.d.ts
 
 interface NodeStats {
@@ -128,36 +149,83 @@ export default function Dashboard() {
     return () => clearInterval(intervalId);
   }, [address, isConnected, fetchTodaysEarnings]);
 
-  // Fetch user sessions/nodes
+  // Function to fetch user sessions
+  const fetchUserSessions = useCallback(async () => {
+    if (!address) return;
+    
+    try {
+      const response = await fetch(`/api/user/node-sessions?walletAddress=${address}&days=7`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Convert node sessions to UserSession format and sort
+        const convertedSessions = (data.sessions || []).map((session: RawNodeSession) => {
+          // Calculate points per second from available data
+          const uptimeInSeconds = typeof session.uptime === 'string' ? parseFloat(session.uptime) : (session.uptime || 0);
+          const pointsEarned = typeof session.pointsEarned === 'string' ? parseFloat(session.pointsEarned) : (session.pointsEarned || 0);
+          const pointsPerSecond = uptimeInSeconds > 0 ? (pointsEarned / uptimeInSeconds) : 0;
+          
+          // Format uptime from seconds to readable format (h:m format)
+           const formatUptime = (seconds: number): string => {
+             const hours = Math.floor(seconds / 3600);
+             const minutes = Math.floor((seconds % 3600) / 60);
+             return `${hours}:${minutes.toString().padStart(2, '0')}`;
+           };
+          
+          return {
+            id: session.sessionId,
+            status: session.status === 'active' && !session.endTime ? 'Connected' : 'Disconnected',
+            statusIcon: session.status === 'active' && !session.endTime ? '🟢' : '🔴',
+            nodeType: session.nodeType || 'Extension Node',
+            deviceIP: session.deviceIP || 'Unknown',
+            browser: session.browser || 'Unknown',
+            platform: session.platform || 'Unknown',
+            deviceInfo: session.deviceInfo || 'Unknown',
+            pointsPerSecond: pointsPerSecond.toFixed(4),
+            totalUptime: formatUptime(uptimeInSeconds),
+            pointsEarned: `${pointsEarned.toFixed(2)} pt`,
+            firstConnection: session.startTime,
+            lastConnection: session.endTime || session.lastHeartbeat || session.startTime,
+            totalConnections: 1,
+            isActive: session.status === 'active' && !session.endTime
+          };
+        });
+        
+        // Sort sessions with active sessions first, then by last connection
+        const sortedSessions = convertedSessions.sort((a: { status: string; lastConnection: string | number | Date; }, b: { status: string; lastConnection: string | number | Date; }) => {
+          // First sort by connection status (connected sessions first)
+          if (a.status === 'Connected' && b.status !== 'Connected') return -1;
+          if (a.status !== 'Connected' && b.status === 'Connected') return 1;
+          
+          // Then sort by lastConnection date (newest first)
+          const dateA = new Date(a.lastConnection);
+          const dateB = new Date(b.lastConnection);
+          return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+        });
+        setUserSessions(sortedSessions);
+      }
+    } catch (error) {
+      console.error('Error fetching user sessions:', error);
+    }
+  }, [address]);
+
+  // Fetch user sessions/nodes on initial load and periodically
   useEffect(() => {
     if (!address) return;
     
     setLoadingSessions(true);
-    fetch(`/api/user/sessions?walletAddress=${address}`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Sort sessions with latest on top based on lastConnection date
-          const sortedSessions = [...(data.sessions || [])].sort((a, b) => {
-            // First sort by connection status (connected sessions first)
-            if (a.status === 'Connected' && b.status !== 'Connected') return -1;
-            if (a.status !== 'Connected' && b.status === 'Connected') return 1;
-            
-            // Then sort by lastConnection date (newest first)
-            const dateA = new Date(a.lastConnection);
-            const dateB = new Date(b.lastConnection);
-            return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
-          });
-          setUserSessions(sortedSessions);
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching user sessions:', error);
-      })
-      .finally(() => {
-        setLoadingSessions(false);
-      });
-  }, [address]); 
+    
+    // Fetch immediately
+    fetchUserSessions().finally(() => {
+      setLoadingSessions(false);
+    });
+    
+    // Set up interval to refresh sessions every 30 seconds
+    const intervalId = setInterval(fetchUserSessions, 30000);
+    
+    // Clean up interval on unmount
+    return () => clearInterval(intervalId);
+  }, [address, fetchUserSessions]); 
 
   // Function to safely fetch historical data with type checking
   const fetchHistoricalDataSafe = useCallback(async (walletAddress: string | undefined, days = 7, dataType = 'points') => {

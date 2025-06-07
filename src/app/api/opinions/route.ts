@@ -14,12 +14,37 @@ export async function GET(request: NextRequest) {
     // Get total count for pagination
     const total = await Opinion.countDocuments({ isVisible: true });
     
-    // Fetch opinions with pagination
-    const opinions = await Opinion.find({ isVisible: true })
-      .sort({ timestamp: -1 }) // Newest first
-      .skip(skip)
-      .limit(limit)
-      .select('-__v');
+    // Fetch opinions with pagination and join with user data for verification status
+    const opinions = await Opinion.aggregate([
+      { $match: { isVisible: true } },
+      { $sort: { timestamp: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'walletAddress',
+          foreignField: 'walletAddress',
+          as: 'userInfo'
+        }
+      },
+      {
+        $addFields: {
+          verification: {
+            $ifNull: [
+              { $arrayElemAt: ['$userInfo.verification', 0] },
+              'unverified'
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          __v: 0,
+          userInfo: 0
+        }
+      }
+    ]);
     
     return NextResponse.json({
       success: true,

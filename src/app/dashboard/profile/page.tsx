@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import './profile.css';
 
 interface UserProfile {
@@ -28,6 +29,7 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const { address, isConnected } = useAccount();
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -97,14 +99,15 @@ export default function ProfilePage() {
       
       // Fetch session data for more accurate node status
       try {
-        const sessionsResponse = await fetch(`/api/user/sessions?walletAddress=${address}`);
+        const sessionsResponse = await fetch(`/api/user/node-sessions?walletAddress=${address}&days=1`);
         
         if (sessionsResponse.ok) {
           const sessionsData = await sessionsResponse.json();
           if (sessionsData.success && sessionsData.sessions) {
-            // Check if any session is currently active
+            // Check if any session is currently active (status === 'active' and no endTime)
             const hasActiveSession = sessionsData.sessions.some(
-              (session: { status: string }) => session.status === 'Connected'
+              (session: { status: string; endTime?: string }) => 
+                session.status === 'active' && !session.endTime
             );
             userProfile.nodeStatus = hasActiveSession ? 'active' : 'inactive';
           }
@@ -356,6 +359,16 @@ export default function ProfilePage() {
             >
               Edit
             </button>
+            
+            {profile?.verification !== 'verified' && (
+              <button 
+                onClick={() => router.push('/dashboard/profile/verify')} 
+                className="verify-button-new"
+                disabled={isLoading}
+              >
+                Verify
+              </button>
+            )}
             
             <button 
               onClick={handleRefresh} 

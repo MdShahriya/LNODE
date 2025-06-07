@@ -1,8 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
-import { FaThumbsUp, FaThumbsDown, FaUser, FaCoins, FaPaperPlane, FaSpinner, FaPlus } from 'react-icons/fa';
+import { FaThumbsUp, FaThumbsDown, FaCoins, FaPaperPlane, FaSpinner, FaPlus } from 'react-icons/fa';
 import { likeOpinion, dislikeOpinion, saveUserInteraction } from '@/lib/utils/opinionInteractions';
 import './opinionwall.css';
 
@@ -15,6 +16,7 @@ interface Opinion {
   likes: number;
   dislikes: number;
   creditCost: number;
+  verification?: string;
 }
 
 export default function OpinionWall() {
@@ -308,10 +310,18 @@ export default function OpinionWall() {
               <div key={opinion._id} className="message-bubble">
                 <div className="message-header">
                   <div className="author-info">
-                    <FaUser className="author-icon" />
+                    <img 
+                      src={`https://api.dicebear.com/9.x/fun-emoji/svg?seed=${opinion.walletAddress}`}
+                      alt="Author Avatar"
+                      className="author-avatar"
+                    />
                     <span className="author-address">
                       {formatWalletAddress(opinion.walletAddress)}
                     </span>
+                    {opinion.verification === 'verified' ? 
+                    <div className="verified-badge">
+                      <span>✓</span>
+                    </div> : null}
                   </div>
                   <span className="message-time">{formatDate(opinion.timestamp)}</span>
                 </div>

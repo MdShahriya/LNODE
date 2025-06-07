@@ -179,6 +179,61 @@
   gap: 1rem;
 }
 
+/* Extension Link */
+.sidebar__extension {
+  margin-bottom: 0.5rem;
+}
+
+.sidebar__extension-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(21, 207, 241, 0.1), rgba(13, 124, 233, 0.1));
+  border: 1px solid rgba(21, 207, 241, 0.3);
+  border-radius: 12px;
+  color: #15CFF1;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar__extension-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(21, 207, 241, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.sidebar__extension-link:hover::before {
+  left: 100%;
+}
+
+.sidebar__extension-link:hover {
+  background: linear-gradient(135deg, rgba(21, 207, 241, 0.2), rgba(13, 124, 233, 0.2));
+  border-color: rgba(21, 207, 241, 0.5);
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(21, 207, 241, 0.2);
+}
+
+.sidebar__extension-icon {
+  font-size: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.sidebar__extension-link:hover .sidebar__extension-icon {
+  transform: scale(1.1);
+}
+
 .sidebar__wallet {
   background: rgba(21, 207, 241, 0.05);
   border: 1px solid rgba(21, 207, 241, 0.2);

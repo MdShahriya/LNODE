@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { FaCoins, FaCheckCircle, FaSpinner } from 'react-icons/fa';
+import { FaCoins, FaCheckCircle, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 import { SiTether } from 'react-icons/si';
 import { prepareCreditPackagePurchase, prepareUsdtApproval } from '@/lib/contracts/creditPackages';
 import './credits.css';
@@ -26,6 +26,7 @@ export default function CreditsPage() {
   const [error, setError] = useState('');
   const [selectedPackage, setSelectedPackage] = useState<CreditPackage | null>(null);
   const [step, setStep] = useState<'approval' | 'deposit' | 'complete'>('approval');
+
 
   // Credit packages available for purchase
   const creditPackages: CreditPackage[] = [
@@ -146,6 +147,8 @@ export default function CreditsPage() {
     }
   }, [contractError]);
 
+
+
   const handlePurchase = async (pkg: CreditPackage) => {
     if (!address) {
       setError('Please connect your wallet to purchase credits');
@@ -187,7 +190,28 @@ export default function CreditsPage() {
 
       {error && (
         <div className="error-message">
+          <FaExclamationTriangle className="error-icon" />
           {error}
+          <div className="support-links">
+            <span>Need help? Contact us on:</span>
+            <a 
+              href="https://discord.gg/tqRcdbnvXx" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="support-link discord"
+            >
+              Discord
+            </a>
+            <span>or</span>
+            <a 
+              href="https://t.me/topay_support_bot" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="support-link telegram"
+            >
+              Telegram
+            </a>
+          </div>
         </div>
       )}
 
@@ -230,7 +254,7 @@ export default function CreditsPage() {
                 <>
                   <FaSpinner className="spinner" />
                   {step === 'approval' && (isPending || isConfirming) ? 'Approving USDT...' :
-                   step === 'deposit' && (isPending || isConfirming) ? 'Processing Deposit...' :
+                   step === 'deposit' && (isPending || isConfirming) ? 'Processing purchase...' :
                    'Processing...'}
                 </>
               ) : (
@@ -245,17 +269,76 @@ export default function CreditsPage() {
       </div>
 
       <div className="credits-info">
-        <h3>How Credits Work</h3>
-        <p>
-          Credits are used to submit opinions on the Opinion Wall. Higher priority opinions cost more credits.
-          You can earn credits by completing tasks, daily check-ins, and other activities, or purchase them directly here.
-        </p>
-        <h3>USDT Fund Collection Pool on BSC</h3>
-        <p>
-          Credit purchases are processed through our secure FundCollectionPool smart contract on the Binance Smart Chain (BSC) using USDT. 
-          This reusable contract collects all payments in a transparent fund pool and emits events for every deposit, ensuring complete transparency. 
-          When you purchase credits, your USDT is deposited into the fund pool and your wallet address is logged on the blockchain for verification.
-        </p>
+
+        
+        <h3>How to Purchase Credits</h3>
+        <div className="purchase-guide">
+          <h4>Prerequisites:</h4>
+          <ul>
+            <li>Connect your Web3 wallet (MetaMask, WalletConnect, etc.)</li>
+            <li>Ensure you have USDT tokens in your wallet</li>
+            <li>Make sure you&apos;re on the correct blockchain network</li>
+          </ul>
+          
+          <h4>Step-by-Step Purchase Process:</h4>
+          <ol>
+            <li><strong>Select a Package:</strong> Choose from our available credit packages above based on your needs</li>
+            <li><strong>Click &quot;Buy with USDT&quot;:</strong> This will initiate the purchase process</li>
+            <li><strong>Approve USDT Transfer:</strong> First, you&apos;ll need to approve the smart contract to spend your USDT tokens</li>
+            <li><strong>Confirm Transaction:</strong> Your wallet will prompt you to confirm the approval transaction</li>
+            <li><strong>Complete Purchase:</strong> After approval, the system will automatically process your credit purchase</li>
+            <li><strong>Credits Added:</strong> Once confirmed, credits will be instantly added to your account</li>
+          </ol>
+          
+          <h4>Important Notes:</h4>
+          <ul>
+            <li>Each purchase requires two blockchain transactions: approval and deposit</li>
+            <li>Transaction fees (gas) are separate from the credit package price</li>
+            <li>Credits are non-refundable once purchased</li>
+            <li>Your credit balance updates automatically after successful purchase</li>
+            <li>If you encounter issues, please contact our support team on <a href="https://discord.gg/topay" target="_blank" rel="noopener noreferrer" className="inline-support-link">Discord</a> or <a href="https://t.me/topay_support" target="_blank" rel="noopener noreferrer" className="inline-support-link">Telegram</a></li>
+          </ul>
+          
+          <h4>Troubleshooting:</h4>
+          <ul>
+            <li><strong>Transaction Failed:</strong> Check your USDT balance and network connection</li>
+            <li><strong>Wallet Not Connected:</strong> Ensure your wallet is properly connected to the dApp</li>
+            <li><strong>Insufficient Funds:</strong> Make sure you have enough USDT plus gas fees</li>
+            <li><strong>Network Issues:</strong> Verify you&apos;re on the correct blockchain network</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Support Information */}
+      <div className="support-info">
+        <h3>Need Help?</h3>
+        <p>For any issues or questions, please reach out to our support team:</p>
+        <div className="support-channels">
+          <a 
+            href="https://discord.gg/topay" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="support-channel discord"
+          >
+            <span className="channel-icon">💬</span>
+            <div className="channel-info">
+              <h4>Discord</h4>
+              <p>Join our community for real-time support</p>
+            </div>
+          </a>
+          <a 
+            href="https://t.me/topay_support" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="support-channel telegram"
+          >
+            <span className="channel-icon">📱</span>
+            <div className="channel-info">
+              <h4>Telegram</h4>
+              <p>Direct support via Telegram</p>
+            </div>
+          </a>
+        </div>
       </div>
     </div>
   );

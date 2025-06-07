@@ -221,6 +221,29 @@ async function syncPointsWithServer() {
 // Function to notify all tabs about state updates
 function notifyTabsAboutStateUpdate() {
   try {
+    const stateData = {
+      type: 'STATE_UPDATED', 
+      state: {
+        walletAddress,
+        isNodeRunning,
+        totalPoints,
+        pointsRate: isNodeRunning ? POINTS_PER_SECOND : 0,
+        isConnected: !!walletAddress
+      }
+    };
+    
+    // Send state update to popup (if it's open)
+    try {
+      chrome.runtime.sendMessage(stateData, () => {
+        if (chrome.runtime.lastError) {
+          // This is expected when popup is not open
+          console.log('Could not send STATE_UPDATED to popup:', chrome.runtime.lastError.message);
+        }
+      });
+    } catch (error) {
+      console.log('Error sending message to popup:', error);
+    }
+    
     // Determine the URL pattern based on the current tab
     let urlPatterns = ["http://localhost:3000/*", "https://*.topay.io/*", "https://*.topay.com/*"];
     
@@ -237,16 +260,7 @@ function notifyTabsAboutStateUpdate() {
       setTimeout(() => {
         tabs.forEach(tab => {
           try {
-            chrome.tabs.sendMessage(tab.id, { 
-              type: 'STATE_UPDATED', 
-              state: {
-                walletAddress,
-                isNodeRunning,
-                totalPoints,
-                pointsRate: isNodeRunning ? POINTS_PER_SECOND : 0,
-                isConnected: !!walletAddress
-              }
-            }, () => {
+            chrome.tabs.sendMessage(tab.id, stateData, () => {
               if (chrome.runtime.lastError) {
                 // This is expected for tabs that don't have content script
                 console.log(`Could not send STATE_UPDATED to tab ${tab.id}: ${chrome.runtime.lastError.message}`);
@@ -351,17 +365,29 @@ async function updateNodeStatusOnServer(isRunning) {
     }
     
     // Calculate session data
-    const sessionId = generateRandomSessionId();
+    let sessionId;
     let uptime = 0;
     let pointsEarned = 0;
     
-    // If stopping the node, get the stored values
-    if (!isRunning) {
-      const result = await new Promise(resolve => {
-        chrome.storage.local.get(['lastSessionUptime', 'lastSessionPointsEarned'], resolve);
+    if (isRunning) {
+      // If starting the node, generate a new session ID and store it
+      sessionId = generateRandomSessionId();
+      await new Promise(resolve => {
+        chrome.storage.local.set({ currentSessionId: sessionId }, resolve);
       });
+    } else {
+      // If stopping the node, get the stored session ID and session data
+      const result = await new Promise(resolve => {
+        chrome.storage.local.get(['currentSessionId', 'lastSessionUptime', 'lastSessionPointsEarned'], resolve);
+      });
+      sessionId = result.currentSessionId;
       uptime = result.lastSessionUptime || 0;
       pointsEarned = result.lastSessionPointsEarned || 0;
+      
+      // Clear the session ID after stopping
+      await new Promise(resolve => {
+        chrome.storage.local.remove(['currentSessionId'], resolve);
+      });
     }
     
     // Prepare the request data
@@ -376,6 +402,8 @@ async function updateNodeStatusOnServer(isRunning) {
         deviceIP
       }
     };
+    
+    console.log(`Updating node status on server: ${isRunning ? 'Starting' : 'Stopping'} node for wallet ${walletAddress}`, data);
     
     // Determine the API URL based on the environment
     // First try to get the current tab URL to determine the base URL
@@ -450,11 +478,16 @@ async function updateNodeStatusOnServer(isRunning) {
           
           // Notify all tabs about the updated points
           notifyTabsAboutStateUpdate();
-        } else if (doNotUpdatePoints) {
-          // Clear the flag if it was set
+        }
+        
+        // Always clear the flag after processing
+        if (doNotUpdatePoints) {
           chrome.storage.local.set({ doNotUpdatePointsOnNextSync: false });
         }
       });
+      
+      // Always notify tabs about state update regardless of points update
+      notifyTabsAboutStateUpdate();
         } else {
           console.error('Failed to update node status on server:', result.error);
         }
@@ -462,8 +495,10 @@ async function updateNodeStatusOnServer(isRunning) {
         console.error('Error in update node status process:', innerError);
       }
     } catch (error) {
-      console.error('Error updating node status on server:', error);
-    }
+        console.error('Error updating node status on server:', error);
+        console.error('Request data was:', data);
+        console.error('API URL was:', apiUrl);
+      }
 }
 
 // Function to start accumulating points
