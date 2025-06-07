@@ -5,22 +5,30 @@
 /**
  * Like an opinion
  * @param opinionId The ID of the opinion to like
- * @returns Promise with the updated like/dislike counts
+ * @param walletAddress The wallet address of the user liking the opinion
+ * @returns Promise with the updated like/dislike counts and hasLiked status
  */
-export async function likeOpinion(opinionId: string): Promise<{ likes: number; dislikes: number }> {
+export async function likeOpinion(opinionId: string, walletAddress: string): Promise<{ likes: number; dislikes: number; hasLiked?: boolean }> {
   try {
     const response = await fetch(`/api/opinions/${opinionId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ action: 'like' })
+      body: JSON.stringify({ 
+        action: 'like',
+        walletAddress
+      })
     });
     
     const data = await response.json();
     
     if (!data.success) {
-      throw new Error(data.error || 'Failed to like opinion');
+      // If the user has already liked this opinion, we'll get a 400 response
+      // but we still want to return the current counts and hasLiked status
+      if (data.data && data.data.hasLiked) {
+        return data.data;
+      }
     }
     
     return data.data;
@@ -33,22 +41,30 @@ export async function likeOpinion(opinionId: string): Promise<{ likes: number; d
 /**
  * Dislike an opinion
  * @param opinionId The ID of the opinion to dislike
- * @returns Promise with the updated like/dislike counts
+ * @param walletAddress The wallet address of the user disliking the opinion
+ * @returns Promise with the updated like/dislike counts and hasDisliked status
  */
-export async function dislikeOpinion(opinionId: string): Promise<{ likes: number; dislikes: number }> {
+export async function dislikeOpinion(opinionId: string, walletAddress: string): Promise<{ likes: number; dislikes: number; hasDisliked?: boolean }> {
   try {
     const response = await fetch(`/api/opinions/${opinionId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ action: 'dislike' })
+      body: JSON.stringify({ 
+        action: 'dislike',
+        walletAddress
+      })
     });
     
     const data = await response.json();
     
     if (!data.success) {
-      throw new Error(data.error || 'Failed to dislike opinion');
+      // If the user has already disliked this opinion, we'll get a 400 response
+      // but we still want to return the current counts and hasDisliked status
+      if (data.data && data.data.hasDisliked) {
+        return data.data;
+      }
     }
     
     return data.data;

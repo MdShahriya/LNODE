@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validate required fields
-    const { walletAddress, content, title, creditCost = 100 } = body;
+    const { walletAddress, content, title, creditCost = 1, priority = 1 } = body;
     
     if (!walletAddress || !content || !title) {
       return NextResponse.json(
@@ -56,17 +56,34 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Validate minimum credit cost
-    if (creditCost < 1) {
+    // Validate priority and calculate expected credit cost
+    const validPriorities = [1, 2, 3, 4, 5];
+    if (!validPriorities.includes(priority)) {
       return NextResponse.json(
-        { error: 'Minimum credit cost is 1 credit' },
+        { error: 'Invalid priority. Must be between 1-5' },
         { status: 400 }
       );
     }
     
-    // Import User and PointsHistory models
+    // Calculate expected credit cost based on priority
+    const expectedCreditCost = {
+      1: 2,   // Low priority
+      2: 4,   // Normal priority
+      3: 6,   // Medium priority
+      4: 8,   // High priority
+      5: 10    // Urgent priority
+}[priority as 1 | 2 | 3 | 4 | 5];
+    
+    // Validate that the provided credit cost matches the expected cost for the priority
+    if (creditCost !== expectedCreditCost) {
+      return NextResponse.json(
+        { error: `Invalid credit cost for priority ${priority}. Expected ${expectedCreditCost} credits` },
+        { status: 400 }
+      );
+    }
+    
+    // Import User model
     const User = (await import('@/models/User')).default;
-    const PointsHistory = (await import('@/models/PointsHistory')).default;
     
     // Find the user
     const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
@@ -86,33 +103,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create a points history record for the deduction
-    const currentBalance = user.credits;
-    const newBalance = currentBalance - creditCost;
-    
-    const pointsHistory = new PointsHistory({
-      user: user._id,
-      walletAddress: walletAddress.toLowerCase(),
-      points: 0, // Not affecting points anymore
-      basePoints: 0,
-      source: 'credits',
-      subSource: 'opinion_creation',
-      description: `Spent ${creditCost} credits to create an opinion: ${title}`,
-      transactionType: 'debit',
-      balanceBefore: currentBalance,
-      balanceAfter: newBalance,
-      isVerified: true,
-      verifiedBy: 'system',
-      verificationDate: new Date(),
-      metadata: {
-        opinionTitle: title,
-        apiVersion: '2.0'
-      }
-    });
-    
-    await pointsHistory.save();
-    
-    // Update user's credits balance
+    // Burn credits directly from user account
+    const newBalance = user.credits - creditCost;
     user.credits = newBalance;
     await user.save();
     
@@ -122,10 +114,9 @@ export async function POST(request: NextRequest) {
       content,
       title,
       creditCost,
-      pointsTransactionId: pointsHistory._id,
+      priority,
       tags: body.tags || [],
       timestamp: new Date()
-      // Remove paymentTxHash field as it's not needed
     });
     
     await newOpinion.save();
@@ -133,8 +124,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: newOpinion,
-      remainingCredits: newBalance,
-      points: user.points // Also return points for reference
+      remainingCredits: newBalance
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating opinion:', error);

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
-import { FaThumbsUp, FaThumbsDown, FaUser, FaCoins, FaPaperPlane, FaSpinner } from 'react-icons/fa';
-import { likeOpinion, dislikeOpinion, getUserInteraction, saveUserInteraction } from '@/lib/utils/opinionInteractions';
+import { FaThumbsUp, FaThumbsDown, FaUser, FaCoins, FaPaperPlane, FaSpinner, FaPlus } from 'react-icons/fa';
+import { likeOpinion, dislikeOpinion, saveUserInteraction } from '@/lib/utils/opinionInteractions';
 import './opinionwall.css';
 
 interface Opinion {
@@ -24,30 +24,57 @@ export default function OpinionWall() {
   const [userCredits, setUserCredits] = useState(0);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [creditCost, setCreditCost] = useState(1);
+  const [priority, setPriority] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [expandedOpinions, setExpandedOpinions] = useState<{[key: string]: boolean}>({});
+
+  // Calculate credit cost based on priority (1-5 scale)
+  const getCreditCost = (priorityLevel: number) => {
+    const costMap = {
+      1: 2,   // Low priority
+      2: 4,   // Normal priority
+      3: 6,   // Medium priority
+      4: 8,   // High priority
+      5: 10    // Urgent priority
+    };
+    return costMap[priorityLevel as keyof typeof costMap] || 1;
+  };
+
+  // Calculate character limit based on priority (1-5 scale)
+  const getCharacterLimit = (priorityLevel: number) => {
+    const limitMap = {
+      1: 200,   // Low priority - 200 chars
+      2: 400,   // Normal priority - 400 chars
+      3: 600,   // Medium priority - 600 chars
+      4: 800,   // High priority - 800 chars
+      5: 1000   // Urgent priority - 1000 chars
+    };
+    return limitMap[priorityLevel as keyof typeof limitMap] || 200;
+  };
+
+  const creditCost = getCreditCost(priority);
+  const characterLimit = getCharacterLimit(priority);
 
   // Define fetchOpinions before using it in useEffect
   const fetchOpinions = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/opinions?page=${currentPage}&limit=9`);
+      const response = await fetch(`/api/opinions?page=1&limit=20`);
       const data = await response.json();
       
       if (data.success) {
         setOpinions(data.data);
-        setTotalPages(data.pagination.pages);
+      } else {
+        console.error('Failed to fetch opinions:', data.error);
       }
     } catch (error) {
       console.error('Error fetching opinions:', error);
     } finally {
       setLoading(false);
     }
-  }, [currentPage]); // Add currentPage as a dependency
+  }, []);
 
   // Define fetchUserCredits before using it in useEffect
   const fetchUserCredits = useCallback(async () => {
@@ -61,12 +88,12 @@ export default function OpinionWall() {
     } catch (error) {
       console.error('Error fetching user credits:', error);
     }
-  }, [address]); // Add address as a dependency
+  }, [address]);
 
   // Fetch opinions
   useEffect(() => {
     fetchOpinions();
-  }, [currentPage, fetchOpinions]);
+  }, [fetchOpinions]);
 
   // Fetch user credits if wallet is connected
   useEffect(() => {
@@ -99,9 +126,10 @@ export default function OpinionWall() {
         },
         body: JSON.stringify({
           walletAddress: address,
-          title,
-          content,
+          title: title.trim(),
+          content: content.trim(),
           creditCost,
+          priority
         }),
       });
       
@@ -111,14 +139,14 @@ export default function OpinionWall() {
         setSuccess('Your opinion has been submitted successfully!');
         setTitle('');
         setContent('');
-        setCreditCost(1);
+        setPriority(1);
         fetchOpinions();
         fetchUserCredits();
         
-        // Clear success message after 5 seconds
+        // Clear success message after 3 seconds
         setTimeout(() => {
           setSuccess('');
-        }, 5000);
+        }, 3000);
       } else {
         setError(data.error || 'Failed to submit opinion');
       }
@@ -137,21 +165,36 @@ export default function OpinionWall() {
     }
     
     try {
-      const { likes, dislikes } = await likeOpinion(opinionId);
+      const result = await likeOpinion(opinionId, address);
       
-      // Update the opinions state
+      // If the user has already liked this opinion, show a message
+      if (result.hasLiked) {
+        setError('You have already liked this opinion');
+        // Clear the error message after 3 seconds
+        setTimeout(() => setError(''), 3000);
+      }
+      
+      // Update the opinions state with the new like/dislike counts
       setOpinions(prevOpinions =>
         prevOpinions.map(opinion =>
           opinion._id === opinionId
-            ? { ...opinion, likes, dislikes }
+            ? { ...opinion, likes: result.likes, dislikes: result.dislikes }
             : opinion
         )
       );
       
       // Save the interaction in localStorage
       saveUserInteraction(opinionId, 'like');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error liking opinion:', error);
+      // Type check the error before accessing the message property
+      if (error instanceof Error) {
+        setError(error.message || 'Failed to like opinion');
+      } else {
+        setError('Failed to like opinion');
+      }
+      // Clear the error message after 3 seconds
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -162,21 +205,36 @@ export default function OpinionWall() {
     }
     
     try {
-      const { likes, dislikes } = await dislikeOpinion(opinionId);
+      const result = await dislikeOpinion(opinionId, address);
       
-      // Update the opinions state
+      // If the user has already disliked this opinion, show a message
+      if (result.hasDisliked) {
+        setError('You have already disliked this opinion');
+        // Clear the error message after 3 seconds
+        setTimeout(() => setError(''), 3000);
+      }
+      
+      // Update the opinions state with the new like/dislike counts
       setOpinions(prevOpinions =>
         prevOpinions.map(opinion =>
           opinion._id === opinionId
-            ? { ...opinion, likes, dislikes }
+            ? { ...opinion, likes: result.likes, dislikes: result.dislikes }
             : opinion
         )
       );
       
       // Save the interaction in localStorage
       saveUserInteraction(opinionId, 'dislike');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error disliking opinion:', error);
+      // Type check the error before accessing the message property
+      if (error instanceof Error) {
+        setError(error.message || 'Failed to dislike opinion');
+      } else {
+        setError('Failed to dislike opinion');
+      }
+      // Clear the error message after 3 seconds
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -186,6 +244,8 @@ export default function OpinionWall() {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -193,165 +253,196 @@ export default function OpinionWall() {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
 
+  // Toggle expanded state for an opinion
+  const toggleExpanded = (opinionId: string) => {
+    setExpandedOpinions(prev => ({
+      ...prev,
+      [opinionId]: !prev[opinionId]
+    }));
+  };
+
+  // Function to truncate text and add ellipsis
+  const truncateText = (text: string, maxLength: number = 150) => {
+    if (text.length <= maxLength) return text;
+    
+    // Find the last space within the maxLength to avoid cutting words
+    const lastSpaceIndex = text.substring(0, maxLength).lastIndexOf(' ');
+    
+    // If no space found or it's at the beginning, just cut at maxLength
+    const cutIndex = lastSpaceIndex > 0 ? lastSpaceIndex : maxLength;
+    
+    return text.substring(0, cutIndex) + '...';
+  };
+
   return (
-    <div className="opinion-wall-container">
-      <h1>Opinion Wall</h1>
-      <p>
-        Share your thoughts and opinions with the TOPAY community. Each submission costs only 1 credit 
-        but helps shape the future of our platform.
-      </p>
-      
-      {/* Opinion Form */}
-      <div className="opinion-form">
-        <h2 className="form-title">Submit Your Opinion</h2>
-        
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="title" className="form-label">Title</label>
-            <input
-              type="text"
-              id="title"
-              className="form-input"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter a title for your opinion"
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="content" className="form-label">Your Opinion</label>
-            <textarea
-              id="content"
-              className="form-textarea"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Share your thoughts here..."
-              required
-            />
-          </div>
-          
-          <div className="payment-info">
-            <div className="payment-icon">
-              <FaCoins />
+    <div className="chat-container">
+      {/* Header */}
+      <div className="chat-header">
+        <h1>Opinion Wall</h1>
+        <div className="user-info">
+          {address && (
+            <div className="credits-display" onClick={() => window.location.href = '/dashboard/credits'}>
+              <FaPlus className="plus-icon" />
+              <FaCoins className="credit-icon" />
+              <span>{userCredits} Credits</span>
             </div>
-            <div className="payment-text">
-              This submission will cost <span className="payment-amount">{creditCost} credits</span>.
-              You currently have <span className="payment-amount">{userCredits} credits</span>.
-            </div>
-          </div>
-          
-          <button
-            type="submit"
-            className="submit-button"
-            disabled={submitting || !address || userCredits < creditCost}
-          >
-            {submitting ? (
-              <>
-                <FaSpinner className="spinner" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <FaPaperPlane />
-                Submit Opinion
-              </>
-            )}
-          </button>
-        </form>
+          )}
+        </div>
       </div>
-      
-      {/* Opinions List */}
-      <h2 className="section-title">Community Opinions</h2>
-      
-      {loading ? (
-        <div className="loading-container">
-          <div className="loading-icon">
-            <FaSpinner className="spinner" />
+
+      {/* Messages/Opinions Area */}
+      <div className="messages-container">
+        {loading ? (
+          <div className="loading-container">
+            <FaSpinner className="loading-icon spinner" />
+            <p className="loading-text">Loading opinions...</p>
           </div>
-          <div className="loading-text">Loading opinions...</div>
-        </div>
-      ) : opinions.length === 0 ? (
-        <div className="empty-container">
-          <div className="empty-text">No opinions have been shared yet. Be the first!</div>
-        </div>
-      ) : (
-        <div className="opinions-list">
-          {opinions.map((opinion) => {
-            const { hasLiked, hasDisliked } = getUserInteraction(opinion._id);
-            
-            return (
-              <div key={opinion._id} className="opinion-card">
-                <div className="opinion-header">
-                  <h3 className="opinion-title">{opinion.title}</h3>
-                  <div className="opinion-date">{formatDate(opinion.timestamp)}</div>
+        ) : opinions.length === 0 ? (
+          <div className="empty-container">
+            <div className="empty-icon">💭</div>
+            <p className="empty-text">No opinions yet. Be the first to share your thoughts!</p>
+          </div>
+        ) : (
+          <div className="opinions-list">
+            {opinions.map((opinion) => (
+              <div key={opinion._id} className="message-bubble">
+                <div className="message-header">
+                  <div className="author-info">
+                    <FaUser className="author-icon" />
+                    <span className="author-address">
+                      {formatWalletAddress(opinion.walletAddress)}
+                    </span>
+                  </div>
+                  <span className="message-time">{formatDate(opinion.timestamp)}</span>
                 </div>
                 
-                <div className="opinion-content">{opinion.content}</div>
+                <div className="message-content">
+                  <h3 className="message-title">{opinion.title}</h3>
+                  {opinion.content.length > 150 ? (
+                    <>
+                      <p className="message-text">
+                        {expandedOpinions[opinion._id] ? opinion.content : truncateText(opinion.content)}
+                      </p>
+                      <button 
+                        className="toggle-content-button"
+                        onClick={() => toggleExpanded(opinion._id)}
+                        aria-expanded={expandedOpinions[opinion._id]}
+                      >
+                        {expandedOpinions[opinion._id] ? 'See less ↑' : 'See more ↓'}
+                      </button>
+                    </>
+                  ) : (
+                    <p className="message-text">{opinion.content}</p>
+                  )}
+                </div>
                 
-                <div className="opinion-footer">
-                  <div className="opinion-author">
-                    <span className="author-icon"><FaUser /></span>
-                    {formatWalletAddress(opinion.walletAddress)}
-                  </div>
-                  
-                  <div className="opinion-actions">
-                    <button
-                      className={`action-button ${hasLiked ? 'active' : ''}`}
+                <div className="message-footer">
+                  <div className="message-actions">
+                    <button 
+                      className="action-button like-button"
                       onClick={() => handleLike(opinion._id)}
                     >
                       <FaThumbsUp className="action-icon" />
-                      {opinion.likes}
+                      <span>{opinion.likes}</span>
                     </button>
-                    
-                    <button
-                      className={`action-button ${hasDisliked ? 'active' : ''}`}
+                    <button 
+                      className="action-button dislike-button"
                       onClick={() => handleDislike(opinion._id)}
                     >
                       <FaThumbsDown className="action-icon" />
-                      {opinion.dislikes}
+                      <span>{opinion.dislikes}</span>
                     </button>
+                  </div>
+                  <div className="credit-cost">
+                    <FaCoins className="cost-icon" />
+                    <span>{opinion.creditCost}</span>
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
-      
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="pagination">
-          <button
-            className="pagination-button"
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            &lt;
-          </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Input Area */}
+      <div className="input-container">
+        {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
+        
+        <form onSubmit={handleSubmit} className="message-form">
+          <div className="input-group">
+            <input
+              type="text"
+              placeholder="Opinion title..."
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="title-input"
+              disabled={submitting || !address}
+            />
+          </div>
           
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <button
-              key={page}
-              className={`pagination-button ${currentPage === page ? 'active' : ''}`}
-              onClick={() => setCurrentPage(page)}
+          <div className="input-row">
+            <textarea
+              placeholder="Share your thoughts with the community..."
+              value={content}
+              onChange={(e) => {
+                const newContent = e.target.value;
+                if (newContent.length <= characterLimit) {
+                  setContent(newContent);
+                }
+              }}
+              className="message-input"
+              disabled={submitting || !address}
+              rows={3}
+              maxLength={characterLimit}
+            />
+            <div 
+              className={`character-counter ${
+                content.length > characterLimit * 0.9 ? 'danger' : 
+                content.length > characterLimit * 0.7 ? 'warning' : ''
+              }`}
             >
-              {page}
-            </button>
-          ))}
-          
-          <button
-            className="pagination-button"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-          >
-            &gt;
-          </button>
-        </div>
-      )}
+              {content.length}/{characterLimit} characters
+            </div>
+            
+            <div className="send-section">
+              <div className="priority-selector">
+                <label>Priority:</label>
+                <select 
+                  value={priority} 
+                  onChange={(e) => setPriority(Number(e.target.value))}
+                  className="priority-select"
+                  disabled={submitting || !address}
+                >
+                  <option value={1}>Low (2 credit, 200 chars)</option>
+                  <option value={2}>Normal (4 credits, 400 chars)</option>
+                  <option value={3}>Medium (6 credits, 600 chars)</option>
+                  <option value={4}>High (8 credits, 800 chars)</option>
+                  <option value={5}>Urgent (10 credits, 1000 chars)</option>
+                </select>
+              </div>
+              
+              <button 
+                type="submit" 
+                className="send-button"
+                disabled={submitting || !address || !title.trim() || !content.trim() || userCredits < creditCost}
+              >
+                {submitting ? (
+                  <FaSpinner className="spinner" />
+                ) : (
+                  <FaPaperPlane />
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+        
+        {!address && (
+          <div className="connect-wallet-notice">
+            Please connect your wallet to share opinions
+          </div>
+        )}
+      </div>
     </div>
   );
 }

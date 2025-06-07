@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IOpinion extends Document {
   walletAddress: string;
@@ -6,12 +6,13 @@ export interface IOpinion extends Document {
   title: string;
   timestamp: Date;
   creditCost: number;
-  pointsTransactionId: mongoose.Types.ObjectId;
+  priority: number;
   likes: number;
   dislikes: number;
   isVisible: boolean;
   tags: string[];
-  // Remove paymentTxHash field from interface
+  likedBy: string[];
+  dislikedBy: string[];
 }
 
 const OpinionSchema: Schema = new Schema(
@@ -42,10 +43,12 @@ const OpinionSchema: Schema = new Schema(
       min: 1, // Minimum 1 credit
       default: 1,
     },
-    pointsTransactionId: {
-      type: Schema.Types.ObjectId,
-      ref: 'PointsHistory',
+    priority: {
+      type: Number,
       required: true,
+      min: 1,
+      max: 5,
+      default: 1,
     },
     likes: {
       type: Number,
@@ -54,6 +57,14 @@ const OpinionSchema: Schema = new Schema(
     dislikes: {
       type: Number,
       default: 0,
+    },
+    likedBy: {
+      type: [String],
+      default: [],
+    },
+    dislikedBy: {
+      type: [String],
+      default: [],
     },
     isVisible: {
       type: Boolean,
@@ -64,7 +75,6 @@ const OpinionSchema: Schema = new Schema(
         type: String,
       },
     ],
-    // Remove paymentTxHash field from schema
   },
   { timestamps: true }
 );

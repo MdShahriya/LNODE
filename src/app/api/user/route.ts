@@ -3,39 +3,6 @@ import connectDB from '@/lib/db';
 import User from '@/models/User';
 import PointsHistory from '@/models/PointsHistory';
 
-// Mock data for development/testing when database connection fails
-const getMockUserData = (walletAddress: string) => {
-  return {
-    _id: 'mock-user-id-123',
-    walletAddress: walletAddress.toLowerCase(),
-    username: 'TestUser',
-    email: 'test@example.com',
-    points: 1250.75,
-    credits: 35,
-    tasksCompleted: 12,
-    uptime: 86400, // 24 hours in seconds
-    nodeStatus: true,
-    totalSessions: 25,
-    activeSessions: 1,
-    lastActiveTime: new Date(),
-    verification: 'verified',
-    lastLoginTime: new Date(),
-    loginCount: 42,
-    longestStreak: 7,
-    maxStreak: 10,
-    currentStreak: 5,
-    totalCheckIns: 30,
-    checkInPointsEarned: 450,
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-    updatedAt: new Date(),
-    totalEarnings: {
-      daily: 75.5,
-      weekly: 350.25,
-      monthly: 1250.75
-    }
-  };
-};
-
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
@@ -130,7 +97,7 @@ export async function POST(request: NextRequest) {
         walletAddress: walletAddress.toLowerCase(),
         points: 0,
         basePoints: 0,
-        source: 'user_registration',
+        source: 'other',
         subSource: 'account_creation',
         description: 'User account created',
         timestamp: now,
@@ -203,8 +170,6 @@ export async function POST(request: NextRequest) {
       user.email = email.toLowerCase();
     }
     
-
-    
     if (Object.keys(preferences).length > 0) {
       user.preferences = { ...user.preferences, ...preferences };
     }
@@ -218,7 +183,6 @@ export async function POST(request: NextRequest) {
         walletAddress: user.walletAddress,
         username: user.username,
         email: user.email,
-
         points: user.points,
         credits: user.credits, // Include credits in response
         totalEarnings: user.totalEarnings,
@@ -261,21 +225,13 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    let user;
-    let useMockData = false;
+    const user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
     
-    try {
-      user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-      // If database connection fails, use mock data
-      useMockData = true;
-    }
-    
-    // If user not found or DB error, use mock data
-    if (!user || useMockData) {
-      console.log('Using mock data for user:', walletAddress);
-      user = getMockUserData(walletAddress);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
     }
     
     const additionalData: {
@@ -284,96 +240,32 @@ export async function GET(request: NextRequest) {
     } = {};
 
     if (includeStats) {
-      // For simplicity, we'll just add mock stats
-      if (useMockData) {
-        additionalData.stats = {
-          points: {
-            current: user.points || 0,
-            totalEarned: 2500,
-            totalSpent: 1250,
-            totalTransactions: 75,
-            avgPerTransaction: 33.3,
-            maxSingleTransaction: 250,
-            uniqueSources: 8,
-            verificationRate: 95,
-            lastTransaction: new Date()
-          },
-          credits: {
-            current: user.credits || 0,
-          },
-          sessions: {
-            total: 25,
-            totalUptime: 345600, // 4 days in seconds
-            avgDuration: 3600, // 1 hour in seconds
-            maxDuration: 14400, // 4 hours in seconds
-            pointsFromSessions: 875,
-            uniqueDevices: 3,
-            uniqueBrowsers: 2,
-            uniquePlatforms: 2,
-            lastSession: new Date()
-          },
-          checkIns: {
-            total: 30,
-            totalPoints: 450,
-            avgPointsPerCheckIn: 15,
-            maxStreak: 10,
-            currentStreak: 5,
-            lastCheckIn: new Date(),
-            rewardTiers: ['basic', 'silver', 'gold'],
-            specialRewards: ['weekend_bonus']
-          },
-          account: {
-            createdAt: user.createdAt,
-            lastActiveTime: user.lastActiveTime,
-            loginCount: user.loginCount || 0,
-            isVerified: true,
-            verificationLevel: 2,
-            totalEarnings: user.totalEarnings || { daily: 75.5, weekly: 350.25, monthly: 1250.75 }
-          }
-        };
-      } else {
-        // Original aggregation code for real data
-        // ... (keep the existing aggregation code)
-      }
+      // Add real stats aggregation here when needed
+      // For now, just return basic stats from user object
+      additionalData.stats = {
+        points: {
+          current: user.points || 0,
+        },
+        credits: {
+          current: user.credits || 0,
+        },
+        account: {
+          createdAt: user.createdAt,
+          lastActiveTime: user.lastActiveTime,
+          loginCount: user.loginCount || 0,
+          totalEarnings: user.totalEarnings || { daily: 0, weekly: 0, monthly: 0 }
+        }
+      };
     }
 
-    if (includeHistory && useMockData) {
-      // Mock recent activity
+    if (includeHistory) {
+      // Add real history fetching here when needed
+      // For now, just return empty arrays
       additionalData.recentActivity = {
-        points: Array.from({ length: 10 }, (_, i) => ({
-          id: `mock-points-${i}`,
-          points: Math.random() > 0.3 ? Math.floor(Math.random() * 50) + 5 : -(Math.floor(Math.random() * 20) + 5),
-          source: ['node_uptime', 'task_completion', 'check_in', 'referral'][Math.floor(Math.random() * 4)],
-          description: 'Mock transaction',
-          timestamp: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
-          transactionType: Math.random() > 0.3 ? 'credit' : 'debit'
-        })),
-        sessions: Array.from({ length: 5 }, (_, i) => ({
-          id: `mock-session-${i}`,
-          uptime: Math.floor(Math.random() * 7200) + 1800,
-          pointsEarned: Math.floor(Math.random() * 100) + 10,
-          deviceInfo: 'Mock Device',
-          status: Math.random() > 0.2 ? 'completed' : 'terminated',
-          startTime: new Date(Date.now() - (i + 1) * 24 * 60 * 60 * 1000),
-          endTime: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
-          sessionId: `sess-${Math.random().toString(36).substring(2, 10)}`,
-          deviceType: ['desktop', 'mobile', 'tablet'][Math.floor(Math.random() * 3)],
-          browser: ['Chrome', 'Firefox', 'Safari'][Math.floor(Math.random() * 3)],
-          platform: ['Windows', 'MacOS', 'Linux', 'iOS', 'Android'][Math.floor(Math.random() * 5)],
-          performanceScore: Math.floor(Math.random() * 100),
-          nodeQuality: ['excellent', 'good', 'average', 'poor'][Math.floor(Math.random() * 4)]
-        })),
-        checkIns: Array.from({ length: 5 }, (_, i) => ({
-          id: `mock-checkin-${i}`,
-          points: Math.floor(Math.random() * 20) + 5,
-          streak: 5 - i,
-          date: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
-          rewardTier: ['basic', 'silver', 'gold'][Math.floor(Math.random() * 3)]
-        }))
+        points: [],
+        sessions: [],
+        checkIns: []
       };
-    } else if (includeHistory) {
-      // Original history fetching code for real data
-      // ... (keep the existing history fetching code)
     }
     
     return NextResponse.json({ 
@@ -406,38 +298,9 @@ export async function GET(request: NextRequest) {
     }, { status: 200 });
   } catch (error) {
     console.error('Error fetching user:', error);
-    
-    // If any error occurs, return mock data as fallback
-    const { searchParams } = new URL(request.url);
-    const walletAddress = searchParams.get('walletAddress') || 'unknown';
-    const mockUser = getMockUserData(walletAddress);
-    
-    return NextResponse.json({ 
-      user: {
-        id: mockUser._id,
-        walletAddress: mockUser.walletAddress,
-        username: mockUser.username,
-        email: mockUser.email,
-        points: mockUser.points,
-        credits: mockUser.credits,
-        tasksCompleted: mockUser.tasksCompleted,
-        uptime: mockUser.uptime,
-        nodeStatus: mockUser.nodeStatus,
-        totalSessions: mockUser.totalSessions,
-        activeSessions: mockUser.activeSessions,
-        lastActiveTime: mockUser.lastActiveTime,
-        verification: mockUser.verification,
-        lastLoginTime: mockUser.lastLoginTime,
-        loginCount: mockUser.loginCount,
-        longestStreak: mockUser.longestStreak,
-        maxStreak: mockUser.maxStreak,
-        currentStreak: mockUser.currentStreak,
-        totalCheckIns: mockUser.totalCheckIns,
-        checkInPointsEarned: mockUser.checkInPointsEarned,
-        createdAt: mockUser.createdAt,
-        updatedAt: mockUser.updatedAt,
-        totalEarnings: mockUser.totalEarnings
-      }
-    }, { status: 200 });
+    return NextResponse.json(
+      { error: 'Failed to fetch user' },
+      { status: 500 }
+    );
   }
 }

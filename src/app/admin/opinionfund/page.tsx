@@ -1,480 +1,344 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { toast } from 'react-hot-toast'
+import { formatUnits, parseUnits } from 'viem'
+import { FaPause, FaPlay, FaUsers } from 'react-icons/fa'
+import { SiTether } from 'react-icons/si'
+import { FUND_COLLECTION_POOL_CONTRACT_ADDRESS, FUND_COLLECTION_POOL_ABI, prepareUsdtApproval, prepareWithdrawFunds } from '@/lib/contracts/creditPackages'
 import './opinionfund.css'
 
-type ProposalStatus = 'pending' | 'approved' | 'rejected'
+type ContractAction = 'deposit' | 'withdraw' | 'pause' | 'unpause'
 
-interface OpinionFundProposal {
-  id: string
-  title: string
-  description: string
-  requestedAmount: number
-  walletAddress: string
-  submittedDate: string
-  status: ProposalStatus
-  category: string
-  votesFor: number
-  votesAgainst: number
-}
+
 
 export default function AdminOpinionFund() {
-  const [activeTab, setActiveTab] = useState<ProposalStatus>('pending')
-  const [proposals, setProposals] = useState<OpinionFundProposal[]>([])
-  const [loading, setLoading] = useState(true)
-  const [formData, setFormData] = useState<Omit<OpinionFundProposal, 'id' | 'submittedDate' | 'status' | 'votesFor' | 'votesAgainst'>>({ 
-    title: '',
-    description: '',
-    requestedAmount: 0,
-    walletAddress: '',
-    category: ''
+  const { address } = useAccount()
+  const { writeContract, data: hash, error: contractError, isPending } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash })
+  
+  const [activeAction, setActiveAction] = useState<ContractAction>('deposit')
+  const [amount, setAmount] = useState('')
+  const [recipientAddress, setRecipientAddress] = useState('')
+
+  const [step, setStep] = useState<'approval' | 'transaction' | 'complete'>('approval')
+  
+  // Read contract data
+  const { data: totalFunds, refetch: refetchTotalFunds } = useReadContract({
+    address: FUND_COLLECTION_POOL_CONTRACT_ADDRESS as `0x${string}`,
+    abi: FUND_COLLECTION_POOL_ABI,
+    functionName: 'getContractBalance',
   })
-  const [editingId, setEditingId] = useState<string | null>(null)
+  
+  const { data: contributorCount, refetch: refetchContributorCount } = useReadContract({
+    address: FUND_COLLECTION_POOL_CONTRACT_ADDRESS as `0x${string}`,
+    abi: FUND_COLLECTION_POOL_ABI,
+    functionName: 'getContributorCount',
+  })
+  
+  const { data: isPaused, refetch: refetchPaused } = useReadContract({
+    address: FUND_COLLECTION_POOL_CONTRACT_ADDRESS as `0x${string}`,
+    abi: FUND_COLLECTION_POOL_ABI,
+    functionName: 'paused',
+  })
+  
+  const { data: userContribution, refetch: refetchUserContribution } = useReadContract({
+    address: FUND_COLLECTION_POOL_CONTRACT_ADDRESS as `0x${string}`,
+    abi: FUND_COLLECTION_POOL_ABI,
+    functionName: 'userContributions',
+    args: address ? [address] : undefined,
+  })
 
-  // Fetch proposals
-  const fetchProposals = useCallback(async () => {
-    try {
-      setLoading(true)
-      // This would be replaced with an actual API call in a real implementation
-      // const response = await fetch(`/api/admin/opinionfund?status=${activeTab}`)
-      // const data = await response.json()
-      // setProposals(data)
-      
-      // For now, we'll use mock data
-      setTimeout(() => {
-        const mockProposals: OpinionFundProposal[] = [
-          {
-            id: '1',
-            title: 'Community Event Funding',
-            description: 'Funding for organizing a community meetup to discuss TOPAY ecosystem.',
-            requestedAmount: 500,
-            walletAddress: '0x1234...5678',
-            submittedDate: '2024-03-15',
-            status: 'pending',
-            category: 'Community',
-            votesFor: 25,
-            votesAgainst: 5
-          },
-          {
-            id: '2',
-            title: 'Educational Content Creation',
-            description: 'Creating educational videos about blockchain technology and TOPAY.',
-            requestedAmount: 750,
-            walletAddress: '0x8765...4321',
-            submittedDate: '2024-03-10',
-            status: 'approved',
-            category: 'Education',
-            votesFor: 42,
-            votesAgainst: 8
-          },
-          {
-            id: '3',
-            title: 'Marketing Campaign',
-            description: 'Social media marketing campaign to increase awareness of TOPAY.',
-            requestedAmount: 1000,
-            walletAddress: '0xabcd...efgh',
-            submittedDate: '2024-03-05',
-            status: 'rejected',
-            category: 'Marketing',
-            votesFor: 15,
-            votesAgainst: 30
-          }
-        ]
-        
-        setProposals(mockProposals.filter(p => p.status === activeTab))
-        setLoading(false)
-      }, 1000)
-    } catch (error) {
-      console.error('Error fetching proposals:', error)
-      toast.error('Failed to load proposals')
-      setLoading(false)
-    }
-  }, [activeTab])
 
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target
-    
-    if (type === 'number') {
-      setFormData({
-        ...formData,
-        [name]: parseFloat(value) || 0
-      })
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      })
-    }
+  const resetForm = () => {
+    setAmount('')
+    setRecipientAddress('')
+    setStep('approval')
   }
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!formData.title || !formData.description || !formData.walletAddress || !formData.category || formData.requestedAmount <= 0) {
-      toast.error('Please fill in all required fields')
+  const handleContractAction = useCallback(async () => {
+    if (!address) {
+      toast.error('Please connect your wallet')
+      return
+    }
+
+    if (!amount && (activeAction === 'deposit' || activeAction === 'withdraw')) {
+      toast.error('Please enter an amount')
+      return
+    }
+
+    if (activeAction === 'withdraw' && !recipientAddress) {
+      toast.error('Please enter recipient address')
       return
     }
 
     try {
-      if (editingId) {
-        // Update existing proposal
-        // This would be replaced with an actual API call in a real implementation
-        // const response = await fetch(`/api/admin/opinionfund/${editingId}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(formData)
-        // })
-        // const updatedProposal = await response.json()
-        
-        // Mock update
-        const updatedProposal: OpinionFundProposal = { 
-          ...formData, 
-          id: editingId,
-          submittedDate: new Date().toISOString().split('T')[0],
-          status: 'pending',
-          votesFor: 0,
-          votesAgainst: 0
-        }
-        
-        setProposals(proposals.map(p => p.id === editingId ? updatedProposal : p))
-        toast.success('Proposal updated successfully')
-      } else {
-        // Create new proposal
-        // This would be replaced with an actual API call in a real implementation
-        // const response = await fetch('/api/admin/opinionfund', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(formData)
-        // })
-        // const newProposal = await response.json()
-        
-        // Mock creation
-        const newProposal: OpinionFundProposal = { 
-          ...formData, 
-          id: Date.now().toString(),
-          submittedDate: new Date().toISOString().split('T')[0],
-          status: 'pending',
-          votesFor: 0,
-          votesAgainst: 0
-        }
-        
-        if (activeTab === 'pending') {
-          setProposals([...proposals, newProposal])
-        }
-        
-        toast.success('Proposal created successfully')
+       const amountInUsdt = parseUnits(amount || '0', 18)
+
+      switch (activeAction) {
+        case 'deposit':
+          if (step === 'approval') {
+            // First approve USDT
+            const approvalConfig = prepareUsdtApproval(parseFloat(amount))
+            writeContract(approvalConfig)
+          } else {
+            // Then deposit
+            writeContract({
+              address: FUND_COLLECTION_POOL_CONTRACT_ADDRESS as `0x${string}`,
+              abi: FUND_COLLECTION_POOL_ABI,
+              functionName: 'deposit',
+              args: [amountInUsdt]
+            })
+          }
+          break
+
+        case 'withdraw':
+          const withdrawConfig = prepareWithdrawFunds(parseFloat(amount), recipientAddress)
+          writeContract(withdrawConfig)
+          break
+
+        case 'pause':
+          writeContract({
+            address: FUND_COLLECTION_POOL_CONTRACT_ADDRESS as `0x${string}`,
+            abi: FUND_COLLECTION_POOL_ABI,
+            functionName: 'pause',
+            args: []
+          })
+          break
+
+        case 'unpause':
+          writeContract({
+            address: FUND_COLLECTION_POOL_CONTRACT_ADDRESS as `0x${string}`,
+            abi: FUND_COLLECTION_POOL_ABI,
+            functionName: 'unpause',
+            args: []
+          })
+          break
       }
-      
-      // Reset form
-      setFormData({ 
-        title: '',
-        description: '',
-        requestedAmount: 0,
-        walletAddress: '',
-        category: ''
-      })
-      setEditingId(null)
     } catch (error) {
-      console.error('Error saving proposal:', error)
-      toast.error('Failed to save proposal')
-    }
-  }
+       console.error('Contract action error:', error)
+       toast.error('Failed to execute contract action')
+     }
+  }, [address, amount, recipientAddress, activeAction, step, writeContract])
 
-  // Handle edit proposal
-  const handleEdit = (proposal: OpinionFundProposal) => {
-    setFormData({
-      title: proposal.title,
-      description: proposal.description,
-      requestedAmount: proposal.requestedAmount,
-      walletAddress: proposal.walletAddress,
-      category: proposal.category
-    })
-    setEditingId(proposal.id)
-  }
-
-  // Handle delete proposal
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this proposal?')) return
-    
-    try {
-      // This would be replaced with an actual API call in a real implementation
-      // await fetch(`/api/admin/opinionfund/${id}`, {
-      //   method: 'DELETE'
-      // })
-      
-      // Mock deletion
-      setProposals(proposals.filter(p => p.id !== id))
-      toast.success('Proposal deleted successfully')
-    } catch (error) {
-      console.error('Error deleting proposal:', error)
-      toast.error('Failed to delete proposal')
-    }
-  }
-
-  // Handle approve proposal
-  const handleApprove = async (id: string) => {
-    try {
-      // This would be replaced with an actual API call in a real implementation
-      // await fetch(`/api/admin/opinionfund/${id}/approve`, {
-      //   method: 'PUT'
-      // })
-      
-      // Mock approval
-      setProposals(proposals.filter(p => p.id !== id))
-      toast.success('Proposal approved successfully')
-    } catch (error) {
-      console.error('Error approving proposal:', error)
-      toast.error('Failed to approve proposal')
-    }
-  }
-
-  // Handle reject proposal
-  const handleReject = async (id: string) => {
-    try {
-      // This would be replaced with an actual API call in a real implementation
-      // await fetch(`/api/admin/opinionfund/${id}/reject`, {
-      //   method: 'PUT'
-      // })
-      
-      // Mock rejection
-      setProposals(proposals.filter(p => p.id !== id))
-      toast.success('Proposal rejected successfully')
-    } catch (error) {
-      console.error('Error rejecting proposal:', error)
-      toast.error('Failed to reject proposal')
-    }
-  }
-
-  // Reset form
-  const handleReset = () => {
-    setFormData({ 
-      title: '',
-      description: '',
-      requestedAmount: 0,
-      walletAddress: '',
-      category: ''
-    })
-    setEditingId(null)
-  }
-
-  // Change active tab
-  const handleTabChange = (tab: ProposalStatus) => {
-    setActiveTab(tab)
-  }
-
+  // Handle transaction confirmation
   useEffect(() => {
-    fetchProposals()
-  }, [activeTab, fetchProposals])
+    if (isConfirmed) {
+      if (step === 'approval' && activeAction === 'deposit') {
+        setStep('transaction')
+      } else if (step === 'transaction' || (step === 'approval' && activeAction !== 'deposit')) {
+        setStep('complete')
+        toast.success('Transaction completed successfully!')
+        refetchTotalFunds()
+        refetchContributorCount()
+        refetchPaused()
+        refetchUserContribution()
+        resetForm()
+      }
+    }
+  }, [isConfirmed, step, activeAction, refetchTotalFunds, refetchContributorCount, refetchPaused, refetchUserContribution])
+
+  // Handle step change for deposit flow
+  useEffect(() => {
+    if (step === 'transaction' && activeAction === 'deposit') {
+      handleContractAction()
+    }
+  }, [step, activeAction, handleContractAction])
+
+  // Handle contract errors
+  useEffect(() => {
+    if (contractError) {
+      toast.error(`Transaction failed: ${contractError.message}`)
+      setStep('approval')
+    }
+  }, [contractError])
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    handleContractAction()
+  }
+
+  const formatBalance = (balance: bigint | undefined) => {
+    if (!balance) return '0'
+    return formatUnits(balance, 18)
+  }
+
+  const getButtonText = () => {
+    if (isPending || isConfirming) {
+      if (activeAction === 'deposit') {
+        return step === 'approval' ? 'Approving USDT...' : 'Processing Deposit...'
+      }
+      return 'Processing...'
+    }
+    
+    switch (activeAction) {
+      case 'deposit':
+        return step === 'approval' ? 'Approve USDT' : 'Deposit Funds'
+      case 'withdraw':
+        return 'Withdraw Funds'
+      case 'pause':
+        return 'Pause Contract'
+      case 'unpause':
+        return 'Unpause Contract'
+      default:
+        return 'Execute'
+    }
+  }
 
   return (
     <div className="admin-opinionfund">
       <div className="admin-opinionfund__container">
-        <h1 className="admin-opinionfund__title">Opinion Fund Management</h1>
-        <p className="admin-opinionfund__subtitle">Manage community proposals for the Opinion Fund</p>
+        <h1 className="admin-opinionfund__title">Fund Collection Pool Control</h1>
+        <p className="admin-opinionfund__subtitle">Manage the smart contract for fund collection and distribution</p>
 
+        {/* Contract Stats */}
+        <div className="contract-stats">
+          <div className="stat-card">
+            <div className="stat-icon">
+              <SiTether />
+            </div>
+            <div className="stat-content">
+              <h3>Total Funds</h3>
+              <p>{formatBalance(totalFunds as bigint)} USDT</p>
+            </div>
+          </div>
+          
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FaUsers />
+            </div>
+            <div className="stat-content">
+              <h3>Contributors</h3>
+              <p>{contributorCount?.toString() || '0'}</p>
+            </div>
+          </div>
+          
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FaUsers />
+            </div>
+            <div className="stat-content">
+              <h3>Your Contribution</h3>
+              <p>{formatBalance(userContribution as bigint)} USDT</p>
+            </div>
+          </div>
+          
+          <div className="stat-card">
+            <div className="stat-icon">
+              {isPaused ? <FaPause /> : <FaPlay />}
+            </div>
+            <div className="stat-content">
+              <h3>Contract Status</h3>
+              <p className={`status ${isPaused ? 'inactive' : 'active'}`}>
+                {isPaused ? 'Paused' : 'Active'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Tabs */}
+        <div className="admin-opinionfund__tabs">
+          <div 
+            className={`admin-opinionfund__tab ${activeAction === 'deposit' ? 'active' : ''}`}
+            onClick={() => setActiveAction('deposit')}
+          >
+            <FaPlay /> Deposit
+          </div>
+          <div 
+            className={`admin-opinionfund__tab ${activeAction === 'withdraw' ? 'active' : ''}`}
+            onClick={() => setActiveAction('withdraw')}
+          >
+            <FaPause /> Withdraw
+          </div>
+          <div 
+            className={`admin-opinionfund__tab ${activeAction === 'pause' ? 'active' : ''}`}
+            onClick={() => setActiveAction('pause')}
+          >
+            <FaPause /> Pause
+          </div>
+          <div 
+            className={`admin-opinionfund__tab ${activeAction === 'unpause' ? 'active' : ''}`}
+            onClick={() => setActiveAction('unpause')}
+          >
+            <FaPlay /> Unpause
+          </div>
+        </div>
+
+        {/* Action Form */}
         <div className="admin-opinionfund__form">
           <h2 className="admin-opinionfund__form-title">
-            {editingId ? 'Edit Proposal' : 'Create New Proposal'}
+            {activeAction === 'deposit' && 'Deposit Funds'}
+            {activeAction === 'withdraw' && 'Withdraw Funds'}
+            {activeAction === 'pause' && 'Pause Contract'}
+            {activeAction === 'unpause' && 'Unpause Contract'}
           </h2>
+          
           <form onSubmit={handleSubmit}>
-            <div className="admin-opinionfund__form-group">
-              <label className="admin-opinionfund__form-label" htmlFor="title">
-                Title *
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className="admin-opinionfund__form-input"
-                required
-              />
-            </div>
-
-            <div className="admin-opinionfund__form-group">
-              <label className="admin-opinionfund__form-label" htmlFor="description">
-                Description *
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="admin-opinionfund__form-textarea"
-                required
-              />
-            </div>
-
-            <div className="admin-opinionfund__form-row">
-              <div className="admin-opinionfund__form-col">
-                <label className="admin-opinionfund__form-label" htmlFor="requestedAmount">
-                  Requested Amount (TOPAY) *
+            {(activeAction === 'deposit' || activeAction === 'withdraw') && (
+              <div className="admin-opinionfund__form-group">
+                <label className="admin-opinionfund__form-label" htmlFor="amount">
+                  Amount (USDT) *
                 </label>
                 <input
                   type="number"
-                  id="requestedAmount"
-                  name="requestedAmount"
-                  value={formData.requestedAmount}
-                  onChange={handleInputChange}
+                  id="amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
                   className="admin-opinionfund__form-input"
+                  placeholder="Enter amount in USDT"
                   min="0"
-                  step="0.01"
+                  step="0.000001"
                   required
                 />
               </div>
+            )}
 
-              <div className="admin-opinionfund__form-col">
-                <label className="admin-opinionfund__form-label" htmlFor="category">
-                  Category *
+            {activeAction === 'withdraw' && (
+              <div className="admin-opinionfund__form-group">
+                <label className="admin-opinionfund__form-label" htmlFor="recipient">
+                  Recipient Address *
                 </label>
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  className="admin-opinionfund__form-select"
+                <input
+                  type="text"
+                  id="recipient"
+                  value={recipientAddress}
+                  onChange={(e) => setRecipientAddress(e.target.value)}
+                  className="admin-opinionfund__form-input"
+                  placeholder="0x..."
                   required
-                >
-                  <option value="">Select a category</option>
-                  <option value="Community">Community</option>
-                  <option value="Education">Education</option>
-                  <option value="Development">Development</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Research">Research</option>
-                  <option value="Other">Other</option>
-                </select>
+                />
               </div>
-            </div>
+            )}
 
-            <div className="admin-opinionfund__form-group">
-              <label className="admin-opinionfund__form-label" htmlFor="walletAddress">
-                Wallet Address *
-              </label>
-              <input
-                type="text"
-                id="walletAddress"
-                name="walletAddress"
-                value={formData.walletAddress}
-                onChange={handleInputChange}
-                className="admin-opinionfund__form-input"
-                required
-              />
-            </div>
+            {(activeAction === 'pause' || activeAction === 'unpause') && (
+              <div className="admin-opinionfund__form-group">
+                <p className="contract-action-warning">
+                  {activeAction === 'pause' 
+                    ? 'This will pause all contract operations including deposits and withdrawals.'
+                    : 'This will resume all contract operations.'}
+                </p>
+              </div>
+            )}
 
             <div className="admin-opinionfund__form-actions">
               <button
                 type="button"
-                onClick={handleReset}
+                onClick={resetForm}
                 className="admin-button admin-button--secondary"
+                disabled={isPending || isConfirming}
               >
-                Cancel
+                Reset
               </button>
               <button
                 type="submit"
                 className="admin-button admin-button--primary"
+                disabled={isPending || isConfirming || !address}
               >
-                {editingId ? 'Update Proposal' : 'Create Proposal'}
+                {getButtonText()}
               </button>
             </div>
           </form>
-        </div>
-
-        <div className="admin-opinionfund__list">
-          <h2 className="admin-opinionfund__list-title">Proposals</h2>
-          
-          <div className="admin-opinionfund__tabs">
-            <div 
-              className={`admin-opinionfund__tab ${activeTab === 'pending' ? 'active' : ''}`}
-              onClick={() => handleTabChange('pending')}
-            >
-              Pending
-            </div>
-            <div 
-              className={`admin-opinionfund__tab ${activeTab === 'approved' ? 'active' : ''}`}
-              onClick={() => handleTabChange('approved')}
-            >
-              Approved
-            </div>
-            <div 
-              className={`admin-opinionfund__tab ${activeTab === 'rejected' ? 'active' : ''}`}
-              onClick={() => handleTabChange('rejected')}
-            >
-              Rejected
-            </div>
-          </div>
-          
-          {loading ? (
-            <div className="admin-opinionfund__loading">
-              <div className="admin-opinionfund__loading-spinner"></div>
-              <p>Loading proposals...</p>
-            </div>
-          ) : proposals.length === 0 ? (
-            <p>No {activeTab} proposals found.</p>
-          ) : (
-            <table className="admin-opinionfund__table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Requested Amount</th>
-                  <th>Wallet Address</th>
-                  <th>Submitted Date</th>
-                  <th>Votes</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {proposals.map((proposal) => (
-                  <tr key={proposal.id}>
-                    <td>{proposal.title}</td>
-                    <td>{proposal.category}</td>
-                    <td>{proposal.requestedAmount} TOPAY</td>
-                    <td>{proposal.walletAddress}</td>
-                    <td>{proposal.submittedDate}</td>
-                    <td>
-                      {proposal.votesFor} for / {proposal.votesAgainst} against
-                    </td>
-                    <td>
-                      <div className="admin-opinionfund__table-actions">
-                        {activeTab === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleApprove(proposal.id)}
-                              className="admin-button admin-button--primary"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleReject(proposal.id)}
-                              className="admin-button admin-button--danger"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => handleEdit(proposal)}
-                          className="admin-button admin-button--secondary"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(proposal.id)}
-                          className="admin-button admin-button--danger"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
         </div>
       </div>
     </div>
