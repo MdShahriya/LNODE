@@ -28,6 +28,34 @@ const TaskSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    taskUrl: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: function(v) {
+          if (!v) return true;
+          return /^https?:\/\/.+/.test(v);
+        },
+        message: 'Task URL must be a valid URL starting with http:// or https://'
+      }
+    },
+    verificationMethod: {
+      type: {
+        type: String,
+        enum: ['auto', 'manual'],
+        default: 'manual'
+      },
+      urlParam: String,
+      apiEndpoint: String,
+      apiMethod: {
+        type: String,
+        enum: ['GET', 'POST'],
+      },
+      apiParams: {
+        type: Map,
+        of: String
+      }
+    },
   },
   { timestamps: true }
 );
@@ -53,15 +81,25 @@ const initialTasks = [
     },
     requirements: ['Node must be active', 'Wallet must be connected'],
     isActive: true,
+    verificationMethod: {
+      type: 'auto',
+      apiEndpoint: '/api/node/uptime-check',
+      apiMethod: 'GET'
+    }
   },
   {
     title: 'Complete Profile',
-    description: 'Fill out all profile information to earn points.',
+    description: 'Complete your profile by adding username, email, and verification details to earn rewards.',
     rewards: {
-      points: 50,
+      points: 500,
     },
-    requirements: ['Wallet connection'],
+    requirements: ['Wallet Connection', 'Username', 'Email', 'Verification (optional)'],
     isActive: true,
+    verificationMethod: {
+      type: 'auto',
+      apiEndpoint: '/api/user/profile-completion',
+      apiMethod: 'GET'
+    }
   },
   {
     title: 'Refer a Friend',
@@ -71,6 +109,11 @@ const initialTasks = [
     },
     requirements: ['Friend must sign up using your referral link', 'Friend must connect wallet'],
     isActive: true,
+    verificationMethod: {
+      type: 'auto',
+      apiEndpoint: '/api/referral/verify',
+      apiMethod: 'GET'
+    }
   },
   {
     title: 'Join Discord Community',
@@ -80,15 +123,25 @@ const initialTasks = [
     },
     requirements: ['Must verify Discord account'],
     isActive: true,
+    verificationMethod: {
+      type: 'auto',
+      apiEndpoint: '/api/discord/verify',
+      apiMethod: 'GET'
+    }
   },
   {
-    title: 'Follow on Social Media',
+    title: 'Follow on Tweeter/X',
     description: 'Follow TOPAY on Twitter and other social media platforms.',
     rewards: {
       points: 50,
     },
-    requirements: ['Must follow official accounts'],
+    requirements: ['Must follow official account'],
     isActive: true,
+    verificationMethod: {
+      type: 'auto',
+      apiEndpoint: '/api/social/verify',
+      apiMethod: 'GET'
+    }
   },
 ];
 

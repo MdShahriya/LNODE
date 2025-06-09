@@ -18,10 +18,20 @@ const initialTasks = [
     title: 'Complete Profile',
     description: 'Fill out all profile information to earn points.',
     rewards: {
-      points: 50,
+      points: 500,
     },
-    requirements: ['Wallet connection'],
+    requirements: [
+      'Wallet connection',
+      'Username',
+      'Email',
+      'Verification (optional)'
+    ],
     isActive: true,
+    verificationMethod: {
+      type: 'auto',
+      apiEndpoint: '/api/user/profile-completion',
+      apiMethod: 'GET'
+    }
   },
   {
     title: 'Refer a Friend',

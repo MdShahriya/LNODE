@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import TwitterOAuth from '@/components/TwitterOAuth';
 import './profile.css';
 
 interface UserProfile {
-
   id: string;
   username: string;
   email: string;
@@ -25,6 +25,8 @@ interface UserProfile {
   weeklyEarnings: number;
   monthlyEarnings: number;
   verification?: string; // Only 'verified' or 'unverified'
+  twitterUsername?: string;
+  twitterVerified?: boolean;
 }
 
 export default function ProfilePage() {
@@ -37,8 +39,10 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
-    email: ''
+    email: '',
+    twitterUsername: ''
   });
+  const [showTwitterVerification, setShowTwitterVerification] = useState(false);
 
   // Memoize the fetchProfileData function to avoid recreating it on every render
   const fetchProfileData = useCallback(async () => {
@@ -122,7 +126,8 @@ export default function ProfilePage() {
       // Update form data with current profile values
       setFormData({
         username: userProfile.username !== 'Anonymous User' ? userProfile.username : '',
-        email: userProfile.email
+        email: userProfile.email,
+        twitterUsername: userProfile.twitterUsername || ''
       });
       
       setIsLoading(false);
@@ -179,7 +184,8 @@ export default function ProfilePage() {
         body: JSON.stringify({
           walletAddress: address,
           username: formData.username,
-          email: formData.email
+          email: formData.email,
+          twitterUsername: formData.twitterUsername
         }),
       });
       
@@ -294,10 +300,22 @@ export default function ProfilePage() {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="Enter your email"
+                disabled={isSaving}
               />
             </div>
-            
 
+            <div className="form-group">
+              <label htmlFor="twitterUsername">Twitter Username</label>
+              <input
+                type="text"
+                id="twitterUsername"
+                name="twitterUsername"
+                value={formData.twitterUsername}
+                onChange={handleInputChange}
+                placeholder="Enter your Twitter username (without @)"
+                disabled={isSaving}
+              />
+            </div>
             
             <div className="form-actions">
               <button type="submit" className="profile-button save-button" disabled={isSaving}>
@@ -345,6 +363,10 @@ export default function ProfilePage() {
               <p className="user-wallet">{formatDisplayAddress(profile?.walletAddress || '')}</p>
               
               <p className="user-email">EMAIL: {profile?.email || 'USER@EXAMPLE.COM'}</p>
+              
+              {profile?.twitterUsername && (
+                <p className="user-twitter">TWITTER: @{profile.twitterUsername}</p>
+              )}
               
               <p className="member-since">member since {profile?.joinedDate ? new Date(profile.joinedDate).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'DD/MM/YYYY'}</p>
             </div>
@@ -405,6 +427,71 @@ export default function ProfilePage() {
             </div>
           </div>
           
+          {/* Social Media Connections Section */}
+          <div className="social-section">
+            <h3 className="section-title">SOCIAL MEDIA CONNECTIONS</h3>
+            
+            <div className="social-connections">
+              <div className="social-platform">
+                <div className="platform-header">
+                  <div className="platform-info">
+                    <span className="platform-icon">🐦</span>
+                    <span className="platform-name">Twitter</span>
+                  </div>
+                  <div className="connection-status">
+                    {profile?.twitterUsername ? (
+                      <span className="connected">@{profile.twitterUsername}</span>
+                    ) : (
+                      <span className="not-connected">Not Connected</span>
+                    )}
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => setShowTwitterVerification(true)}
+                  className="connect-button"
+                >
+                  {profile?.twitterUsername ? 'Update Connection' : 'Connect Twitter'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Twitter OAuth Modal */}
+          {showTwitterVerification && (
+            <div className="verification-modal-overlay">
+              <div className="verification-modal">
+                <div className="verification-modal-header">
+                  <h3>Twitter Account Connection</h3>
+                  <button 
+                    onClick={() => setShowTwitterVerification(false)}
+                    className="close-modal-btn"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="verification-modal-content">
+                  <TwitterOAuth
+                    onSuccess={(data) => {
+                      console.log('Twitter OAuth success:', data);
+                      // Show success message
+                      if (typeof data.message === 'string') {
+                        toast.success(data.message);
+                      }
+                      // Refresh profile data to get updated Twitter info
+                      fetchProfileData();
+                      setShowTwitterVerification(false);
+                    }}
+                    onError={(error) => {
+                      console.error('Twitter OAuth error:', error);
+                      toast.error(`Twitter connection failed: ${error}`);
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Activity Statistics Section */}
           <div className="activity-section">
             <h3 className="section-title">ACTIVITY STATISTICS</h3>
@@ -426,8 +513,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
-  );
+        </div>)}
+      </div>
+    );
 }

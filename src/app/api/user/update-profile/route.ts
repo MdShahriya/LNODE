@@ -6,7 +6,7 @@ export async function PUT(request: NextRequest) {
   try {
     await connectDB();
     
-    const { walletAddress, username, email } = await request.json();
+    const { walletAddress, username, email, twitterUsername } = await request.json();
     
     if (!walletAddress) {
       return NextResponse.json(
@@ -28,6 +28,7 @@ export async function PUT(request: NextRequest) {
     // Update user profile fields if provided
     if (username !== undefined) user.username = username;
     if (email !== undefined) user.email = email;
+    if (twitterUsername !== undefined) user.twitterUsername = twitterUsername;
     
     // Ensure preferences object exists if it doesn't already
     if (!user.preferences) user.preferences = {};

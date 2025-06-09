@@ -44,6 +44,13 @@ export interface IUser extends Document {
   // Profile enhancements
   username?: string;
   email?: string;
+  twitterUsername?: string;
+  twitterId?: string;
+  twitterAccessToken?: string;
+  twitterRefreshToken?: string;
+  twitterTokenExpiresAt?: Date;
+  twitterVerified?: boolean;
+  twitterConnectedAt?: Date;
 
   preferences?: {
     notifications: boolean;
@@ -215,6 +222,34 @@ const UserSchema: Schema = new Schema(
       trim: true,
       lowercase: true,
       sparse: true,
+    },
+    twitterUsername: {
+      type: String,
+      trim: true,
+      maxlength: 15, // Twitter username max length
+      sparse: true,
+    },
+    twitterId: {
+      type: String,
+      sparse: true,
+    },
+    twitterAccessToken: {
+      type: String,
+      select: false, // Don't include in queries by default for security
+    },
+    twitterRefreshToken: {
+      type: String,
+      select: false, // Don't include in queries by default for security
+    },
+    twitterTokenExpiresAt: {
+      type: Date,
+    },
+    twitterVerified: {
+      type: Boolean,
+      default: false,
+    },
+    twitterConnectedAt: {
+      type: Date,
     },
     // Verification information
     verification: {

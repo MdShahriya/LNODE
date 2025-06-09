@@ -190,6 +190,14 @@
   text-transform: uppercase;
 }
 
+.user-twitter {
+  font-size: 1.3rem;
+  margin: 0.5rem 0;
+  color: rgba(29, 161, 242, 0.9);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
 .verification-status {
   font-size: 1.1rem;
   color: #a0a0a0;
@@ -308,6 +316,107 @@
   display: inline-block;
 }
 
+/* Social Media Connections Section */
+.social-section {
+  background-color: rgba(20, 25, 40, 0.5);
+  border-radius: 12px;
+  padding: 2.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.social-connections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.social-platform {
+  background-color: rgba(30, 35, 50, 0.8);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.platform-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.platform-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.platform-icon {
+  font-size: 1.5rem;
+}
+
+.platform-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+}
+
+.connection-status .connected {
+  color: #4CAF50;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.connection-status .not-connected {
+  color: #FF5252;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.connect-button {
+  background: linear-gradient(135deg, #1da1f2, #0d8bd9);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.connect-button:hover {
+  background: linear-gradient(135deg, #0d8bd9, #0a7bc4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(29, 161, 242, 0.3);
+}
+
+.verification-container {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cancel-verification {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: all 0.2s ease;
+}
+
+.cancel-verification:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
 /* Activity Section */
 .activity-section {
   background-color: rgba(20, 25, 40, 0.5);
@@ -356,6 +465,25 @@
   .activity-boxes {
     flex-direction: column;
     gap: 1rem;
+  }
+  
+  .social-section {
+    padding: 1.5rem;
+  }
+  
+  .social-platform {
+    padding: 1.5rem;
+  }
+  
+  .platform-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .connect-button {
+    width: 100%;
+    padding: 1rem;
   }
   
   .stat-box,

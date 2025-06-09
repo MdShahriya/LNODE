@@ -27,6 +27,25 @@ export default function ReferralByAddressPage() {
     try {
       setApplying(true)
       
+      // First check if user exists, if not create them
+      const checkUserResponse = await fetch(`/api/user?walletAddress=${address}`)
+      
+      if (checkUserResponse.status === 404) {
+        // User doesn't exist, create a new one
+        const createResponse = await fetch('/api/user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ walletAddress: address }),
+        })
+        
+        if (!createResponse.ok) {
+          const errorData = await createResponse.json()
+          throw new Error(errorData.error || 'Failed to create user')
+        }
+      }
+      
       // Apply the referral directly using the referrer's wallet address
       const response = await fetch('/api/referral', {
         method: 'POST',
