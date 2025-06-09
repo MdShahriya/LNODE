@@ -5,6 +5,7 @@ import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadCont
 import { toast } from 'react-hot-toast';
 import { parseEther, formatEther } from 'viem';
 import Image from 'next/image';
+import Link from 'next/link';
 import './verify.css';
 
 // Import the actual ABI from the generated file
@@ -396,6 +397,22 @@ export default function VerifyPage() {
     );
   }
 
+  // If OG benefits are activated, show only welcome message with dashboard redirect button
+  if (verificationStatus.isVerified) {
+    return (
+      <div className="verify-container">
+        <div className="success-message" style={{ marginTop: '2rem' }}>
+          <div className="success-icon">🎉</div>
+          <h3>Welcome to the OG Club!</h3>
+          <p>Your exclusive benefits are now active! Enjoy your special status and rewards.</p>
+          <Link href="/dashboard" className="verify-btn enabled" style={{ display: 'inline-block', marginTop: '2rem', textDecoration: 'none' }}>
+            Return to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="verify-container">
       <div className="verify-header">
@@ -604,15 +621,6 @@ export default function VerifyPage() {
           </button>
         )}
       </div>
-
-      {/* Success Message */}
-      {verificationStatus.isVerified && (
-        <div className="success-message">
-          <div className="success-icon">🎉</div>
-          <h3>Welcome to the OG Club!</h3>
-          <p>Your exclusive benefits are now active! Enjoy your special status and rewards.</p>
-        </div>
-      )}
     </div>
   );
 }

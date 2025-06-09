@@ -130,7 +130,7 @@ const initialTasks = [
     }
   },
   {
-    title: 'Follow on Tweeter/X',
+    title: 'Follow on Twitter/X',
     description: 'Follow TOPAY on Twitter and other social media platforms.',
     rewards: {
       points: 50,

@@ -32,23 +32,12 @@ export async function GET(request: NextRequest) {
       referredBy: user._id 
     });
     
-    // Check if user has a referral code
-    const hasReferralCode = user.referralCode && user.referralCode.length > 0;
-    
     // Minimum requirement: at least 1 referral
     const minimumReferrals = 1;
     const verified = referralCount >= minimumReferrals;
     
-    if (!hasReferralCode) {
-      return NextResponse.json({ 
-        error: 'No referral code found. Please generate your referral code first.',
-        verified: false,
-        details: {
-          referralCount,
-          hasReferralCode: false
-        }
-      }, { status: 200 });
-    }
+    // Note: The system uses wallet address as the referral code, not a separate referralCode field
+    // So we don't need to check for a referralCode field
     
     return NextResponse.json({ 
       verified,
@@ -58,8 +47,7 @@ export async function GET(request: NextRequest) {
       details: {
         referralCount,
         minimumRequired: minimumReferrals,
-        referralCode: user.referralCode,
-        hasReferralCode
+        walletAddress: user.walletAddress // Using wallet address as the referral code
       }
     });
     

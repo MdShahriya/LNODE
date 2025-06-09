@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import TwitterOAuthBind from '@/components/TwitterOAuthBind';
 import './profile.css';
 
 interface UserProfile {
@@ -42,7 +41,6 @@ export default function ProfilePage() {
     email: '',
     twitterUsername: ''
   });
-  const [showTwitterVerification, setShowTwitterVerification] = useState(false);
 
   // Memoize the fetchProfileData function to avoid recreating it on every render
   const fetchProfileData = useCallback(async () => {
@@ -427,63 +425,6 @@ export default function ProfilePage() {
             </div>
           </div>
           
-          {/* Social Media Connections Section */}
-          <div className="social-section">
-            <h3 className="section-title">SOCIAL MEDIA CONNECTIONS</h3>
-            
-            <div className="social-connections">
-              <div className="social-platform">
-                <div className="platform-header">
-                  <div className="platform-info">
-                    <span className="platform-icon">🐦</span>
-                    <span className="platform-name">X</span>
-                  </div>
-                  <div className="connection-status">
-                    {profile?.twitterUsername ? (
-                      <span className="connected">@{profile.twitterUsername}</span>
-                    ) : (
-                      <span className="not-connected">Not Connected</span>
-                    )}
-                  </div>
-                </div>
-                
-                <button 
-                  onClick={() => setShowTwitterVerification(true)}
-                  className="connect-button"
-                >
-                  {profile?.twitterUsername ? 'Update Connection' : 'Bind X'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Twitter OAuth Modal */}
-          {showTwitterVerification && (
-            <div className="verification-modal-overlay">
-              <div className="verification-modal">
-                <div className="verification-modal-header">
-                  <h3>X Account Connection</h3>
-                  <button 
-                    onClick={() => setShowTwitterVerification(false)}
-                    className="close-modal-btn"
-                  >
-                    ×
-                  </button>
-                </div>
-                <div className="verification-modal-content">
-                  <TwitterOAuthBind
-                    onConnectionUpdate={(connected) => {
-                      console.log('Twitter connection updated:', connected);
-                      // Refresh profile data to get updated Twitter info
-                      fetchProfileData();
-                      setShowTwitterVerification(false);
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Activity Statistics Section */}
           <div className="activity-section">
             <h3 className="section-title">ACTIVITY STATISTICS</h3>

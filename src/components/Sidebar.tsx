@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import { FaBars, FaTimes, FaHome, FaChartLine, FaUserFriends, FaGift, FaUser, FaCommentAlt, FaDownload } from 'react-icons/fa'
+import { FaBars, FaTimes, FaHome, FaChartLine, FaUserFriends, FaGift, FaUser, FaCommentAlt, FaChrome } from 'react-icons/fa'
 import './Sidebar.css'
 
 const navigation = [
@@ -109,7 +109,7 @@ export default function Sidebar() {
               rel="noopener noreferrer"
               className="sidebar__extension-link"
             >
-              <FaDownload className="sidebar__extension-icon" />
+              <FaChrome className="sidebar__extension-icon" />
               <span>Install Extension</span>
             </a>
           </div>

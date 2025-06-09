@@ -11,7 +11,10 @@ import './opinionfund.css'
 
 type ContractAction = 'deposit' | 'withdraw' | 'pause' | 'unpause' | ''
 
-
+// List of authorized wallet addresses for Opinion Fund management
+const OPINION_FUND_MANAGERS = [
+  '0xeA79596784C7A93f64D51452337513Fd248C310d'
+].map(addr => addr.toLowerCase());
 
 export default function AdminOpinionFund() {
   const { address } = useAccount()
@@ -23,6 +26,10 @@ export default function AdminOpinionFund() {
   const [recipientAddress, setRecipientAddress] = useState('')
 
   const [step, setStep] = useState<'approval' | 'transaction' | 'complete'>('approval')
+  
+  // Check if the connected wallet is authorized to manage the Opinion Fund
+  const normalizedAddress = address?.toLowerCase();
+  const isAuthorizedManager = normalizedAddress && OPINION_FUND_MANAGERS.includes(normalizedAddress);
   
   // Read contract data
   const { data: totalFunds, refetch: refetchTotalFunds } = useReadContract({
@@ -61,6 +68,11 @@ export default function AdminOpinionFund() {
   const handleContractAction = useCallback(async () => {
     if (!address) {
       toast.error('Please connect your wallet')
+      return
+    }
+
+    if (!isAuthorizedManager) {
+      toast.error('You are not authorized to perform this action')
       return
     }
 
@@ -121,7 +133,7 @@ export default function AdminOpinionFund() {
        console.error('Contract action error:', error)
        toast.error('Failed to execute contract action')
      }
-  }, [address, amount, recipientAddress, activeAction, step, writeContract])
+  }, [address, amount, recipientAddress, activeAction, step, writeContract, isAuthorizedManager])
 
   // Handle transaction confirmation - simplified logic matching credits page pattern
   useEffect(() => {
@@ -205,6 +217,23 @@ export default function AdminOpinionFund() {
       default:
         return 'Execute'
     }
+  }
+
+  // Show unauthorized message if not an authorized manager
+  if (!isAuthorizedManager) {
+    return (
+      <div className="admin-opinionfund">
+        <div className="admin-opinionfund__container">
+          <h1 className="admin-opinionfund__title">Fund Collection Pool Control</h1>
+          <div className="admin-opinionfund__form">
+            <h2 className="admin-opinionfund__form-title">Unauthorized Access</h2>
+            <p style={{ textAlign: 'center', color: '#FFFFFF', marginBottom: '2rem' }}>
+              You are not authorized to manage the Opinion Fund. Please connect with an authorized wallet address.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -305,34 +305,11 @@ export default function TaskCenter() {
       unmetRequirements.push('Connect your wallet')
     }
     
-    // Check if task has specific requirements that need validation
-    if (task.requirements && task.requirements.length > 0) {
-      // For demonstration purposes, let's add some common requirement checks
-      task.requirements.forEach((requirement) => {
-        const reqLower = requirement.toLowerCase()
-        
-        // Check for social media requirements
-        if (reqLower.includes('follow') && reqLower.includes('twitter')) {
-          // Simulate checking if user has followed on Twitter
-          unmetRequirements.push('Follow us on Twitter')
-        } else if (reqLower.includes('join') && reqLower.includes('discord')) {
-          // Simulate checking if user has joined Discord
-          unmetRequirements.push('Join our Discord community')
-        } else if (reqLower.includes('refer') && reqLower.includes('friend')) {
-          // Simulate checking if user has made referrals
-          unmetRequirements.push('Refer at least one friend')
-        } else if (reqLower.includes('profile') && reqLower.includes('complete')) {
-          // Simulate checking if profile is complete
-          unmetRequirements.push('Complete your profile')
-        } else if (reqLower.includes('verify') && reqLower.includes('email')) {
-          // Simulate checking if email is verified
-          unmetRequirements.push('Verify your email address')
-        }
-        // For any other requirements, add them as unmet for demonstration
-        else if (!reqLower.includes('wallet') && !reqLower.includes('connect')) {
-          unmetRequirements.push(requirement)
-        }
-      })
+    // For tasks with auto verification, we'll rely on the API to verify requirements
+    // Only do client-side checks for tasks without auto verification
+    if (task.verificationMethod?.type !== 'auto') {
+      // Only add specific checks for non-auto verified tasks
+      // For auto-verified tasks, the API will handle verification
     }
     
     return unmetRequirements
