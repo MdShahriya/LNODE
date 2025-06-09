@@ -300,34 +300,17 @@ const LandingPage: React.FC = () => {
             </div>
 
             <div className="footer-links">
-              <div className="footer-links-column">
-                <h3 className="footer-links-title">Platform</h3>
-                <ul className="footer-links-list">
-                  <li><Link href="/dashboard">Dashboard</Link></li>
-                  <li><Link href="/dashboard/rewards">Rewards</Link></li>
-                  <li><Link href="/dashboard/leaderboard">Leaderboard</Link></li>
-                  <li><Link href="/dashboard/referral">Referrals</Link></li>
-                </ul>
-              </div>
-              <div className="footer-links-column">
-                <h3 className="footer-links-title">Resources</h3>
-                <ul className="footer-links-list">
-                  <li><a href="#">Documentation</a></li>
-                  <li><a href="#">API</a></li>
-                  <li><a href="#">Support</a></li>
-                  <li><a href="#">Community</a></li>
-                </ul>
-              </div>
+
               <div className="footer-links-column">
                 <h3 className="footer-links-title">Connect</h3>
                 <div className="footer-social-links">
-                  <a href="#" className="footer-social-link" aria-label="Twitter">
+                  <a href="https://x.com/topayfoundation" className="footer-social-link" aria-label="Twitter">
                     <FaTwitter />
                   </a>
-                  <a href="#" className="footer-social-link" aria-label="GitHub">
+                  <a href="https://github.com/TOPAY-FOUNDATION" className="footer-social-link" aria-label="GitHub">
                     <FaGithub />
                   </a>
-                  <a href="#" className="footer-social-link" aria-label="Discord">
+                  <a href="https://discord.gg/tqRcdbnvXx" className="footer-social-link" aria-label="Discord">
                     <FaDiscord />
                   </a>
                   <a href="https://chrome.google.com/webstore/detail/topay-node-extension/your-extension-id" className="footer-social-link" aria-label="Chrome Extension">
@@ -341,8 +324,6 @@ const LandingPage: React.FC = () => {
           <div className="footer-bottom">
             <p className="footer-copyright">&copy; {new Date().getFullYear()} TOPAY Foundation. All rights reserved.</p>
             <div className="footer-legal">
-              <a href="#" className="footer-legal-link">Privacy Policy</a>
-              <a href="#" className="footer-legal-link">Terms of Service</a>
             </div>
           </div>
         </div>
