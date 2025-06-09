@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requestToken, generateAuthorizationUrl } from '@/lib/twitter-oauth-1a';
 import { generateTwitterAuthUrl } from '@/lib/twitter-oauth';
 
 export async function POST(request: NextRequest) {
   try {
-    const { walletAddress, scopes } = await request.json();
+    const { walletAddress } = await request.json();
     
     if (!walletAddress) {
       return NextResponse.json(
@@ -12,29 +13,28 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Generate OAuth URL with PKCE
-    const defaultScopes = ['tweet.read', 'users.read', 'follows.read', 'like.read'];
-    const requestedScopes = scopes || defaultScopes;
+    // Step 1: Request Token (OAuth 1.0a)
+    const { requestToken: oauthToken, requestTokenSecret } = await requestToken();
     
-    const { authUrl, state } = generateTwitterAuthUrl(requestedScopes);
+    // Step 2: Generate Authorization URL
+    const authUrl = generateAuthorizationUrl(oauthToken);
     
     // Create response with OAuth URL
     const response = NextResponse.json({
       success: true,
       authUrl,
-      message: 'Redirect to Twitter for authorization'
+      message: 'Redirect to X for authorization'
     });
     
-    // Store OAuth state and code verifier in secure cookies
-    // In production, consider using a more secure session store
-    response.cookies.set('twitter_oauth_state', state.state, {
+    // Store OAuth 1.0a tokens in secure cookies
+    response.cookies.set('twitter_request_token', oauthToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 600, // 10 minutes
     });
     
-    response.cookies.set('twitter_code_verifier', state.codeVerifier, {
+    response.cookies.set('twitter_request_token_secret', requestTokenSecret, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

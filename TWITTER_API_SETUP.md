@@ -1,21 +1,21 @@
-# Twitter API Setup Guide
+# X API Setup Guide
 
-This guide will help you set up Twitter API integration with OAuth 2.0 authentication for the TOPAY Foundation Dashboard.
+This guide will help you set up X API integration with OAuth 2.0 authentication for the TOPAY Foundation Dashboard.
 
 ## Prerequisites
 
-1. A Twitter Developer Account
-2. A Twitter App created in the Developer Portal
+1. An X Developer Account
+2. An X App created in the Developer Portal
 3. API keys, tokens, and OAuth 2.0 credentials
 
-## Step 1: Create a Twitter Developer Account
+## Step 1: Create an X Developer Account
 
-1. Go to [Twitter Developer Portal](https://developer.x.com/)
-2. Sign in with your Twitter account
+1. Go to [X Developer Portal](https://developer.x.com/)
+2. Sign in with your X account
 3. Apply for a developer account
 4. Wait for approval (usually takes a few hours to a few days)
 
-## Step 2: Create a Twitter App
+## Step 2: Create an X App
 
 1. Once approved, go to the [Developer Portal](https://developer.x.com/en/portal/dashboard)
 2. Click "Create App" or "+ Create App"
@@ -230,14 +230,16 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 NODE_ENV=production
 ```
 
+> **Note**: While X is the new brand name, the environment variable names still use the prefix `TWITTER_` for compatibility with existing code.
+
 ## Support
 
 For additional help:
 
-- [Twitter API Documentation](https://developer.x.com/en/docs)
+- [X API Documentation](https://developer.x.com/en/docs)
 - [OAuth 2.0 Guide](https://developer.x.com/en/docs/authentication/oauth-2-0)
-- [Twitter API Community](https://twittercommunity.com/)
-- [Twitter Developer Support](https://developer.x.com/en/support)
+- [X API Community](https://twittercommunity.com/)
+- [X Developer Support](https://developer.x.com/en/support)
 
 ## Step 2: Configure Environment Variables
 
@@ -470,4 +472,4 @@ For issues with Twitter API integration:
 
 ---
 
-**Note**: This integration requires active Twitter API credentials. Make sure to comply with Twitter's Terms of Service and API usage policies.
+**Note**: This integration requires active X API credentials. Make sure to comply with X's Terms of Service and API usage policies.

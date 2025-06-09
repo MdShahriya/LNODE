@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import TwitterOAuth from '@/components/TwitterOAuth';
+import TwitterOAuthBind from '@/components/TwitterOAuthBind';
 import './profile.css';
 
 interface UserProfile {
@@ -305,14 +305,14 @@ export default function ProfilePage() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="twitterUsername">Twitter Username</label>
+              <label htmlFor="twitterUsername">X Username</label>
               <input
                 type="text"
                 id="twitterUsername"
                 name="twitterUsername"
                 value={formData.twitterUsername}
                 onChange={handleInputChange}
-                placeholder="Enter your Twitter username (without @)"
+                placeholder="Enter your X username (without @)"
                 disabled={isSaving}
               />
             </div>
@@ -365,7 +365,7 @@ export default function ProfilePage() {
               <p className="user-email">EMAIL: {profile?.email || 'USER@EXAMPLE.COM'}</p>
               
               {profile?.twitterUsername && (
-                <p className="user-twitter">TWITTER: @{profile.twitterUsername}</p>
+                <p className="user-twitter">X: @{profile.twitterUsername}</p>
               )}
               
               <p className="member-since">member since {profile?.joinedDate ? new Date(profile.joinedDate).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'DD/MM/YYYY'}</p>
@@ -436,7 +436,7 @@ export default function ProfilePage() {
                 <div className="platform-header">
                   <div className="platform-info">
                     <span className="platform-icon">🐦</span>
-                    <span className="platform-name">Twitter</span>
+                    <span className="platform-name">X</span>
                   </div>
                   <div className="connection-status">
                     {profile?.twitterUsername ? (
@@ -451,7 +451,7 @@ export default function ProfilePage() {
                   onClick={() => setShowTwitterVerification(true)}
                   className="connect-button"
                 >
-                  {profile?.twitterUsername ? 'Update Connection' : 'Connect Twitter'}
+                  {profile?.twitterUsername ? 'Update Connection' : 'Bind X'}
                 </button>
               </div>
             </div>
@@ -462,7 +462,7 @@ export default function ProfilePage() {
             <div className="verification-modal-overlay">
               <div className="verification-modal">
                 <div className="verification-modal-header">
-                  <h3>Twitter Account Connection</h3>
+                  <h3>X Account Connection</h3>
                   <button 
                     onClick={() => setShowTwitterVerification(false)}
                     className="close-modal-btn"
@@ -471,20 +471,12 @@ export default function ProfilePage() {
                   </button>
                 </div>
                 <div className="verification-modal-content">
-                  <TwitterOAuth
-                    onSuccess={(data) => {
-                      console.log('Twitter OAuth success:', data);
-                      // Show success message
-                      if (typeof data.message === 'string') {
-                        toast.success(data.message);
-                      }
+                  <TwitterOAuthBind
+                    onConnectionUpdate={(connected) => {
+                      console.log('Twitter connection updated:', connected);
                       // Refresh profile data to get updated Twitter info
                       fetchProfileData();
                       setShowTwitterVerification(false);
-                    }}
-                    onError={(error) => {
-                      console.error('Twitter OAuth error:', error);
-                      toast.error(`Twitter connection failed: ${error}`);
                     }}
                   />
                 </div>

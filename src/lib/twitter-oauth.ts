@@ -96,7 +96,7 @@ export async function exchangeCodeForTokens(
   codeVerifier: string
 ): Promise<TwitterTokens> {
   try {
-    const response = await fetch('https://api.x.com/oauth2/token', {
+    const response = await fetch('https://api.twitter.com/2/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -135,7 +135,7 @@ export async function exchangeCodeForTokens(
  */
 export async function refreshAccessToken(refreshToken: string): Promise<TwitterTokens> {
   try {
-    const response = await fetch('https://api.x.com/oauth2/token', {
+    const response = await fetch('https://api.twitter.com/2/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -174,25 +174,28 @@ export async function getAuthenticatedUser(accessToken: string): Promise<Twitter
   try {
     const client = new TwitterApi(accessToken);
     
-    const user = await client.v2.me({
-      'user.fields': ['profile_image_url', 'verified', 'public_metrics'],
+    // Use v1.1 API instead of v2
+    const user = await client.v1.verifyCredentials({
+      include_email: false,
+      include_entities: false,
+      skip_status: true
     });
     
-    if (!user.data) {
+    if (!user) {
       throw new Error('Failed to fetch user data');
     }
     
     return {
-      id: user.data.id,
-      username: user.data.username,
-      name: user.data.name,
-      profileImageUrl: user.data.profile_image_url,
-      verified: user.data.verified,
-      publicMetrics: user.data.public_metrics ? {
-        followersCount: user.data.public_metrics.followers_count ?? 0,
-        followingCount: user.data.public_metrics.following_count ?? 0,
-        tweetCount: user.data.public_metrics.tweet_count ?? 0,
-      } : undefined,
+      id: user.id_str,
+      username: user.screen_name,
+      name: user.name,
+      profileImageUrl: user.profile_image_url_https,
+      verified: user.verified,
+      publicMetrics: {
+        followersCount: user.followers_count,
+        followingCount: user.friends_count,
+        tweetCount: user.statuses_count
+      },
     };
   } catch (error) {
     console.error('Error fetching authenticated user:', error);
@@ -213,26 +216,13 @@ export async function verifyFollowingWithAuth(
   try {
     const client = new TwitterApi(accessToken);
     
-    // Get current user
-    const me = await client.v2.me();
-    if (!me.data) {
-      throw new Error('Failed to get current user');
-    }
-    
-    // Get target user
-    const targetUser = await client.v2.userByUsername(targetUsername);
-    if (!targetUser.data) {
-      throw new Error(`Target user ${targetUsername} not found`);
-    }
-    
-    // Check if following
-    const following = await client.v2.following(me.data.id, {
-      max_results: 1000,
+    // Use v1.1 API instead of v2
+    const friendship = await client.v1.friendship({
+      source_screen_name: await (await client.v1.verifyCredentials()).screen_name,
+      target_screen_name: targetUsername
     });
     
-    return following.data?.some(
-      (user) => user.id === targetUser.data.id
-    ) || false;
+    return friendship.relationship.source.following || false;
   } catch (error) {
     console.error('Error verifying following with auth:', error);
     return false;
@@ -249,9 +239,10 @@ export async function postTweet(accessToken: string, text: string): Promise<Reco
   try {
     const client = new TwitterApi(accessToken);
     
-    const tweet = await client.v2.tweet(text);
+    // Use v1.1 API instead of v2
+    const tweet = await client.v1.tweet(text);
     
-    return tweet.data;
+    return tweet as unknown as Record<string, unknown>;
   } catch (error) {
     console.error('Error posting tweet:', error);
     throw error;
@@ -265,7 +256,7 @@ export async function postTweet(accessToken: string, text: string): Promise<Reco
  */
 export async function revokeAccessToken(accessToken: string): Promise<boolean> {
   try {
-    const response = await fetch('https://api.x.com/oauth2/revoke', {
+    const response = await fetch('https://api.twitter.com/oauth2/revoke', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -292,7 +283,7 @@ export async function revokeAccessToken(accessToken: string): Promise<boolean> {
 export async function validateAccessToken(accessToken: string): Promise<boolean> {
   try {
     const client = new TwitterApi(accessToken);
-    await client.v2.me();
+    await client.v1.verifyCredentials();
     return true;
   } catch {
     return false;

@@ -86,27 +86,27 @@ export default function TwitterVerification({
       case 'like':
         return 'Like the specified tweet';
       default:
-        return 'Complete the Twitter action';
+        return 'Complete the X action';
     }
   };
 
   const getInstructions = () => {
     switch (action) {
       case 'follow':
-        return `Please follow @${targetUsername} on Twitter, then enter your Twitter username below to verify.`;
+        return `Please follow @${targetUsername} on X, then enter your X username below to verify.`;
       case 'retweet':
-        return 'Please retweet the specified tweet, then enter your Twitter username below to verify.';
+        return 'Please retweet the specified tweet, then enter your X username below to verify.';
       case 'like':
-        return 'Please like the specified tweet, then enter your Twitter username below to verify.';
+        return 'Please like the specified tweet, then enter your X username below to verify.';
       default:
-        return 'Please complete the required Twitter action, then verify below.';
+        return 'Please complete the required X action, then verify below.';
     }
   };
 
   return (
     <div className="twitter-verification-container">
       <div className="verification-header">
-        <h3>Twitter Verification</h3>
+        <h3>X Verification</h3>
         <p className="action-text">{getActionText()}</p>
       </div>
 
@@ -121,13 +121,13 @@ export default function TwitterVerification({
 
       <div className="verification-form">
         <div className="input-group">
-          <label htmlFor="twitter-username">Twitter Username:</label>
+          <label htmlFor="twitter-username">X Username:</label>
           <input
             id="twitter-username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Enter your Twitter username (without @)"
+            placeholder="Enter your X username (without @)"
             disabled={isVerifying || isVerified}
             className="username-input"
           />

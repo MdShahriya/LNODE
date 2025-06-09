@@ -8,6 +8,7 @@ import { bsc, bscTestnet } from '@reown/appkit/networks'
 import React, { type ReactNode } from 'react'
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
 import { Toaster } from 'react-hot-toast'
+import { SessionProvider } from 'next-auth/react'
 
 // Set up queryClient
 const queryClient = new QueryClient()
@@ -53,36 +54,38 @@ function ContextProvider({ children, cookies }: { children: ReactNode; cookies: 
   const initialState = cookieToInitialState(wagmiAdapter.wagmiConfig as Config, cookies)
 
   return (
-    <WagmiProvider config={wagmiAdapter.wagmiConfig as Config} initialState={initialState}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#1a1a1a',
-              color: '#fff',
-              border: '1px solid #333',
-              borderRadius: '8px',
-              fontSize: '14px'
-            },
-            success: {
-              iconTheme: {
-                primary: '#10b981',
-                secondary: '#fff'
+    <SessionProvider>
+      <WagmiProvider config={wagmiAdapter.wagmiConfig as Config} initialState={initialState}>
+        <QueryClientProvider client={queryClient}>
+          {children}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#1a1a1a',
+                color: '#fff',
+                border: '1px solid #333',
+                borderRadius: '8px',
+                fontSize: '14px'
+              },
+              success: {
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#fff'
+                }
+              },
+              error: {
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff'
+                }
               }
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff'
-              }
-            }
-          }}
-        />
-      </QueryClientProvider>
-    </WagmiProvider>
+            }}
+          />
+        </QueryClientProvider>
+      </WagmiProvider>
+    </SessionProvider>
   )
 }
 

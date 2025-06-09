@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revokeAccessToken } from '@/lib/twitter-oauth';
+import { revokeAccessToken } from '@/lib/twitter-oauth-1a';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 
@@ -29,9 +29,12 @@ export async function POST(request: NextRequest) {
     }
     
     // Revoke access token if it exists
-    if (user.twitterAccessToken) {
+    if (user.twitterAccessToken && user.twitterAccessTokenSecret) {
       try {
-        await revokeAccessToken(user.twitterAccessToken);
+        await revokeAccessToken(
+          user.twitterAccessToken,
+          user.twitterAccessTokenSecret
+        );
       } catch (error) {
         console.warn('Failed to revoke Twitter access token:', error);
         // Continue with disconnection even if revocation fails
@@ -42,8 +45,7 @@ export async function POST(request: NextRequest) {
     user.twitterUsername = undefined;
     user.twitterId = undefined;
     user.twitterAccessToken = undefined;
-    user.twitterRefreshToken = undefined;
-    user.twitterTokenExpiresAt = undefined;
+    user.twitterAccessTokenSecret = undefined;
     user.twitterVerified = false;
     user.twitterConnectedAt = undefined;
     

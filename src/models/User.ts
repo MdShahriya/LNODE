@@ -47,8 +47,7 @@ export interface IUser extends Document {
   twitterUsername?: string;
   twitterId?: string;
   twitterAccessToken?: string;
-  twitterRefreshToken?: string;
-  twitterTokenExpiresAt?: Date;
+  twitterAccessTokenSecret?: string;
   twitterVerified?: boolean;
   twitterConnectedAt?: Date;
 
@@ -237,12 +236,9 @@ const UserSchema: Schema = new Schema(
       type: String,
       select: false, // Don't include in queries by default for security
     },
-    twitterRefreshToken: {
+    twitterAccessTokenSecret: {
       type: String,
       select: false, // Don't include in queries by default for security
-    },
-    twitterTokenExpiresAt: {
-      type: Date,
     },
     twitterVerified: {
       type: Boolean,
