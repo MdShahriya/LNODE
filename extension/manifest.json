@@ -25,12 +25,12 @@
   ],
   "content_scripts": [
     {
-      "matches": ["http://localhost:3000/*", "https://*.topay.foundation/*"],
+      "matches": ["https://node.topayfoundation.com/*", "https://*.topay.foundation/*"],
       "js": ["content.js"]
     }
   ],
   "host_permissions": [
-    "http://localhost:3000/*",
+    "https://node.topayfoundation.com/*",
     "https://*.topay.foundation/*",
     "https://api.ipify.org/*"
   ],
@@ -41,7 +41,7 @@
   "web_accessible_resources": [
     {
       "resources": ["inject.js"],
-      "matches": ["http://localhost:3000/*", "https://*.topay.foundation/*"]
+      "matches": ["https://node.topayfoundation.com/*", "https://*.topay.foundation/*"]
     }
   ]
 }

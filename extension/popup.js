@@ -103,7 +103,7 @@ function init() {
 
 function connectWallet() {
   // Open the dashboard in a new tab to get the wallet address
-  chrome.tabs.create({ url: `http://localhost:3000/dashboard` });
+  chrome.tabs.create({ url: `https://node.topayfoundation.com/dashboard` });
   
   // The dashboard will send the wallet address back to the extension
   // This will be handled by the content script and message listeners
@@ -199,13 +199,13 @@ function toggleNode() {
 
 function goToDashboard() {
   // Open the dashboard in a new tab with the wallet address as a parameter
-  chrome.tabs.create({ url: `http://localhost:3000/dashboard?wallet=${walletAddress}` });
+  chrome.tabs.create({ url: `https://node.topayfoundation.com/dashboard?wallet=${walletAddress}` });
 }
 
 function notifyDashboard(event, data = {}) {
   // Send a message to the content script to notify the dashboard of an event
   try {
-    chrome.tabs.query({ url: ["http://localhost:3000/*"] }, (tabs) => {
+    chrome.tabs.query({ url: ["https://node.topayfoundation.com/*"] }, (tabs) => {
       if (tabs && tabs.length > 0) {
         // Add a small delay to ensure content scripts are fully loaded
         setTimeout(() => {

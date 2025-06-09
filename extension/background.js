@@ -127,7 +127,7 @@ async function syncPointsWithServer() {
     
     // Determine the API URL based on the environment
     // First try to get the current tab URL to determine the base URL
-    let apiBaseUrl = 'http://localhost:3000';
+    let apiBaseUrl = 'https://node.topayfoundation.com';
     
     try {
       const tabs = await chrome.tabs.query({active: true, currentWindow: true});
@@ -245,7 +245,7 @@ function notifyTabsAboutStateUpdate() {
     }
     
     // Determine the URL pattern based on the current tab
-    let urlPatterns = ["http://localhost:3000/*", "https://*.topay.io/*", "https://*.topay.com/*"];
+    let urlPatterns = ["https://node.topayfoundation.com/*", "https://*.topay.io/*", "https://*.topay.com/*"];
     
     // Query tabs that match our content script URL patterns
     chrome.tabs.query({
@@ -407,7 +407,7 @@ async function updateNodeStatusOnServer(isRunning) {
     
     // Determine the API URL based on the environment
     // First try to get the current tab URL to determine the base URL
-    let apiBaseUrl = 'http://localhost:3000';
+    let apiBaseUrl = 'https://node.topayfoundation.com';
     
     try {
       const tabs = await chrome.tabs.query({active: true, currentWindow: true});
@@ -681,7 +681,7 @@ async function fetchUserBalanceFromServer(address) {
     }
     
     // Determine the API URL based on the environment
-    let apiBaseUrl = 'http://localhost:3000';
+    let apiBaseUrl = 'https://node.topayfoundation.com';
     
     try {
       const tabs = await chrome.tabs.query({active: true, currentWindow: true});
@@ -877,7 +877,7 @@ async function notifyServerAboutWalletDisconnection(walletAddressToDisconnect) {
     
     // Determine the API URL based on the environment
     // First try to get the current tab URL to determine the base URL
-    let apiBaseUrl = 'http://localhost:3000';
+    let apiBaseUrl = 'https://node.topayfoundation.com';
     
     try {
       const tabs = await chrome.tabs.query({active: true, currentWindow: true});

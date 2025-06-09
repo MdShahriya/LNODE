@@ -367,70 +367,11 @@ export default function TaskCenter() {
 
       // Proceed with manual verification
       await updateTaskStatus(taskId, 'completed')
-// Remove unreachable code since it appears after a return statement
     } catch (error) {
       console.error('Error completing task:', error)
       toast.error(`Failed to complete task "${task.title}". Please try again.`)
     }
   }, [tasks, updateTaskStatus, verifyTaskViaApi, checkTaskRequirements])
-
-  // Test function to demonstrate popup messages
-  const testPopupMessages = useCallback(() => {
-    // Test different types of popup messages
-    const testScenarios = [
-      () => {
-        toast.error('Please complete the following requirements first:\n• Connect your wallet\n• Follow us on Twitter\n• Join our Discord community', {
-          duration: 6000,
-          style: {
-            maxWidth: '400px',
-            fontSize: '14px'
-          }
-        })
-      },
-      () => {
-        toast(
-          'Please confirm you have completed all requirements for "Test Task":\n\n• Follow us on Twitter\n• Join our Discord community\n• Complete your profile\n\nIf you have completed all requirements, click the Verify button again to mark as completed.',
-          {
-            duration: 8000,
-            style: {
-              maxWidth: '500px',
-              fontSize: '14px',
-              lineHeight: '1.4'
-            }
-          }
-        )
-      },
-      () => {
-        toast.error('Task "Social Media Engagement" verification failed. Please ensure you have completed all requirements:\n\n• Follow us on Twitter\n• Join our Discord community\n• Share our latest post\n\nThen try again.', {
-          duration: 7000,
-          style: {
-            maxWidth: '450px',
-            fontSize: '14px'
-          }
-        })
-      },
-      () => {
-        toast.success('Task completed successfully! You earned 100 points.', {
-          duration: 4000,
-          style: {
-            fontSize: '14px'
-          }
-        })
-      },
-      () => {
-        toast.loading('Verifying task completion...', {
-          duration: 2000
-        })
-        setTimeout(() => {
-          toast.success('Verification complete!')
-        }, 2000)
-      }
-    ]
-    
-    // Cycle through different test scenarios
-    const scenario = testScenarios[Math.floor(Math.random() * testScenarios.length)]
-    scenario()
-  }, [])
 
   // Fetch tasks from API
   const fetchTasks = useCallback(async () => {
@@ -526,30 +467,6 @@ export default function TaskCenter() {
         >
           Task Center
         </motion.h1>
-        
-        {/* Test button for popup messages */}
-        <motion.button
-          onClick={testPopupMessages}
-          className="task-center__test-button"
-          style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            marginBottom: '20px',
-            fontSize: '14px',
-            fontWeight: '500'
-          }}
-          whileHover={{ scale: 1.05, boxShadow: '0 8px 20px rgba(102, 126, 234, 0.4)' }}
-          whileTap={{ scale: 0.95 }}
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          🧪 Test Popup Messages
-        </motion.button>
         
         {!isConnected ? (
           <motion.div 
