@@ -104,7 +104,7 @@ export default function Sidebar() {
         <div className="sidebar__footer">
           <div className="sidebar__extension">
             <a 
-              href="https://chrome.google.com/webstore/detail/topay-node-extension/your-extension-id" 
+              href="https://chromewebstore.google.com/detail/topay-node-dashboard/iccokkjgjalhfndahkbkjlgnmeccoddl" 
               target="_blank" 
               rel="noopener noreferrer"
               className="sidebar__extension-link"

@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { FaTwitter, FaGithub, FaDiscord, FaChrome } from 'react-icons/fa';
+import { FaTwitter, FaGithub, FaDiscord } from 'react-icons/fa';
 import NodeNetworkBackground from "../components/NodeNetworkBackground";
 import "./page.css";
 
@@ -312,9 +312,6 @@ const LandingPage: React.FC = () => {
                   </a>
                   <a href="https://discord.gg/tqRcdbnvXx" className="footer-social-link" aria-label="Discord">
                     <FaDiscord />
-                  </a>
-                  <a href="https://chrome.google.com/webstore/detail/topay-node-extension/your-extension-id" className="footer-social-link" aria-label="Chrome Extension">
-                    <FaChrome />
                   </a>
                 </div>
               </div>
