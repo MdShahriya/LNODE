@@ -64,9 +64,9 @@ const LandingPage: React.FC = () => {
 
           <nav className="header-nav">
             <ul className="header-nav-list">
-              <li><Link href="/" className="header-nav-link active">Home</Link></li>
-              <li><Link href="/dashboard/rewards" className="header-nav-link">Rewards</Link></li>
-              <li><Link href="/dashboard/leaderboard" className="header-nav-link">Leaderboard</Link></li>
+              <li><Link href="https://topayfoundation.com/" className="header-nav-link active">Home</Link></li>
+              <li><Link href="https://docs.topayfoundation.com/docs/intro" className="header-nav-link">Documentaion</Link></li>
+              <li><Link href="https://topayfoundation.com/roadmap" className="header-nav-link">Roadmap</Link></li>
             </ul>
           </nav>
 
@@ -155,9 +155,6 @@ const LandingPage: React.FC = () => {
               <span className="list-icon">🏆</span> <strong>Achievements:</strong> Unlock exclusive achievements and improve leaderboard ranking to earn bonus rewards
             </motion.li>
             <motion.li variants={listItem}>
-              <span className="list-icon">💻</span> <strong>Low Requirements:</strong> Run a node with minimal hardware - 2GB RAM, 50GB storage, and stable internet connection
-            </motion.li>
-            <motion.li variants={listItem}>
               <span className="list-icon">🌐</span> <strong>Community:</strong> Join a global community of node operators collaborating to build the future of finance
             </motion.li>
           </motion.ul>
@@ -191,18 +188,6 @@ const LandingPage: React.FC = () => {
               <strong>Vision:</strong> A world where financial transactions are seamless, secure, and accessible to everyone, regardless of location or economic status.
             </motion.p>
             <motion.div className="about-stats" variants={listItem}>
-              <div className="stat-item">
-                <span className="stat-number">10,000+</span>
-                <span className="stat-label">Active Nodes</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-number">150+</span>
-                <span className="stat-label">Countries</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-number">1M+</span>
-                <span className="stat-label">Transactions Daily</span>
-              </div>
             </motion.div>
           </motion.div>
         </motion.section>
@@ -302,7 +287,6 @@ const LandingPage: React.FC = () => {
             <div className="footer-links">
 
               <div className="footer-links-column">
-                <h3 className="footer-links-title">Connect</h3>
                 <div className="footer-social-links">
                   <a href="https://x.com/topayfoundation" className="footer-social-link" aria-label="Twitter">
                     <FaTwitter />

@@ -505,11 +505,6 @@ canvas {
   gap: 0.75rem;
 }
 
-.header-logo-image {
-  border-radius: 50%;
-  box-shadow: 0 0 10px rgba(21, 207, 241, 0.3);
-}
-
 .header-logo-text {
   font-size: 1.5rem;
   font-weight: 700;
@@ -546,7 +541,6 @@ canvas {
   left: 0;
   width: 0;
   height: 2px;
-  background: linear-gradient(90deg, #0D7CE9, #15CFF1);
   transition: width 0.3s ease;
 }
 
