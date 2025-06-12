@@ -41,7 +41,7 @@ This guide will help you set up X API integration with OAuth 2.0 authentication 
      - ✅ Direct Messages (optional)
    - **Type of App**: Web App
    - **Callback URLs**:
-     - Development: `http://localhost:3000/api/auth/twitter/callback`
+     - Development: `https://node.topayfoundation.com/api/auth/twitter/callback`
      - Production: `https://yourdomain.com/api/auth/twitter/callback`
    - **Website URL**: Your application's URL
    - **Terms of Service**: Your terms URL (optional)
@@ -81,10 +81,10 @@ TWITTER_ACCESS_TOKEN_SECRET=your_access_token_secret_here
 # OAuth 2.0 credentials (REQUIRED for user authentication)
 TWITTER_CLIENT_ID=your_oauth2_client_id_here
 TWITTER_CLIENT_SECRET=your_oauth2_client_secret_here
-TWITTER_CALLBACK_URL=http://localhost:3000/api/auth/twitter/callback
+TWITTER_CALLBACK_URL=https://node.topayfoundation.com/api/auth/twitter/callback
 
 # Application settings
-NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=https://node.topayfoundation.com
 NODE_ENV=development
 ```
 
@@ -420,7 +420,7 @@ Implement caching and request throttling in production.
 2. Test the API endpoint:
 
    ```bash
-   curl "http://localhost:3000/api/social/verify?walletAddress=0x123&platform=twitter&username=test_user&action=follow"
+   curl "https://node.topayfoundation.com/api/social/verify?walletAddress=0x123&platform=twitter&username=test_user&action=follow"
    ```
 
 3. Check the response for successful verification or error messages.

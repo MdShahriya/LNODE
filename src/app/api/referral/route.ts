@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const totalPointsEarned = referredUsers.reduce((total, u) => total + (u.referralPointsEarned || 0), 0);
     
     // Generate referral link with the format: domain.com/ref/referer-address
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://node.topayfoundation.com';
     const referralLink = `${baseUrl}/ref/${user.walletAddress}`;
 
     const stats = {

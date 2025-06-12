@@ -4,7 +4,7 @@ import crypto from 'crypto';
 // OAuth configuration
 const TWITTER_CLIENT_ID = process.env.TWITTER_CLIENT_ID!;
 const TWITTER_CLIENT_SECRET = process.env.TWITTER_CLIENT_SECRET!;
-const CALLBACK_URL = process.env.TWITTER_CALLBACK_URL || 'http://localhost:3000/api/auth/twitter/callback';
+const CALLBACK_URL = process.env.TWITTER_CALLBACK_URL || 'https://node.topayfoundation.com/api/auth/twitter/callback';
 
 // OAuth 2.0 PKCE (Proof Key for Code Exchange) implementation
 export interface TwitterOAuthState {
