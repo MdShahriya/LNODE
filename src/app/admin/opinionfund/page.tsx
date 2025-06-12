@@ -13,7 +13,7 @@ type ContractAction = 'deposit' | 'withdraw' | 'pause' | 'unpause' | ''
 
 // List of authorized wallet addresses for Opinion Fund management
 const OPINION_FUND_MANAGERS = [
-  '0xeA79596784C7A93f64D51452337513Fd248C310d'
+  '0x9841adF197F21fE9a299312da8EF2C47f83c4e89'
 ].map(addr => addr.toLowerCase());
 
 export default function AdminOpinionFund() {
