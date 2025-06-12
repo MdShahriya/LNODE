@@ -30,14 +30,14 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     explorer: 'https://bscscan.com',
     rpcUrl: 'https://bsc-dataseed1.binance.org/',
     usdtAddress: '0x55d398326f99059fF775485246999027B3197955' as Address, // Actual USDT address on BSC mainnet
-    fundCollectionPoolAddress: '0x0000000000000000000000000000000000000000' as Address, // TODO: Add actual fund pool address
-    nftGeneratorAddress: '0x0000000000000000000000000000000000000000' as Address, // TODO: Add actual NFT contract address after deployment
+    fundCollectionPoolAddress: '0x2EE8F86Ca4fC40e7A7593D6aA1326b299E282B1F' as Address, // TODO: Add actual fund pool address
+    nftGeneratorAddress: '0xc378039Cb9edCfe24cB739054E7740F407AF5fba' as Address, // TODO: Add actual NFT contract address after deployment
     website: 'https://node.topayfoundation.com'
   }
 };
 
 // Set the active network (replace with your actual active network)
-export const ACTIVE_NETWORK = NETWORKS.bscTestnet;
+export const ACTIVE_NETWORK = NETWORKS.bscMainnet;
 
 // Export contract addresses for convenience
 export const USDT_CONTRACT_ADDRESS = ACTIVE_NETWORK.usdtAddress;

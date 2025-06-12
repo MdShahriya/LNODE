@@ -4,7 +4,7 @@
 import { wagmiAdapter, projectId } from '@/config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createAppKit } from '@reown/appkit/react' 
-import { bsc, bscTestnet } from '@reown/appkit/networks'
+import { bsc } from '@reown/appkit/networks'
 import React, { type ReactNode } from 'react'
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
 import { Toaster } from 'react-hot-toast'
@@ -29,7 +29,7 @@ const metadata = {
 export const modal = createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks: [bsc,bscTestnet],
+  networks: [bsc],
   defaultNetwork: bsc,
   metadata: metadata,
   termsConditionsUrl: "",
