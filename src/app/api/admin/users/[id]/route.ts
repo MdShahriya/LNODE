@@ -28,6 +28,14 @@ export async function PATCH(
       user.points = data.points;
     }
     
+    if (data.verification !== undefined) {
+      user.verification = data.verification;
+      if (data.verification === 'verified') {
+        user.verifiedAt = new Date();
+        user.verificationMethod = 'admin';
+      }
+    }
+    
     await user.save();
     
     return NextResponse.json({ user });

@@ -12,6 +12,7 @@ interface User {
   uptime: number // in seconds
   nodeStatus: boolean
   nodeStartTime: string | null
+  verification?: string // 'verified', 'unverified', or 'pending'
   createdAt: string
   updatedAt: string
 }
@@ -28,7 +29,8 @@ export default function AdminUsersManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editFormData, setEditFormData] = useState({
-    points: 0
+    points: 0,
+    verification: 'unverified'
   })
 
   const usersPerPage = 10
@@ -123,7 +125,8 @@ export default function AdminUsersManagement() {
   const openEditModal = (user: User) => {
     setSelectedUser(user)
     setEditFormData({
-      points: user.points
+      points: user.points,
+      verification: user.verification || 'unverified'
     })
     setIsEditModalOpen(true)
   }
@@ -135,11 +138,11 @@ export default function AdminUsersManagement() {
   }
 
   // Handle edit form input change
-  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setEditFormData({
       ...editFormData,
-      [name]: parseInt(value) || 0
+      [name]: name === 'points' ? (parseInt(value) || 0) : value
     })
   }
 
@@ -165,6 +168,7 @@ export default function AdminUsersManagement() {
       setUsers(users.map(user => user.id === selectedUser.id ? {
         ...user,
         points: updatedUser.points,
+        verification: updatedUser.verification,
         updatedAt: updatedUser.updatedAt
       } : user))
       
@@ -267,113 +271,243 @@ export default function AdminUsersManagement() {
   return (
     <div className="admin-users">
       <div className="admin-users__container">
-        <h1 className="admin-users__title">User Management</h1>
-        <p className="admin-users__subtitle">View and manage TOPAY users</p>
-
-        <div className="admin-users__search">
-          <input
-            type="text"
-            placeholder="Search by wallet address"
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className="admin-users__search-input"
-          />
-        </div>
-
-        <div className="admin-users__filters">
-          <div className="admin-users__filter">
-            <span className="admin-users__filter-label">Node Status:</span>
-            <select
-              value={nodeFilter}
-              onChange={handleNodeFilterChange}
-              className="admin-users__filter-select"
-            >
-              <option value="all">All</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+        {/* Header Section */}
+        <div className="admin-users__header">
+          <div className="admin-users__header-content">
+            <h1 className="admin-users__title">
+              <span className="admin-users__title-icon">👥</span>
+              User Management
+            </h1>
+            <p className="admin-users__subtitle">Manage and monitor TOPAY network participants</p>
           </div>
-          
-          <div className="admin-users__filter">
-            <span className="admin-users__filter-label">Sort By:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => handleSortChange(e.target.value as keyof User)}
-              className="admin-users__filter-select"
-            >
-              <option value="points">Points</option>
-              <option value="tasksCompleted">Tasks Completed</option>
-              <option value="uptime">Uptime</option>
-              <option value="createdAt">Join Date</option>
-            </select>
-          </div>
-          
-          <div className="admin-users__filter">
-            <span className="admin-users__filter-label">Order:</span>
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-              className="admin-users__filter-select"
-            >
-              <option value="desc">Highest First</option>
-              <option value="asc">Lowest First</option>
-            </select>
+          <div className="admin-users__stats">
+            <div className="admin-users__stat-card">
+              <div className="admin-users__stat-value">{users.length}</div>
+              <div className="admin-users__stat-label">Total Users</div>
+            </div>
+            <div className="admin-users__stat-card">
+              <div className="admin-users__stat-value">{users.filter(u => u.nodeStatus).length}</div>
+              <div className="admin-users__stat-label">Active Nodes</div>
+            </div>
+            <div className="admin-users__stat-card">
+              <div className="admin-users__stat-value">{users.filter(u => u.verification === 'verified').length}</div>
+              <div className="admin-users__stat-label">Verified Users</div>
+            </div>
           </div>
         </div>
 
-        <div className="admin-users__card">
-          <h2 className="admin-users__card-title">Users List</h2>
+        {/* Search and Filters Section */}
+        <div className="admin-users__controls">
+          <div className="admin-users__search-section">
+            <div className="admin-users__search">
+              <div className="admin-users__search-icon">🔍</div>
+              <input
+                type="text"
+                placeholder="Search by wallet address..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="admin-users__search-input"
+              />
+            </div>
+          </div>
+
+          <div className="admin-users__filters">
+            <div className="admin-users__filter">
+              <label className="admin-users__filter-label">Node Status</label>
+              <select
+                value={nodeFilter}
+                onChange={handleNodeFilterChange}
+                className="admin-users__filter-select"
+              >
+                <option value="all">All Nodes</option>
+                <option value="active">🟢 Active</option>
+                <option value="inactive">🔴 Inactive</option>
+              </select>
+            </div>
+            
+            <div className="admin-users__filter">
+              <label className="admin-users__filter-label">Sort By</label>
+              <select
+                value={sortBy}
+                onChange={(e) => handleSortChange(e.target.value as keyof User)}
+                className="admin-users__filter-select"
+              >
+                <option value="points">💰 Points</option>
+                <option value="tasksCompleted">✅ Tasks</option>
+                <option value="uptime">⏱️ Uptime</option>
+                <option value="createdAt">📅 Join Date</option>
+              </select>
+            </div>
+            
+            <div className="admin-users__filter">
+              <label className="admin-users__filter-label">Order</label>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                className="admin-users__filter-select"
+              >
+                <option value="desc">📈 Highest First</option>
+                <option value="asc">📉 Lowest First</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Users Table Section */}
+        <div className="admin-users__main-content">
+          <div className="admin-users__table-header">
+            <h2 className="admin-users__table-title">
+              <span className="admin-users__table-icon">📊</span>
+              Users Overview
+            </h2>
+            <div className="admin-users__table-info">
+              Showing {filteredUsers.length} of {users.length} users
+            </div>
+          </div>
           
           {loading ? (
             <div className="admin-users__loading">
               <div className="admin-users__loading-spinner"></div>
-              <p>Loading users...</p>
+              <div className="admin-users__loading-text">
+                <h3>Loading Users...</h3>
+                <p>Fetching user data from the network</p>
+              </div>
             </div>
           ) : paginatedUsers.length === 0 ? (
-            <p>No users found matching your criteria.</p>
+            <div className="admin-users__empty-state">
+              <div className="admin-users__empty-icon">🔍</div>
+              <h3>No Users Found</h3>
+              <p>No users match your current search criteria. Try adjusting your filters.</p>
+            </div>
           ) : (
             <>
               <div className="admin-users__table-container">
                 <table className="admin-users__table">
                   <thead>
                     <tr>
-                      <th>Wallet Address</th>
-                      <th>Points</th>
-                      <th>Tasks Completed</th>
-                      <th>Uptime</th>
-                      <th>Node Status</th>
-                      <th>Join Date</th>
-                      <th>Actions</th>
+                      <th className="admin-users__table-header clickable" onClick={() => handleSortChange('walletAddress')}>
+                        <span className="admin-users__header-content">
+                          <span className="admin-users__header-icon">👤</span>
+                          Wallet Address
+                          {sortBy === 'walletAddress' && <span className="admin-users__sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                        </span>
+                      </th>
+                      <th className="admin-users__table-header clickable" onClick={() => handleSortChange('points')}>
+                        <span className="admin-users__header-content">
+                          <span className="admin-users__header-icon">💰</span>
+                          Points
+                          {sortBy === 'points' && <span className="admin-users__sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                        </span>
+                      </th>
+                      <th className="admin-users__table-header clickable" onClick={() => handleSortChange('tasksCompleted')}>
+                        <span className="admin-users__header-content">
+                          <span className="admin-users__header-icon">✅</span>
+                          Tasks
+                          {sortBy === 'tasksCompleted' && <span className="admin-users__sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                        </span>
+                      </th>
+                      <th className="admin-users__table-header clickable" onClick={() => handleSortChange('uptime')}>
+                        <span className="admin-users__header-content">
+                          <span className="admin-users__header-icon">⏱️</span>
+                          Uptime
+                          {sortBy === 'uptime' && <span className="admin-users__sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                        </span>
+                      </th>
+                      <th className="admin-users__table-header clickable" onClick={() => handleSortChange('nodeStatus')}>
+                        <span className="admin-users__header-content">
+                          <span className="admin-users__header-icon">🔗</span>
+                          Node Status
+                          {sortBy === 'nodeStatus' && <span className="admin-users__sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                        </span>
+                      </th>
+                      <th className="admin-users__table-header clickable" onClick={() => handleSortChange('verification')}>
+                        <span className="admin-users__header-content">
+                          <span className="admin-users__header-icon">🛡️</span>
+                          Verification
+                          {sortBy === 'verification' && <span className="admin-users__sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                        </span>
+                      </th>
+                      <th className="admin-users__table-header clickable" onClick={() => handleSortChange('createdAt')}>
+                        <span className="admin-users__header-content">
+                          <span className="admin-users__header-icon">📅</span>
+                          Joined
+                          {sortBy === 'createdAt' && <span className="admin-users__sort-indicator">{sortOrder === 'asc' ? '↑' : '↓'}</span>}
+                        </span>
+                      </th>
+                      <th className="admin-users__table-header">
+                        <span className="admin-users__header-content">
+                          <span className="admin-users__header-icon">⚙️</span>
+                          Actions
+                        </span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedUsers.map((user) => (
-                      <tr key={user.id}>
-                        <td>{user.walletAddress}</td>
-                        <td>{user.points}</td>
-                        <td>{user.tasksCompleted}</td>
-                        <td>{formatUptime(user.uptime)}</td>
-                        <td>
-                          <div className="node-status">
-                            <div className={`node-status__indicator ${user.nodeStatus ? 'active' : 'inactive'}`}></div>
-                            {user.nodeStatus ? 'Active' : 'Inactive'}
+                      <tr key={user.id} className="admin-users__table-row">
+                        <td className="admin-users__table-cell">
+                          <div className="admin-users__wallet-info">
+                            <div className="admin-users__wallet-address">
+                              {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
+                            </div>
+                            <div className="admin-users__wallet-full" title={user.walletAddress}>
+                              {user.walletAddress}
+                            </div>
                           </div>
                         </td>
-                        <td>{formatDate(user.createdAt)}</td>
-                        <td>
+                        <td className="admin-users__table-cell">
+                          <div className="admin-users__points">
+                            <span className="admin-users__points-value">{user.points.toLocaleString()}</span>
+                            <span className="admin-users__points-label">pts</span>
+                          </div>
+                        </td>
+                        <td className="admin-users__table-cell">
+                          <div className="admin-users__tasks">
+                            <span className="admin-users__tasks-value">{user.tasksCompleted}</span>
+                            <span className="admin-users__tasks-label">completed</span>
+                          </div>
+                        </td>
+                        <td className="admin-users__table-cell">
+                          <div className="admin-users__uptime">
+                            {formatUptime(user.uptime)}
+                          </div>
+                        </td>
+                        <td className="admin-users__table-cell">
+                          <div className={`node-status ${user.nodeStatus ? 'active' : 'inactive'}`}>
+                            <div className={`node-status__indicator ${user.nodeStatus ? 'active' : 'inactive'}`}></div>
+                            <span className="node-status__text">{user.nodeStatus ? 'Active' : 'Inactive'}</span>
+                          </div>
+                        </td>
+                        <td className="admin-users__table-cell">
+                          <span className={`verification-status ${user.verification || 'unverified'}`}>
+                            {user.verification === 'verified' ? '✅ Verified' : 
+                             user.verification === 'pending' ? '⏳ Pending' : 
+                             '❌ Unverified'}
+                          </span>
+                        </td>
+                        <td className="admin-users__table-cell">
+                          <div className="admin-users__date">
+                            {formatDate(user.createdAt)}
+                          </div>
+                        </td>
+                        <td className="admin-users__table-cell">
                           <div className="admin-users__table-actions">
                             <button
                               onClick={() => openEditModal(user)}
-                              className="admin-button admin-button--secondary"
+                              className="admin-button admin-button--edit"
+                              title="Edit user"
                             >
+                              <span className="admin-button__icon">✏️</span>
                               Edit
                             </button>
                             {user.nodeStatus && (
                               <button
                                 onClick={() => resetNodeStatus(user.id)}
-                                className="admin-button admin-button--danger"
+                                className="admin-button admin-button--reset"
+                                title="Reset node status"
                               >
-                                Reset Node
+                                <span className="admin-button__icon">🔄</span>
+                                Reset
                               </button>
                             )}
                           </div>
@@ -386,47 +520,71 @@ export default function AdminUsersManagement() {
               
               <div className="admin-users__pagination">
                 <div className="admin-users__pagination-info">
-                  Showing {(currentPage - 1) * usersPerPage + 1} to {Math.min(currentPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
+                  <span className="admin-users__pagination-text">
+                    Showing <strong>{(currentPage - 1) * usersPerPage + 1}</strong> to <strong>{Math.min(currentPage * usersPerPage, filteredUsers.length)}</strong> of <strong>{filteredUsers.length}</strong> users
+                  </span>
                 </div>
-                <div className="admin-users__pagination-buttons">
+                <div className="admin-users__pagination-controls">
+                  <button
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                    className="admin-users__pagination-button admin-users__pagination-button--first"
+                    title="First page"
+                  >
+                    ⏮️
+                  </button>
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="admin-users__pagination-button"
+                    className="admin-users__pagination-button admin-users__pagination-button--prev"
+                    title="Previous page"
                   >
-                    Previous
+                    ⬅️ Previous
                   </button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    // Show 5 pages max, centered around current page
-                    let pageNum = currentPage
-                    if (currentPage <= 3) {
-                      pageNum = i + 1
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i
-                    } else {
-                      pageNum = currentPage - 2 + i
-                    }
-                    
-                    // Only show valid page numbers
-                    if (pageNum > 0 && pageNum <= totalPages) {
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`admin-users__pagination-button ${currentPage === pageNum ? 'active' : ''}`}
-                        >
-                          {pageNum}
-                        </button>
-                      )
-                    }
-                    return null
-                  })}
+                  
+                  <div className="admin-users__pagination-numbers">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      // Show 5 pages max, centered around current page
+                      let pageNum = currentPage
+                      if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+                      
+                      // Only show valid page numbers
+                      if (pageNum > 0 && pageNum <= totalPages) {
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`admin-users__pagination-button admin-users__pagination-button--number ${currentPage === pageNum ? 'admin-users__pagination-button--active' : ''}`}
+                          >
+                            {pageNum}
+                          </button>
+                        )
+                      }
+                      return null
+                    })}
+                  </div>
+                  
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="admin-users__pagination-button"
+                    className="admin-users__pagination-button admin-users__pagination-button--next"
+                    title="Next page"
                   >
-                    Next
+                    Next ➡️
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="admin-users__pagination-button admin-users__pagination-button--last"
+                    title="Last page"
+                  >
+                    ⏭️
                   </button>
                 </div>
               </div>
@@ -437,46 +595,105 @@ export default function AdminUsersManagement() {
 
       {/* Edit User Modal */}
       {isEditModalOpen && selectedUser && (
-        <div className="admin-users__modal">
-          <div className="admin-users__modal-content">
+        <div className="admin-users__modal" onClick={closeEditModal}>
+          <div className="admin-users__modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="admin-users__modal-header">
-              <h3 className="admin-users__modal-title">Edit User</h3>
+              <div className="admin-users__modal-title-section">
+                <h3 className="admin-users__modal-title">
+                  <span className="admin-users__modal-icon">✏️</span>
+                  Edit User Profile
+                </h3>
+                <p className="admin-users__modal-subtitle">Modify user settings and permissions</p>
+              </div>
               <button
                 onClick={closeEditModal}
                 className="admin-users__modal-close"
+                title="Close modal"
               >
-                &times;
+                ✕
               </button>
             </div>
+            
             <div className="admin-users__modal-body">
-              <p>Wallet Address: {selectedUser.walletAddress}</p>
-              <form onSubmit={handleEditSubmit}>
-                <div className="admin-users__form-group">
-                  <label className="admin-users__form-label" htmlFor="points">
-                    Points
-                  </label>
-                  <input
-                    type="number"
-                    id="points"
-                    name="points"
-                    value={editFormData.points}
-                    onChange={handleEditInputChange}
-                    className="admin-users__form-input"
-                    min="0"
-                  />
+              <div className="admin-users__user-info">
+                <div className="admin-users__user-avatar">
+                  <span className="admin-users__avatar-icon">👤</span>
                 </div>
+                <div className="admin-users__user-details">
+                  <h4 className="admin-users__user-wallet">Wallet Address</h4>
+                  <p className="admin-users__wallet-address-full" title={selectedUser.walletAddress}>
+                    {selectedUser.walletAddress}
+                  </p>
+                  <div className="admin-users__user-stats">
+                    <span className="admin-users__user-stat">
+                      <span className="admin-users__stat-icon">📅</span>
+                      Joined: {formatDate(selectedUser.createdAt)}
+                    </span>
+                    <span className="admin-users__user-stat">
+                      <span className="admin-users__stat-icon">✅</span>
+                      Tasks: {selectedUser.tasksCompleted}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <form onSubmit={handleEditSubmit} className="admin-users__edit-form">
+                <div className="admin-users__form-row">
+                  <div className="admin-users__form-group">
+                    <label className="admin-users__form-label" htmlFor="points">
+                      <span className="admin-users__label-icon">💰</span>
+                      Points Balance
+                    </label>
+                    <div className="admin-users__input-wrapper">
+                      <input
+                        type="number"
+                        id="points"
+                        name="points"
+                        value={editFormData.points}
+                        onChange={handleEditInputChange}
+                        className="admin-users__form-input"
+                        min="0"
+                        placeholder="Enter points amount"
+                      />
+                      <span className="admin-users__input-suffix">pts</span>
+                    </div>
+                    <p className="admin-users__form-help">Current: {selectedUser.points.toLocaleString()} points</p>
+                  </div>
+                  
+                  <div className="admin-users__form-group">
+                    <label className="admin-users__form-label" htmlFor="verification">
+                      <span className="admin-users__label-icon">🛡️</span>
+                      Verification Status
+                    </label>
+                    <select
+                      id="verification"
+                      name="verification"
+                      value={editFormData.verification}
+                      onChange={handleEditInputChange}
+                      className="admin-users__form-select"
+                    >
+                      <option value="unverified">❌ Unverified</option>
+                      <option value="pending">⏳ Pending Review</option>
+                      <option value="verified">✅ Verified</option>
+                    </select>
+                    <p className="admin-users__form-help">Current: {selectedUser.verification || 'unverified'}</p>
+                  </div>
+                </div>
+                
                 <div className="admin-users__modal-footer">
                   <button
                     type="button"
                     onClick={closeEditModal}
-                    className="admin-button admin-button--secondary"
+                    className="admin-button admin-button--cancel"
                   >
+                    <span className="admin-button__icon">❌</span>
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="admin-button admin-button--primary"
+                    className="admin-button admin-button--save"
                   >
+                    <span className="admin-button__icon">💾</span>
                     Save Changes
                   </button>
                 </div>

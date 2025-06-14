@@ -7,7 +7,7 @@ import './admin-layout.css';
 
 // List of authorized admin wallet addresses
 const ADMIN_ADDRESSES = [
-  '0x9841adF197F21fE9a299312da8EF2C47f83c4e89', // Replace with actual admin addresses
+  '0x9841adF197F21fE9a299312da8EF2C47f83c4e89',
   '0xeA79596784C7A93f64D51452337513Fd248C310d'
 ].map(addr => addr.toLowerCase());
 
@@ -38,7 +38,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <div className="admin-unauthorized">
         <h1>Unauthorized Access</h1>
         <p>Please connect with an authorized admin wallet to access this section.</p>
-        <appkit-button balance='hide'/>
+        <appkit-connect-button />
       </div>
     );
   }

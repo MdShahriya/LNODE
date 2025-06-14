@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
       uptime: user.uptime,
       nodeStatus: user.nodeStatus,
       nodeStartTime: user.nodeStartTime,
+      verification: user.verification || 'unverified',
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     }));
