@@ -87,7 +87,7 @@ export default function VerifyPage() {
   // Mint amount is fixed to 1 NFT per user (except contract owner)
   
   // Countdown timer state - hardcoded target date
-  const targetDate = useMemo(() => new Date('2025-06-21T12:00:00'), []);
+  const targetDate = useMemo(() => new Date('2025-06-28T12:00:00'), []);
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
