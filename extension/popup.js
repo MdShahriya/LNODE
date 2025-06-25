@@ -8,30 +8,18 @@ const disconnectButton = document.getElementById('disconnect-wallet');
 const walletAddressElement = document.getElementById('wallet-address');
 const startButton = document.getElementById('toggle-node');
 const nodeStatusIndicator = document.getElementById('node-status');
-const totalRewardsElement = document.querySelector('.reward-item:first-child .reward-value');
-const rewardRateElement = document.querySelector('.reward-item:last-child .reward-value');
 const dashboardButton = document.getElementById('go-to-dashboard');
 
 // State variables
 let walletAddress = null;
 let isNodeRunning = false;
-let totalPoints = 0;
-let pointsRate = 0;
-
-// Constants
-const POINTS_PER_SECOND = 0.2;
-
-// Variables for points animation
-let displayedPoints = 0;
-let pointsAnimationInterval = null;
 
 // Initialize the popup
 function init() {
   // Load state from storage
-  chrome.storage.local.get(['walletAddress', 'isNodeRunning', 'totalPoints'], (result) => {
+  chrome.storage.local.get(['walletAddress', 'isNodeRunning'], (result) => {
     walletAddress = result.walletAddress || null;
     isNodeRunning = result.isNodeRunning || false;
-    totalPoints = result.totalPoints || 0;
     
     // Update the UI
     updateUI();
@@ -44,9 +32,6 @@ function init() {
     }
     if (changes.isNodeRunning) {
       isNodeRunning = changes.isNodeRunning.newValue;
-    }
-    if (changes.totalPoints) {
-      totalPoints = changes.totalPoints.newValue;
     }
     
     // Update the UI
@@ -72,8 +57,6 @@ function init() {
       if (response) {
         walletAddress = response.walletAddress;
         isNodeRunning = response.isNodeRunning;
-        totalPoints = response.totalPoints;
-        pointsRate = response.pointsRate || 0;
         updateUI();
       }
     });
@@ -90,8 +73,6 @@ function init() {
       if (message.state) {
         walletAddress = message.state.walletAddress;
         isNodeRunning = message.state.isNodeRunning;
-        totalPoints = message.state.totalPoints;
-        pointsRate = message.state.pointsRate || 0;
         
         // Update the UI
         updateUI();
@@ -217,8 +198,7 @@ function notifyDashboard(event, data = {}) {
                 data: {
                   ...data,
                   walletAddress,
-                  isNodeRunning,
-                  totalPoints
+                  isNodeRunning
                 }
               }, () => {
                 // Handle potential error with callback
@@ -273,7 +253,7 @@ function updateUI() {
     startButton.setAttribute('aria-label', 'Stop Node');
     // Update status description
     if (statusTextElement) {
-      statusTextElement.textContent = 'Node is running and earning rewards';
+      statusTextElement.textContent = 'Node is running';
       statusTextElement.style.color = '#10b981';
     }
     // Update SVG to power-off icon with enhanced styling
@@ -285,8 +265,7 @@ function updateUI() {
       <div class="button-glow"></div>
     `;
     
-    // Start points animation if not already running
-    startPointsAnimation();
+    // Node is running
   } else {
     // Show stopped UI
     startButton.classList.remove('stop-button');
@@ -309,71 +288,13 @@ function updateUI() {
       <div class="button-glow"></div>
     `;
     
-    // Stop points animation and update to exact value
-    stopPointsAnimation();
-    totalRewardsElement.textContent = totalPoints.toFixed(2) + ' pt';
+    // Node is stopped
   }
   
-  // Update rewards rate display
-  rewardRateElement.textContent = isNodeRunning ? pointsRate.toFixed(2) + ' pt/s' : '0.200 pt/s';
-  
-  // If not animating, update the total rewards display directly
-  if (!pointsAnimationInterval) {
-    displayedPoints = totalPoints;
-    totalRewardsElement.textContent = displayedPoints.toFixed(2) + ' pt';
-  }
+  // Node status updated
 }
 
-// Function to start the points animation
-function startPointsAnimation() {
-  // Clear any existing animation interval
-  stopPointsAnimation();
-  
-  // Set the initial displayed points if needed
-  if (displayedPoints === 0 && totalPoints > 0) {
-    displayedPoints = totalPoints;
-  }
-  
-  // Track the last increment time
-  let lastIncrementTime = Date.now();
-  
-  // Start a new interval to animate the points
-  pointsAnimationInterval = setInterval(() => {
-    // If the node is running, increment the displayed points
-    if (isNodeRunning) {
-      const currentTime = Date.now();
-      const elapsedSeconds = (currentTime - lastIncrementTime) / 1000;
-      
-      // Only increment when a full second has passed
-      if (elapsedSeconds >= 1) {
-        // Increment by exactly POINTS_PER_SECOND (0.2)
-        displayedPoints += POINTS_PER_SECOND;
-        lastIncrementTime = currentTime;
-        
-        // Ensure displayed points don't exceed actual points by too much
-        if (displayedPoints > totalPoints + 0.5) {
-          displayedPoints = totalPoints;
-        }
-        
-        // Update the display with exact increments (0.2, 0.4, 0.6, etc.)
-        totalRewardsElement.textContent = displayedPoints.toFixed(2) + ' pt';
-        totalRewardsElement.classList.add('points-animating');
-      }
-    } else {
-      // If node is stopped, stop the animation
-      stopPointsAnimation();
-    }
-  }, 100); // Check every 100ms but only increment at 1-second intervals
-}
-
-// Function to stop the points animation
-function stopPointsAnimation() {
-  if (pointsAnimationInterval) {
-    clearInterval(pointsAnimationInterval);
-    pointsAnimationInterval = null;
-    totalRewardsElement.classList.remove('points-animating');
-  }
-}
+// Node status functions removed
 
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -382,8 +303,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // Update local state
       if (message.walletAddress !== undefined) walletAddress = message.walletAddress;
       if (message.isNodeRunning !== undefined) isNodeRunning = message.isNodeRunning;
-      if (message.totalPoints !== undefined) totalPoints = message.totalPoints;
-      if (message.pointsRate !== undefined) pointsRate = message.pointsRate || POINTS_PER_SECOND;
       
       // Update the UI
       updateUI();
