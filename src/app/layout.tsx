@@ -5,9 +5,7 @@ import "./layout.css"
 import { headers } from "next/headers"; // added
 import ContextProvider from '@/context'
 import MaintenancePage from './maintenance/page'
-
-// Maintenance mode toggle - set to true to enable maintenance mode
-const MAINTENANCE_MODE = true;
+import { MAINTENANCE_CONFIG } from '@/config/maintenance'
 
 export const metadata: Metadata = {
   title: "TOPAY NODE | Dashboard",
@@ -23,7 +21,7 @@ export default async function RootLayout({
   const cookies = (await headers()).get('cookie')
 
   // If maintenance mode is enabled, show maintenance page
-  if (MAINTENANCE_MODE) {
+  if (MAINTENANCE_CONFIG.enabled) {
     return (
       <html lang="en">
         <body>

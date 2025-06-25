@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOPAY Extension Preview</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .preview-container {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+        .extension-frame {
+            border: 2px solid #333;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+        .extension-frame iframe {
+            border: none;
+            display: block;
+        }
+        .info {
+            color: white;
+            max-width: 300px;
+        }
+        .info h2 {
+            color: #0D7CE9;
+            margin-bottom: 20px;
+        }
+        .info ul {
+            list-style: none;
+            padding: 0;
+        }
+        .info li {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #0D7CE9;
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <div class="extension-frame">
+            <iframe src="popup.html" width="380" height="580"></iframe>
+        </div>
+        <div class="info">
+            <h2>🚀 Enhanced TOPAY Extension UI</h2>
+            <ul>
+                <li>✨ Modern gradient backgrounds</li>
+                <li>🎨 Improved visual hierarchy</li>
+                <li>💫 Smooth animations & transitions</li>
+                <li>🔥 Enhanced button interactions</li>
+                <li>📱 Better responsive design</li>
+                <li>🌟 Polished status indicators</li>
+                <li>🎯 Improved user experience</li>
+                <li>💎 Premium visual effects</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

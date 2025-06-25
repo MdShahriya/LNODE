@@ -58,44 +58,49 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get sessions with aggregation
-    const sessions = await NodeSession.aggregate([
-      { $match: query },
-      {
-        $group: {
-          _id: {
-            sessionId: '$sessionId',
-            deviceIP: '$deviceIP',
-            deviceInfo: '$deviceInfo',
-            browser: '$browser',
-            platform: '$platform',
-            deviceType: '$deviceType'
-          },
-          startTime: { $min: '$startTime' },
-          endTime: { $max: '$endTime' },
-          status: { $last: '$status' },
-          uptime: { $sum: '$uptime' },
-          pointsEarned: { $sum: '$pointsEarned' },
-          lastHeartbeat: { $max: '$lastHeartbeat' },
-          errorCount: { $sum: '$errorCount' },
-          warningCount: { $sum: '$warningCount' },
-          // Performance metrics
-          avgCpuUsage: { $avg: '$performanceMetrics.cpuUsage' },
-          avgMemoryUsage: { $avg: '$performanceMetrics.memoryUsage' },
-          avgNetworkLatency: { $avg: '$performanceMetrics.networkLatency' },
-          // Network info
-          networkTypes: { $addToSet: '$networkInfo.connectionType' },
-          effectiveTypes: { $addToSet: '$networkInfo.effectiveType' },
-          // Geolocation
-          countries: { $addToSet: '$geolocation.country' },
-          regions: { $addToSet: '$geolocation.region' },
-          cities: { $addToSet: '$geolocation.city' },
-          nodeQuality: { $last: '$nodeQuality' },
-          performanceScore: { $avg: '$performanceScore' }
-        }
+    // Get sessions with simple query and sort (avoiding complex aggregation that might miss sessions)
+    const rawSessions = await NodeSession.find(query)
+      .sort({ startTime: -1 })
+      .lean();
+    
+    // Deduplicate sessions by sessionId, keeping the most recent one
+    const sessionMap = new Map();
+    rawSessions.forEach(session => {
+      const existing = sessionMap.get(session.sessionId);
+      if (!existing || session.startTime > existing.startTime) {
+        sessionMap.set(session.sessionId, session);
+      }
+    });
+    
+    // Convert map back to array and transform to expected format
+    const sessions = Array.from(sessionMap.values()).map(session => ({
+      _id: {
+        sessionId: session.sessionId,
+        deviceIP: session.deviceIP,
+        deviceInfo: session.deviceInfo,
+        browser: session.browser,
+        platform: session.platform,
+        deviceType: session.deviceType
       },
-      { $sort: { startTime: -1 } }
-    ]);
+      startTime: session.startTime,
+      endTime: session.endTime,
+      status: session.status,
+      uptime: session.uptime || 0,
+      pointsEarned: session.pointsEarned || 0,
+      lastHeartbeat: session.lastHeartbeat,
+      errorCount: session.errorCount || 0,
+      warningCount: session.warningCount || 0,
+      avgCpuUsage: session.performanceMetrics?.cpuUsage,
+      avgMemoryUsage: session.performanceMetrics?.memoryUsage,
+      avgNetworkLatency: session.performanceMetrics?.networkLatency,
+      networkTypes: session.networkInfo?.connectionType ? [session.networkInfo.connectionType] : [],
+      effectiveTypes: session.networkInfo?.effectiveType ? [session.networkInfo.effectiveType] : [],
+      countries: session.geolocation?.country ? [session.geolocation.country] : [],
+      regions: session.geolocation?.region ? [session.geolocation.region] : [],
+      cities: session.geolocation?.city ? [session.geolocation.city] : [],
+      nodeQuality: session.nodeQuality,
+      performanceScore: session.performanceScore
+    }));
 
     // Process sessions with additional data
     const processedSessions: ProcessedNodeSession[] = sessions.map(session => {

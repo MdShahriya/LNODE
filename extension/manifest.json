@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TOPAY Node",
-  "version": "0.1.57",
+  "version": "0.2.02",
   "description": "Control your TOPAY node, track device IP, and monitor points and uptime",
   "action": {
     "default_popup": "popup.html",

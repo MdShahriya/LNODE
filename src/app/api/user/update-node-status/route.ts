@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
         // Use the session ID from the extension or generate one
         const sessionId = sessionData?.sessionId || `${user._id}-${Date.now()}`;
         
-        // Create a new node session
-        await NodeSession.create({
+        // Create a new node session with validation
+        const newSession = await NodeSession.create({
           user: user._id,
           walletAddress: user.walletAddress,
           deviceIP: sessionData?.deviceIP || clientIP,
@@ -91,6 +91,19 @@ export async function POST(request: NextRequest) {
             event: 'node_started'
           }
         });
+        
+        console.log('Created new session:', {
+          sessionId: newSession.sessionId,
+          walletAddress: user.walletAddress,
+          deviceIP: newSession.deviceIP,
+          startTime: newSession.startTime
+        });
+        
+        // Verify the session was created successfully
+        const verifySession = await NodeSession.findById(newSession._id);
+        if (!verifySession) {
+          throw new Error('Failed to create session - verification failed');
+        }
       }
     } else if (user.nodeStartTime) {
       // If node is being turned off and we have a start time, calculate uptime and points
@@ -126,14 +139,22 @@ export async function POST(request: NextRequest) {
       // Reset the start time
       user.nodeStartTime = null;
       
-      // Find and update the active session
+      // Find and update the active session with improved logging
       let activeSession;
+      
+      console.log('Looking for active session to deactivate:', {
+        sessionId: sessionData?.sessionId,
+        walletAddress: user.walletAddress,
+        uptime: elapsedSeconds,
+        pointsEarned
+      });
       
       // If we have a session ID from the extension, use it to find the session
       if (sessionData && sessionData.sessionId) {
         activeSession = await NodeSession.findOne({
           sessionId: sessionData.sessionId
         });
+        console.log('Found session by sessionId:', activeSession ? 'Yes' : 'No');
       }
       
       // If no session found with the provided ID, fall back to finding the most recent active session
@@ -143,6 +164,7 @@ export async function POST(request: NextRequest) {
           status: 'active',
           endTime: { $exists: false }
         }).sort({ startTime: -1 });
+        console.log('Found session by fallback search:', activeSession ? 'Yes' : 'No');
       }
       
       if (activeSession) {
@@ -151,6 +173,14 @@ export async function POST(request: NextRequest) {
         activeSession.uptime = elapsedSeconds;
         activeSession.pointsEarned = pointsEarned;
         await activeSession.save();
+        
+        console.log('Successfully deactivated session:', {
+          sessionId: activeSession.sessionId,
+          finalUptime: activeSession.uptime,
+          finalPoints: activeSession.pointsEarned
+        });
+      } else {
+        console.warn('No active session found to deactivate for wallet:', user.walletAddress);
       }
       
       // Create points history record

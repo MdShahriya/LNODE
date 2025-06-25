@@ -172,10 +172,15 @@ export default function Dashboard() {
              return `${hours}:${minutes.toString().padStart(2, '0')}`;
            };
           
+          // Improved status detection logic
+          const isRecentlyActive = session.lastHeartbeat && 
+            new Date(session.lastHeartbeat).getTime() > Date.now() - 5 * 60 * 1000; // Active in last 5 minutes
+          const isCurrentlyActive = session.status === 'active' && !session.endTime && isRecentlyActive;
+          
           return {
             id: session.sessionId,
-            status: session.status === 'active' && !session.endTime ? 'Connected' : 'Disconnected',
-            statusIcon: session.status === 'active' && !session.endTime ? '🟢' : '🔴',
+            status: isCurrentlyActive ? 'Connected' : 'Disconnected',
+            statusIcon: isCurrentlyActive ? '🟢' : '🔴',
             nodeType: session.nodeType || 'Extension Node',
             deviceIP: session.deviceIP || 'Unknown',
             browser: session.browser || 'Unknown',
@@ -220,8 +225,8 @@ export default function Dashboard() {
       setLoadingSessions(false);
     });
     
-    // Set up interval to refresh sessions every 30 seconds
-    const intervalId = setInterval(fetchUserSessions, 30000);
+    // Set up interval to refresh sessions every 10 seconds (synchronized with extension)
+    const intervalId = setInterval(fetchUserSessions, 10000);
     
     // Clean up interval on unmount
     return () => clearInterval(intervalId);

@@ -261,6 +261,8 @@ function updateUI() {
   }
   
   // Update node status
+  const statusTextElement = document.getElementById('status-text');
+  
   if (isNodeRunning) {
     // Show running UI
     startButton.classList.remove('start-button');
@@ -269,12 +271,18 @@ function updateUI() {
     nodeStatusIndicator.classList.add('status-running');
     // Update button aria-label
     startButton.setAttribute('aria-label', 'Stop Node');
-    // Update SVG to power-off icon
+    // Update status description
+    if (statusTextElement) {
+      statusTextElement.textContent = 'Node is running and earning rewards';
+      statusTextElement.style.color = '#10b981';
+    }
+    // Update SVG to power-off icon with enhanced styling
     startButton.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="8" y1="12" x2="16" y2="12"></line>
       </svg>
+      <div class="button-glow"></div>
     `;
     
     // Start points animation if not already running
@@ -287,12 +295,18 @@ function updateUI() {
     nodeStatusIndicator.classList.add('status-stopped');
     // Update button aria-label
     startButton.setAttribute('aria-label', 'Start Node');
-    // Update SVG to power-on icon
+    // Update status description
+    if (statusTextElement) {
+      statusTextElement.textContent = 'Click to start your node';
+      statusTextElement.style.color = '#94a3b8';
+    }
+    // Update SVG to power-on icon with enhanced styling
     startButton.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
         <line x1="12" y1="2" x2="12" y2="12"></line>
       </svg>
+      <div class="button-glow"></div>
     `;
     
     // Stop points animation and update to exact value

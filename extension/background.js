@@ -423,39 +423,43 @@ async function updateNodeStatusOnServer(isRunning) {
     }
     
     // First, try to register the user if they don't exist
-     try {
-       await registerUserIfNeeded(walletAddress, apiBaseUrl);
-       
-       // Then update the node status
-       const response = await fetch(`${apiBaseUrl}/api/user/update-node-status`, {
-         method: 'POST',
-         headers: {
-           'Content-Type': 'application/json',
-           'X-Source': 'extension'
-         },
-         body: JSON.stringify(data)
-       });
-     
-       if (!response.ok) {
-      // Try to get more detailed error information from the response
-      try {
-        const errorData = await response.json();
-        throw new Error(`Server responded with status: ${response.status}, message: ${errorData.message || errorData.error || 'Unknown error'}`);
-      } catch (jsonError) {
-        // If we can't parse the error response, just use the status code
-        console.error('Error parsing error response:', jsonError);
-        throw new Error(`Server responded with status: ${response.status}`);
-      }
-    }
+    let retryCount = 0;
+    const maxRetries = 3;
     
-    // Safely parse the response body
-    let result;
-    try {
-      result = await response.json();
-    } catch (jsonError) {
-      console.error('Error parsing response JSON:', jsonError);
-      throw new Error(`Failed to parse server response: ${jsonError.message}`);
-    }
+    while (retryCount < maxRetries) {
+      try {
+        await registerUserIfNeeded(walletAddress, apiBaseUrl);
+        
+        // Then update the node status
+        const response = await fetch(`${apiBaseUrl}/api/user/update-node-status`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Source': 'extension'
+          },
+          body: JSON.stringify(data)
+        });
+      
+        if (!response.ok) {
+          // Try to get more detailed error information from the response
+          try {
+            const errorData = await response.json();
+            throw new Error(`Server responded with status: ${response.status}, message: ${errorData.message || errorData.error || 'Unknown error'}`);
+          } catch (jsonError) {
+            // If we can't parse the error response, just use the status code
+            console.error('Error parsing error response:', jsonError);
+            throw new Error(`Server responded with status: ${response.status}`);
+          }
+        }
+        
+        // Safely parse the response body
+        let result;
+        try {
+          result = await response.json();
+        } catch (jsonError) {
+          console.error('Error parsing response JSON:', jsonError);
+          throw new Error(`Failed to parse server response: ${jsonError.message}`);
+        }
     
     if (result.success) {
       console.log(`Node status updated on server: ${isRunning ? 'Running' : 'Stopped'}`);
@@ -491,14 +495,46 @@ async function updateNodeStatusOnServer(isRunning) {
         } else {
           console.error('Failed to update node status on server:', result.error);
         }
+        
+        // Success - break out of retry loop
+        break;
+        
       } catch (innerError) {
-        console.error('Error in update node status process:', innerError);
+        retryCount++;
+        console.error(`Error in update node status process (attempt ${retryCount}/${maxRetries}):`, innerError);
+        
+        if (retryCount >= maxRetries) {
+          console.error('Failed to update node status after maximum retries');
+          // Store failed update for later retry
+          const failedUpdates = await new Promise(resolve => {
+            chrome.storage.local.get(['failedUpdates'], (result) => {
+              resolve(result.failedUpdates || []);
+            });
+          });
+          failedUpdates.push({
+            walletAddress,
+            isRunning,
+            sessionData: {
+              sessionId,
+              pointsPerSecond: POINTS_PER_SECOND,
+              uptime,
+              pointsEarned,
+              deviceIP
+            },
+            timestamp: Date.now()
+          });
+          chrome.storage.local.set({ failedUpdates });
+        } else {
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+        }
       }
-    } catch (error) {
-        console.error('Error updating node status on server:', error);
-        console.error('Request data was:', data);
-        console.error('API URL was:', apiUrl);
-      }
+    }
+  } catch (error) {
+    console.error('Error updating node status on server:', error);
+    console.error('Request data was:', data);
+    console.error('API URL was:', apiBaseUrl);
+  }
 }
 
 // Function to start accumulating points
