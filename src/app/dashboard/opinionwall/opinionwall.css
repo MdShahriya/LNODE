@@ -543,19 +543,12 @@
   display: flex;
   transition: all 0.3s ease;
   align-items: center;
-  cursor: pointer;
   gap: 10px;
   background: rgba(255, 255, 255, 0.2);
-  padding: 10px 10px;
+  padding: 10px 16px;
   border-radius: 20px;
   font-weight: 600;
   font-size: 18px;
-}
-
-.credits-display:hover{
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .credit-icon {
@@ -563,13 +556,44 @@
   font-size: 18px;
 }
 
-.plus-icon {
+.purchase-credits-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(45deg, #ff9500, #ff5e3a);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(255, 94, 58, 0.3);
+  animation: pulse 2s infinite;
+}
+
+.purchase-credits-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 15px rgba(255, 94, 58, 0.4);
+  background: linear-gradient(45deg, #ff5e3a, #ff9500);
+}
+
+.purchase-icon {
   color: #ffffff;
-  font-size: 20px;
-  padding: 4px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  margin-left: 8px;
+  font-size: 16px;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 4px 10px rgba(255, 94, 58, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(255, 94, 58, 0.5);
+  }
+  100% {
+    box-shadow: 0 4px 10px rgba(255, 94, 58, 0.3);
+  }
 }
 
 /* Messages Container - Full Height */
@@ -1029,7 +1053,8 @@
   font-weight: 500;
 }
 
-.connect-wallet-notice {
+.connect-wallet-notice,
+.low-credits-notice {
   text-align: center;
   color: rgba(255, 255, 255, 0.7);
   font-size: 15px;
@@ -1038,6 +1063,81 @@
   background: rgba(37, 40, 51, 0.6);
   border-radius: 10px;
   border: 1px solid rgba(21, 207, 241, 0.1);
+}
+
+.low-credits-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 94, 58, 0.1);
+  border: 1px solid rgba(255, 94, 58, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.purchase-credits-button-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(45deg, #ff9500, #ff5e3a);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(255, 94, 58, 0.3);
+  white-space: nowrap;
+}
+
+.purchase-credits-button-inline:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(255, 94, 58, 0.4);
+  background: linear-gradient(45deg, #ff5e3a, #ff9500);
+}
+
+/* Floating Purchase Button */
+.floating-purchase-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(45deg, #ff9500, #ff5e3a);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 94, 58, 0.4);
+  z-index: 1100;
+  animation: float 3s ease-in-out infinite, pulse 2s infinite;
+}
+
+.floating-purchase-button:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(255, 94, 58, 0.5);
+}
+
+.floating-purchase-icon {
+  font-size: 18px;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 /* Spinner Animation */

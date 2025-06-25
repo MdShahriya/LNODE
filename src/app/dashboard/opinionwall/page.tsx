@@ -278,16 +278,30 @@ export default function OpinionWall() {
 
   return (
     <div className="chat-container">
+      {address && userCredits < 10 && (
+        <div className="floating-purchase-button" onClick={() => window.location.href = '/dashboard/credits'}>
+          <FaPlus className="floating-purchase-icon" />
+          <span>Buy Credits</span>
+        </div>
+      )}
       {/* Header */}
       <div className="chat-header">
         <h1>Opinion Wall</h1>
         <div className="user-info">
           {address && (
-            <div className="credits-display" onClick={() => window.location.href = '/dashboard/credits'}>
-              <FaPlus className="plus-icon" />
-              <FaCoins className="credit-icon" />
-              <span>{userCredits} Credits</span>
-            </div>
+            <>
+              <div className="credits-display">
+                <FaCoins className="credit-icon" />
+                <span>{userCredits} Credits</span>
+              </div>
+              <button 
+                className="purchase-credits-button" 
+                onClick={() => window.location.href = '/dashboard/credits'}
+              >
+                <FaPlus className="purchase-icon" />
+                <span>Buy Credits</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -447,9 +461,20 @@ export default function OpinionWall() {
           </div>
         </form>
         
-        {!address && (
+        {!address ? (
           <div className="connect-wallet-notice">
             Please connect your wallet to share opinions
+          </div>
+        ) : userCredits < creditCost && (
+          <div className="low-credits-notice">
+            <span>Not enough credits for this priority level</span>
+            <button 
+              className="purchase-credits-button-inline" 
+              onClick={() => window.location.href = '/dashboard/credits'}
+            >
+              <FaPlus className="purchase-icon" />
+              <span>Buy More Credits</span>
+            </button>
           </div>
         )}
       </div>

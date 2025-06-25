@@ -15,7 +15,7 @@
   left: 0;
   right: 0;
   height: 250px;
-  background: linear-gradient(180deg, rgba(13, 124, 233, 0.15) 0%, transparent 100%);
+  background: transparent;
   pointer-events: none;
   z-index: -1;
 }
