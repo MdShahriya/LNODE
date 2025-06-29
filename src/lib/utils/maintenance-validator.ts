@@ -17,7 +17,6 @@ export interface ValidationResult {
 export interface MaintenanceConfig {
   enabled: boolean;
   message: string;
-  allowedEndpoints: string[];
   allowedAdminRoutes: string[];
 }
 
@@ -54,36 +53,9 @@ export function validateMaintenanceConfig(config: MaintenanceConfig = MAINTENANC
     }
   }
 
-  // Validate allowedEndpoints
-  if (!Array.isArray(config.allowedEndpoints)) {
-    result.errors.push('allowedEndpoints must be an array');
-    result.isValid = false;
-  } else {
-    config.allowedEndpoints.forEach((endpoint, index) => {
-      if (typeof endpoint !== 'string') {
-        result.errors.push(`allowedEndpoints[${index}] must be a string`);
-        result.isValid = false;
-      } else {
-        if (!endpoint.startsWith('/')) {
-          result.warnings.push(`allowedEndpoints[${index}] should start with '/' for consistency`);
-        }
-        if (endpoint.includes('*') || endpoint.includes('?')) {
-          result.warnings.push(`allowedEndpoints[${index}] contains wildcards - ensure this is intentional`);
-        }
-      }
-    });
-
-    // Check for essential endpoints
-    const hasHealthCheck = config.allowedEndpoints.some(ep => ep.includes('health'));
-    if (!hasHealthCheck) {
-      result.suggestions.push('Consider adding a health check endpoint to allowedEndpoints');
-    }
-
-    const hasAuth = config.allowedEndpoints.some(ep => ep.includes('auth'));
-    if (!hasAuth) {
-      result.suggestions.push('Consider adding authentication endpoints to allowedEndpoints');
-    }
-  }
+  // Note: API endpoints are now handled by middleware logic
+  // Only auth endpoints (/api/auth/*) are allowed during maintenance
+  result.suggestions.push('During maintenance, only authentication endpoints (/api/auth/*) are accessible');
 
   // Validate allowedAdminRoutes
   if (!Array.isArray(config.allowedAdminRoutes)) {
@@ -109,41 +81,9 @@ export function validateMaintenanceConfig(config: MaintenanceConfig = MAINTENANC
 }
 
 /**
- * Validates endpoint patterns for security
+ * Note: Endpoint security is now handled by middleware
+ * Only auth endpoints (/api/auth/*) are allowed during maintenance
  */
-export function validateEndpointSecurity(endpoints: string[]): ValidationResult {
-  const result: ValidationResult = {
-    isValid: true,
-    errors: [],
-    warnings: [],
-    suggestions: []
-  };
-
-  const dangerousPatterns = [
-    { pattern: /\/admin(?!\/maintenance|\/status)/, message: 'Admin endpoints should be carefully reviewed' },
-    { pattern: /\/api\/.*\/(delete|remove|destroy)/, message: 'Destructive operations should not be allowed during maintenance' },
-    { pattern: /\/api\/.*\/(create|add|insert)/, message: 'Creation operations should not be allowed during maintenance' },
-    { pattern: /\/api\/.*\/(update|edit|modify)/, message: 'Modification operations should not be allowed during maintenance' },
-    { pattern: /\*/, message: 'Wildcard patterns can be overly permissive' },
-    { pattern: /\.\.\//, message: 'Path traversal patterns detected' }
-  ];
-
-  endpoints.forEach((endpoint, index) => {
-    dangerousPatterns.forEach(({ pattern, message }) => {
-      if (pattern.test(endpoint)) {
-        result.warnings.push(`allowedEndpoints[${index}] (${endpoint}): ${message}`);
-      }
-    });
-
-    // Check for overly broad patterns
-    if (endpoint === '/api' || endpoint === '/api/') {
-      result.errors.push(`allowedEndpoints[${index}] is too broad - this would allow all API access`);
-      result.isValid = false;
-    }
-  });
-
-  return result;
-}
 
 /**
  * Checks if the current configuration is production-ready
@@ -166,20 +106,10 @@ export function validateProductionReadiness(config: MaintenanceConfig = MAINTENA
     result.warnings.push('Maintenance message contains "test" - ensure this is appropriate for production');
   }
 
-  // Check for development-specific endpoints
-  const devEndpoints = config.allowedEndpoints.filter(ep => 
-    ep.includes('dev') || ep.includes('debug') || ep.includes('test')
-  );
-  if (devEndpoints.length > 0 && process.env.NODE_ENV === 'production') {
-    result.warnings.push(`Development endpoints found in production: ${devEndpoints.join(', ')}`);
-  }
-
-  // Check for proper monitoring endpoints
-  const hasMonitoring = config.allowedEndpoints.some(ep => 
-    ep.includes('health') || ep.includes('status') || ep.includes('metrics')
-  );
-  if (!hasMonitoring) {
-    result.suggestions.push('Add monitoring endpoints for production observability');
+  // Note: API endpoint validation is now handled by middleware
+  // All non-auth endpoints are blocked during maintenance
+  if (process.env.NODE_ENV === 'production' && config.enabled) {
+    result.suggestions.push('Ensure monitoring systems can still access health endpoints via alternative methods');
   }
 
   return result;
@@ -190,24 +120,20 @@ export function validateProductionReadiness(config: MaintenanceConfig = MAINTENA
  */
 export function validateMaintenanceSystem(config: MaintenanceConfig = MAINTENANCE_CONFIG): ValidationResult {
   const configValidation = validateMaintenanceConfig(config);
-  const securityValidation = validateEndpointSecurity(config.allowedEndpoints);
   const productionValidation = validateProductionReadiness(config);
 
   return {
-    isValid: configValidation.isValid && securityValidation.isValid && productionValidation.isValid,
+    isValid: configValidation.isValid && productionValidation.isValid,
     errors: [
       ...configValidation.errors,
-      ...securityValidation.errors,
       ...productionValidation.errors
     ],
     warnings: [
       ...configValidation.warnings,
-      ...securityValidation.warnings,
       ...productionValidation.warnings
     ],
     suggestions: [
       ...configValidation.suggestions,
-      ...securityValidation.suggestions,
       ...productionValidation.suggestions
     ]
   };
