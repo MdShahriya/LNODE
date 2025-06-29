@@ -7,6 +7,7 @@ import './usermanagment.css'
 interface User {
   id: string
   walletAddress: string
+  username?: string
   points: number
   tasksCompleted: number
   uptime: number // in seconds

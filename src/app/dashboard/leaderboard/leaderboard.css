@@ -115,23 +115,39 @@
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Special styling for top 3 ranks */
-.rank-1 {
-  background: linear-gradient(135deg, #FFD700, #FFA500); /* Gold gradient */
-  color: #000000;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.6); /* Gold glow */
+/* Avatar container with rank badge */
+.leaderboard__avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.rank-2 {
-  background: linear-gradient(135deg, #E0E0E0, #A9A9A9); /* Silver gradient */
-  color: #000000;
-  box-shadow: 0 0 15px rgba(192, 192, 192, 0.6); /* Silver glow */
+.leaderboard__avatar .avatar-image {
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background-color: #FFFFFF;
+  transition: all 0.2s ease;
 }
 
-.rank-3 {
-  background: linear-gradient(135deg, #CD7F32, #A0522D); /* Bronze gradient */
-  color: #000000;
-  box-shadow: 0 0 15px rgba(205, 127, 50, 0.6); /* Bronze glow */
+.leaderboard__row:hover .leaderboard__avatar .avatar-image {
+  border-color: #15CFF1;
+  box-shadow: 0 0 15px rgba(21, 207, 241, 0.3);
+}
+/* Special styling for avatar containers in top 3 positions */
+.leaderboard__avatar.rank-1 .avatar-image {
+  border: 4px solid #FFD700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+}
+
+.leaderboard__avatar.rank-2 .avatar-image {
+  border: 4px solid #E0E0E0;
+  box-shadow: 0 0 15px rgba(192, 192, 192, 0.8);
+}
+
+.leaderboard__avatar.rank-3 .avatar-image {
+  border: 4px solid #CD7F32;
+  box-shadow: 0 0 15px rgba(205, 127, 50, 0.8);
 }
 
 .leaderboard__address {

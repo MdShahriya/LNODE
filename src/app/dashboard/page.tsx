@@ -6,6 +6,7 @@ import './dashboard.css'
 import React from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ProcessedNodeSession } from '@/app/api/user/node-sessions/helpers';
+import { motion } from 'framer-motion';
 
 // Interface for raw node session data from API
 interface RawNodeSession {
@@ -87,6 +88,25 @@ interface ChartDataPoint {
   };
 }
 
+// Lottery winner interfaces
+interface LotteryWinner {
+  id: string
+  date: string
+  walletAddress: string
+  username: string | null
+  prize: number
+}
+
+interface LotteryResponse {
+  winners: LotteryWinner[]
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    pages: number
+  }
+}
+
 // No sample data generation functions - removed to clean up code
 
 export default function Dashboard() {
@@ -111,6 +131,11 @@ export default function Dashboard() {
   const [todaysEarnings, setTodaysEarnings] = useState(0.00);
   const [userSessions, setUserSessions] = useState<UserSession[]>([])
   const [loadingSessions, setLoadingSessions] = useState(false)
+  
+  // Lottery winner state
+  const [todaysWinner, setTodaysWinner] = useState<LotteryWinner | null>(null)
+  const [lotteryLoading, setLotteryLoading] = useState(true)
+  const [lotteryError, setLotteryError] = useState<string | null>(null)
 
   // Function to fetch today's earnings
   const fetchTodaysEarnings = useCallback(async () => {
@@ -135,6 +160,45 @@ export default function Dashboard() {
     }
   }, [address]);
 
+  // Check if a date is today
+  const isToday = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    return date.toDateString() === today.toDateString()
+  }
+
+  // Fetch today's lottery winner from API
+  const fetchTodaysWinner = useCallback(async () => {
+    try {
+      setLotteryLoading(true)
+      setLotteryError(null)
+      
+      // Fetch all winners and filter for today on frontend
+      const response = await fetch('/api/lottery/winners?page=1&limit=100')
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch lottery winners')
+      }
+      
+      const data: LotteryResponse = await response.json()
+      
+      // Find today's winner (should be only one)
+      const todaysWinner = data.winners.find(winner => isToday(winner.date))
+      setTodaysWinner(todaysWinner || null)
+    } catch (err) {
+      console.error('Error fetching lottery winner:', err)
+      setLotteryError('Failed to load today\'s lottery winner.')
+    } finally {
+      setLotteryLoading(false)
+    }
+  }, [])
+
+  // Format wallet address for display
+  const formatWalletAddress = (address: string) => {
+    if (!address) return 'Unknown'
+    return `${address.slice(0, 8)}...${address.slice(-6)}`
+  }
+
   // Fetch today's earnings on initial load and periodically
   useEffect(() => {
     if (!isConnected || !address) return;
@@ -148,6 +212,11 @@ export default function Dashboard() {
     // Clean up interval on unmount
     return () => clearInterval(intervalId);
   }, [address, isConnected, fetchTodaysEarnings]);
+
+  // Fetch today's lottery winner on component mount
+  useEffect(() => {
+    fetchTodaysWinner()
+  }, [fetchTodaysWinner])
 
   // Function to fetch user sessions
   const fetchUserSessions = useCallback(async () => {
@@ -597,6 +666,77 @@ export default function Dashboard() {
                   Copy referral link
                 </button>
               </div>
+            </div>
+
+            {/* Today's Winner Section */}
+            <div className="todays-winner-section">
+              <h2 className="section-title">🏆 Today&apos;s Winner</h2>
+              {lotteryLoading ? (
+                <motion.div 
+                  className="winner-loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="loading-spinner"></div>
+                  <p>Loading today&apos;s winner...</p>
+                </motion.div>
+              ) : lotteryError ? (
+                <motion.div 
+                  className="winner-error"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="error-icon">⚠️</div>
+                  <p>{lotteryError}</p>
+                  <button 
+                    onClick={fetchTodaysWinner}
+                    className="retry-btn"
+                  >
+                    Try Again
+                  </button>
+                </motion.div>
+              ) : !todaysWinner ? (
+                <motion.div 
+                  className="no-winner"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="no-winner-icon">🎲</div>
+                  <h3>No Winner Yet Today!</h3>
+                  <p>The daily draw hasn&apos;t happened yet.</p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  className="winner-card"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <div className="winner-avatar">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      width={60}
+                      height={60}
+                      src={`https://api.dicebear.com/9.x/fun-emoji/svg?seed=${todaysWinner.walletAddress}`} 
+                      alt="Winner Avatar" 
+                      className="winner-avatar-image"
+                    />
+                    <div className="winner-crown">👑</div>
+                  </div>
+                  <div className="winner-info">
+                    <h3 className="winner-name">
+                      {todaysWinner.username || 'Anonymous Winner'}
+                    </h3>
+                    <p className="winner-address">
+                      {formatWalletAddress(todaysWinner.walletAddress)}
+                    </p>
+                    <div className="winner-prize">Prize: ${todaysWinner.prize || 0}</div>
+                  </div>
+                </motion.div>
+              )}
             </div>
 
             {/* Rest of the dashboard UI */}

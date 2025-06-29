@@ -6,6 +6,7 @@ import type { FilterQuery } from 'mongoose';
 interface UserQuery extends FilterQuery<typeof User> {
   walletAddress?: { $regex: string; $options: string };
   nodeStatus?: boolean;
+  verification?: string;
 }
 
 interface SortObject {
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'points';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     const nodeFilter = searchParams.get('nodeFilter') || 'all';
+    const verification = searchParams.get('verification');
     
     const skip = (page - 1) * limit;
     
@@ -40,6 +42,11 @@ export async function GET(request: NextRequest) {
       query.nodeStatus = true;
     } else if (nodeFilter === 'inactive') {
       query.nodeStatus = false;
+    }
+    
+    // Add verification filter if provided
+    if (verification) {
+      query.verification = verification;
     }
     
     // Count total matching documents for pagination
@@ -59,6 +66,7 @@ export async function GET(request: NextRequest) {
     const formattedUsers = users.map(user => ({
       id: user._id,
       walletAddress: user.walletAddress,
+      username: user.username,
       points: user.points,
       tasksCompleted: user.tasksCompleted,
       uptime: user.uptime,

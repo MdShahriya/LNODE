@@ -144,14 +144,16 @@
 
 /* Ensure child components don't add extra padding */
 .rewards-page__content .task-center,
-.rewards-page__content .achievements {
+.rewards-page__content .achievements,
+.rewards-page__content .lottery-winners {
   padding-top: 0;
   min-height: auto;
 }
 
 /* Hide child component titles since we have tabs */
 .rewards-page__content .task-center__heading,
-.rewards-page__content .achievements__title {
+.rewards-page__content .achievements__title,
+.rewards-page__content .lottery-winners__heading {
   display: none;
 }
 

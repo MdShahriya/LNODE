@@ -5,13 +5,14 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAccount } from 'wagmi'
-import { FaBars, FaTimes, FaHome, FaTasks, FaTrophy, FaUsers, FaMoneyBillWave } from 'react-icons/fa'
+import { FaBars, FaTimes, FaHome, FaTasks, FaTrophy, FaUsers, FaMoneyBillWave, FaTicketAlt } from 'react-icons/fa'
 import './Sidebar.css' // Reusing the same CSS
 
 const adminNavigation = [
   { name: 'Dashboard', href: '/admin', icon: <FaHome /> },
   { name: 'Tasks', href: '/admin/tasks', icon: <FaTasks /> },
   { name: 'Achievements', href: '/admin/achievements', icon: <FaTrophy /> },
+  { name: 'Lottery', href: '/admin/lottery', icon: <FaTicketAlt /> },
   { name: 'Users', href: '/admin/usersmanagment', icon: <FaUsers /> },
   { name: 'Opinion Fund', href: '/admin/opinionfund', icon: <FaMoneyBillWave /> },
 ]

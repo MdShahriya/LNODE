@@ -5,13 +5,14 @@ import { motion } from 'framer-motion'
 import DailyCheckIn from './check-in/page'
 import TaskCenter from './tasks/page'
 import Achievements from './achievements/page'
+import LotteryWinners from './lottery/page'
 import './rewards.css'
 
 // Tab types
-type RewardTab = 'tasks' | 'achievements'
+type RewardTab = 'tasks' | 'achievements' | 'lottery'
 
 export default function RewardsPage() {
-  const [activeTab, setActiveTab] = useState<RewardTab>('tasks')
+  const [activeTab, setActiveTab] = useState<RewardTab>('lottery')
 
   // Change active tab
   const handleTabChange = (tab: RewardTab) => {
@@ -40,13 +41,19 @@ export default function RewardsPage() {
           <DailyCheckIn />
         </motion.div>
         
-        {/* Tabs for Tasks and Achievements */}
+        {/* Tabs for Tasks, Achievements, and Lottery */}
         <motion.div 
           className="rewards-page__tabs"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
+          <div 
+            className={`rewards-page__tab ${activeTab === 'lottery' ? 'active' : ''}`}
+            onClick={() => handleTabChange('lottery')}
+          >
+            Daily Winners
+          </div>
           <div 
             className={`rewards-page__tab ${activeTab === 'tasks' ? 'active' : ''}`}
             onClick={() => handleTabChange('tasks')}
@@ -70,6 +77,7 @@ export default function RewardsPage() {
         >
           {activeTab === 'tasks' && <TaskCenter />}
           {activeTab === 'achievements' && <Achievements />}
+          {activeTab === 'lottery' && <LotteryWinners />}
         </motion.div>
       </div>
     </div>

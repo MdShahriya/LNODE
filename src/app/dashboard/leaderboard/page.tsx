@@ -156,11 +156,18 @@ export default function Leaderboard() {
                   >
                     <td>
                       <motion.div 
-                        className={`leaderboard__rank ${entry.rank <= 3 ? `rank-${entry.rank}` : ''}`}
-                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        className={`leaderboard__avatar ${entry.rank <= 3 ? `rank-${entry.rank}` : ''}`}
+                        whileHover={{ scale: 1.1 }}
                         transition={{ type: 'spring', stiffness: 300 }}
                       >
-                        {entry.rank}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img 
+                          width={40}
+                          height={40}
+                          src={`https://api.dicebear.com/9.x/fun-emoji/svg?seed=${entry.address}`} 
+                          alt={`User ${entry.rank} Avatar`} 
+                          className="avatar-image"
+                        />
                       </motion.div>
                     </td>
                     <td>

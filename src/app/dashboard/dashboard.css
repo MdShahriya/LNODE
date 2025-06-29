@@ -530,3 +530,142 @@
     display: none;
   }
 }
+
+/* Today's Winner Section */
+.todays-winner-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(37, 40, 51, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(21, 207, 241, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.winner-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(13, 124, 233, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(13, 124, 233, 0.3);
+}
+
+.winner-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.winner-avatar-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid #15CFF1;
+  object-fit: cover;
+}
+
+.winner-crown {
+  position: absolute;
+  top: -10px;
+  right: -5px;
+  font-size: 1.2rem;
+  z-index: 2;
+}
+
+.winner-info {
+  flex: 1;
+}
+
+.winner-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin: 0 0 0.25rem 0;
+}
+
+.winner-address {
+  font-size: 0.9rem;
+  color: #B0B0B0;
+  margin: 0 0 0.5rem 0;
+  font-family: 'Courier New', monospace;
+}
+
+.winner-prize {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #F1C40F;
+  background: rgba(241, 196, 15, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.winner-loading, .winner-error, .no-winner {
+  text-align: center;
+  padding: 2rem;
+  color: #B0B0B0;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(21, 207, 241, 0.3);
+  border-top: 3px solid #15CFF1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-icon, .no-winner-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.retry-btn {
+  background: linear-gradient(45deg, #0D7CE9, #15CFF1);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  margin-top: 1rem;
+  transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 124, 233, 0.3);
+}
+
+.no-winner h3 {
+  color: #FFFFFF;
+  margin: 0 0 0.5rem 0;
+}
+
+/* Responsive styles for Today's Winner */
+@media (max-width: 768px) {
+  .winner-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+  
+  .winner-avatar-image {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .winner-crown {
+    top: -8px;
+    right: -3px;
+    font-size: 1rem;
+  }
+}
