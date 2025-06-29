@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
+import ConfirmationModal from '../../../../components/ConfirmationModal'
 import './lottery.css'
 
 interface LotteryWinner {
@@ -32,12 +33,29 @@ export default function LotteryWinners() {
   const [error, setError] = useState<string | null>(null)
   const [isVerified, setIsVerified] = useState<boolean>(false)
   const [verificationLoading, setVerificationLoading] = useState<boolean>(true)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [actionToConfirm, setActionToConfirm] = useState<(() => void) | null>(null)
 
   // Check if a date is today
   const isToday = (dateString: string) => {
     const date = new Date(dateString)
     const today = new Date()
     return date.toDateString() === today.toDateString()
+  }
+
+  // Handle confirmation
+  const handleConfirm = () => {
+    if (actionToConfirm) {
+      actionToConfirm()
+    }
+    setShowConfirmModal(false)
+    setActionToConfirm(null)
+  }
+
+  // Handle cancel
+  const handleCancel = () => {
+    setShowConfirmModal(false)
+    setActionToConfirm(null)
   }
 
   // Fetch today's lottery winner from API
@@ -319,6 +337,14 @@ export default function LotteryWinners() {
           </motion.div>
         )}
       </div>
+      
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        title="Confirm Action"
+        message="Are you sure you want to proceed with this action?"
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </div>
   )
 }

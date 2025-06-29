@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
+import ConfirmationModal from '../../../components/ConfirmationModal'
 import './usermanagment.css'
 
 interface User {
@@ -33,6 +34,8 @@ export default function AdminUsersManagement() {
     points: 0,
     verification: 'unverified'
   })
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [userToReset, setUserToReset] = useState<string | null>(null)
 
   const usersPerPage = 10
 
@@ -183,10 +186,15 @@ export default function AdminUsersManagement() {
 
   // Reset node status
   const resetNodeStatus = async (userId: string) => {
-    if (!confirm('Are you sure you want to reset this user\'s node status?')) return
+    setUserToReset(userId)
+    setShowConfirmModal(true)
+  }
+
+  const confirmResetNodeStatus = async () => {
+    if (!userToReset) return
     
     try {
-      const response = await fetch(`/api/admin/users/reset-node?userId=${userId}`, {
+      const response = await fetch(`/api/admin/users/reset-node?userId=${userToReset}`, {
         method: 'POST'
       })
       
@@ -196,7 +204,7 @@ export default function AdminUsersManagement() {
       
       // Update the user in the local state
       setUsers(users.map(user => {
-        if (user.id === userId) {
+        if (user.id === userToReset) {
           return {
             ...user,
             nodeStatus: false,
@@ -211,6 +219,9 @@ export default function AdminUsersManagement() {
     } catch (error) {
       console.error('Error resetting node status:', error)
       toast.error('Failed to reset node status')
+    } finally {
+      setShowConfirmModal(false)
+      setUserToReset(null)
     }
   }
 
@@ -703,6 +714,20 @@ export default function AdminUsersManagement() {
           </div>
         </div>
       )}
+      
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        title="Reset Node Status"
+        message={`Are you sure you want to reset the node status for user ID: ${userToReset}? This action cannot be undone.`}
+        onConfirm={confirmResetNodeStatus}
+        onCancel={() => {
+          setShowConfirmModal(false);
+          setUserToReset(null);
+        }}
+        confirmText="Reset"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   )
 }

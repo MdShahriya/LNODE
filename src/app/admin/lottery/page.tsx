@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { FaPlus, FaEdit, FaTrash, FaDice } from 'react-icons/fa'
+import ConfirmationModal from '@/components/ConfirmationModal'
 import './lottery.css'
 
 interface LotteryWinner {
@@ -34,6 +35,8 @@ export default function AdminLotteryPage() {
   })
   const [pageSize, setPageSize] = useState(20)
   const [randomDrawing, setRandomDrawing] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [winnerToDelete, setWinnerToDelete] = useState<string | null>(null)
 
   // New winner form state
   const [newWinner, setNewWinner] = useState<LotteryWinner>(() => {
@@ -187,10 +190,15 @@ export default function AdminLotteryPage() {
 
   // Delete lottery winner
   const deleteWinner = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this lottery winner?')) return
+    setWinnerToDelete(id)
+    setShowConfirmModal(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!winnerToDelete) return
     
     try {
-      const response = await fetch(`/api/admin/lottery/winners/${id}`, {
+      const response = await fetch(`/api/admin/lottery/winners/${winnerToDelete}`, {
         method: 'DELETE'
       })
       
@@ -203,6 +211,9 @@ export default function AdminLotteryPage() {
     } catch (error) {
       console.error('Error deleting lottery winner:', error)
       toast.error('Failed to delete lottery winner')
+    } finally {
+      setShowConfirmModal(false)
+      setWinnerToDelete(null)
     }
   }
 
@@ -609,6 +620,20 @@ export default function AdminLotteryPage() {
           </div>
         </div>
       )}
+      
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        title="Delete Lottery Winner"
+        message="Are you sure you want to delete this lottery winner? This action cannot be undone."
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowConfirmModal(false)
+          setWinnerToDelete(null)
+        }}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
       </div>
     </div>
   )

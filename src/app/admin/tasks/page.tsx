@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import './tasks.css'
 import { toast } from 'react-hot-toast'
+import ConfirmationModal from '@/components/ConfirmationModal'
 
 interface Task {
   id: string  // Changed from id?: string to make id required
@@ -43,6 +44,8 @@ export default function AdminTasksPage() {
   
   // Add new API param field
   const [apiParams, setApiParams] = useState<{key: string, value: string}[]>([{key: '', value: ''}])
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
 
   // Fetch all tasks
   const fetchTasks = async () => {
@@ -316,10 +319,15 @@ export default function AdminTasksPage() {
 
   // Delete task
   const deleteTask = async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return
+    setTaskToDelete(taskId)
+    setShowConfirmModal(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!taskToDelete) return
     
     try {
-      const response = await fetch(`/api/admin/tasks?id=${taskId}`, {
+      const response = await fetch(`/api/admin/tasks?id=${taskToDelete}`, {
         method: 'DELETE',
       })
       
@@ -344,6 +352,9 @@ export default function AdminTasksPage() {
     } catch (error) {
       console.error('Error deleting task:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to delete task')
+    } finally {
+      setShowConfirmModal(false)
+      setTaskToDelete(null)
     }
   }
 
@@ -679,6 +690,20 @@ export default function AdminTasksPage() {
           )}
         </div>
       </div>
+      
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setShowConfirmModal(false)
+          setTaskToDelete(null)
+        }}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </div>
   )
 }

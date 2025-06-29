@@ -12,7 +12,7 @@ async function isAdmin(_request: NextRequest) {
 }
 
 // GET - Fetch a specific lottery winner by ID
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Check if user is admin
     if (!await isAdmin(request)) {
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     await connectToDatabase()
     
     // Get winner ID from params
-    const { id } = params
+    const { id } = await params
     
     // Find winner by ID
     const winner = await LotteryWinner.findById(id).lean() as (Omit<ILotteryWinner, keyof Document> & { _id: string }) | null
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT - Update a lottery winner
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Check if user is admin
     if (!await isAdmin(request)) {
@@ -66,7 +66,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     await connectToDatabase()
     
     // Get winner ID from params
-    const { id } = params
+    const { id } = await params
     
     // Get request body
     const body = await request.json()
@@ -121,7 +121,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE - Delete a lottery winner
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Check if user is admin
     if (!await isAdmin(request)) {
@@ -132,7 +132,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     await connectToDatabase()
     
     // Get winner ID from params
-    const { id } = params
+    const { id } = await params
     
     // Find and delete winner
     const deletedWinner = await LotteryWinner.findByIdAndDelete(id) as mongoose.Document<unknown, object, ILotteryWinner> | null

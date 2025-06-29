@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
+import ConfirmationModal from '@/components/ConfirmationModal'
 import './achievements.css'
 
 interface Achievement {
@@ -24,6 +25,8 @@ export default function AdminAchievements() {
     isActive: true
   })
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [achievementToDelete, setAchievementToDelete] = useState<Achievement | null>(null)
 
   const fetchAchievements = useCallback(async () => {
     try {
@@ -137,11 +140,16 @@ export default function AdminAchievements() {
   }
 
   // Handle delete achievement
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this achievement?')) return
+  const handleDelete = async (achievement: Achievement) => {
+    setAchievementToDelete(achievement)
+    setShowConfirmModal(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!achievementToDelete) return
     
     try {
-      const response = await fetch(`/api/admin/achievements/${id}`, {
+      const response = await fetch(`/api/admin/achievements/${achievementToDelete._id}`, {
         method: 'DELETE'
       })
 
@@ -149,11 +157,14 @@ export default function AdminAchievements() {
         throw new Error('Failed to delete achievement')
       }
       
-      setAchievements(achievements.filter(a => a._id !== id))
+      setAchievements(achievements.filter(a => a._id !== achievementToDelete._id))
       toast.success('Achievement deleted successfully')
     } catch (error) {
       console.error('Error deleting achievement:', error)
       toast.error('Failed to delete achievement')
+    } finally {
+      setShowConfirmModal(false)
+      setAchievementToDelete(null)
     }
   }
 
@@ -352,7 +363,7 @@ export default function AdminAchievements() {
                           {achievement.isActive ? 'Disable' : 'Enable'}
                         </button>
                         <button
-                          onClick={() => handleDelete(achievement._id)}
+                          onClick={() => handleDelete(achievement)}
                           className="admin-button admin-button--danger"
                         >
                           Delete
@@ -366,6 +377,20 @@ export default function AdminAchievements() {
           )}
         </div>
       </div>
+      
+      <ConfirmationModal
+          isOpen={showConfirmModal}
+          title="Delete Achievement"
+          message={`Are you sure you want to delete "${achievementToDelete?.title}"? This action cannot be undone.`}
+          onConfirm={confirmDelete}
+          onCancel={() => {
+            setShowConfirmModal(false);
+            setAchievementToDelete(null);
+          }}
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="danger"
+        />
     </div>
   )
 }
