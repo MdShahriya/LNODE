@@ -11,6 +11,18 @@ export const MAINTENANCE_CONFIG = {
   allowedEndpoints: [
     '/api/auth', // Keep auth endpoints for admin access
   ],
+  // All API endpoints that should be blocked during maintenance
+  blockedEndpoints: [
+    '/api/user',
+    '/api/admin',
+    '/api/tasks',
+    '/api/lottery',
+    '/api/referral',
+    '/api/social',
+    '/api/discord',
+    '/api/node',
+    '/api/leaderboard',
+  ],
   // Admin routes that should remain accessible
   allowedAdminRoutes: [
     '/admin',

@@ -16,7 +16,12 @@ export function middleware(request: NextRequest) {
       pathname.startsWith(endpoint)
     );
 
-    if (!isAllowedEndpoint) {
+    // Also check if this API endpoint is explicitly blocked
+    const isBlockedEndpoint = MAINTENANCE_CONFIG.blockedEndpoints?.some(endpoint => 
+      pathname.startsWith(endpoint)
+    );
+
+    if (!isAllowedEndpoint || isBlockedEndpoint) {
       // Block the API call and return maintenance response
       return NextResponse.json(
         {
