@@ -11,31 +11,23 @@ export function middleware(request: NextRequest) {
 
   // Check if the request is for an API route
   if (pathname.startsWith('/api')) {
-    // During maintenance, ONLY allow auth endpoints - block everything else
-    const isAuthEndpoint = pathname.startsWith('/api/auth');
-    
-    if (!isAuthEndpoint) {
-      // Block ALL non-auth API calls during maintenance
-      console.log(`[Maintenance] Blocking API call to ${pathname}`); // Debug log
-      return NextResponse.json(
-        {
-          error: 'Service Unavailable',
-          message: MAINTENANCE_CONFIG.message,
-          maintenance: true,
-          timestamp: new Date().toISOString()
-        },
-        { 
-          status: 503,
-          headers: {
-            'Retry-After': '3600', // Suggest retry after 1 hour
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache, no-store, must-revalidate'
-          }
+    // During maintenance, block ALL API calls
+    console.log(`[Maintenance] Blocking API call to ${pathname}`); // Debug log
+    return NextResponse.json(
+      {
+        error: 'Not Found',
+        message: 'The requested resource was not found',
+        maintenance: true,
+        timestamp: new Date().toISOString()
+      },
+      { 
+        status: 404,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
         }
-      );
-    } else {
-      console.log(`[Maintenance] Allowing auth API call to ${pathname}`); // Debug log
-    }
+      }
+    );
   }
 
   // Check if the request is for an admin route during maintenance

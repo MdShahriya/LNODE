@@ -54,8 +54,8 @@ export function validateMaintenanceConfig(config: MaintenanceConfig = MAINTENANC
   }
 
   // Note: API endpoints are now handled by middleware logic
-  // Only auth endpoints (/api/auth/*) are allowed during maintenance
-  result.suggestions.push('During maintenance, only authentication endpoints (/api/auth/*) are accessible');
+  // ALL API endpoints are blocked during maintenance mode
+  result.suggestions.push('During maintenance, ALL API endpoints are blocked and return 404 Not Found');
 
   // Validate allowedAdminRoutes
   if (!Array.isArray(config.allowedAdminRoutes)) {
@@ -82,7 +82,7 @@ export function validateMaintenanceConfig(config: MaintenanceConfig = MAINTENANC
 
 /**
  * Note: Endpoint security is now handled by middleware
- * Only auth endpoints (/api/auth/*) are allowed during maintenance
+ * ALL API endpoints are blocked during maintenance mode
  */
 
 /**
@@ -107,7 +107,7 @@ export function validateProductionReadiness(config: MaintenanceConfig = MAINTENA
   }
 
   // Note: API endpoint validation is now handled by middleware
-  // All non-auth endpoints are blocked during maintenance
+  // ALL API endpoints are blocked during maintenance
   if (process.env.NODE_ENV === 'production' && config.enabled) {
     result.suggestions.push('Ensure monitoring systems can still access health endpoints via alternative methods');
   }
