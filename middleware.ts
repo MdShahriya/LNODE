@@ -11,18 +11,12 @@ export function middleware(request: NextRequest) {
 
   // Check if the request is for an API route
   if (pathname.startsWith('/api')) {
-    // Check if this API endpoint is in the allowed list
-    const isAllowedEndpoint = MAINTENANCE_CONFIG.allowedEndpoints.some(endpoint => 
-      pathname.startsWith(endpoint)
-    );
-
-    // Also check if this API endpoint is explicitly blocked
-    const isBlockedEndpoint = MAINTENANCE_CONFIG.blockedEndpoints?.some(endpoint => 
-      pathname.startsWith(endpoint)
-    );
-
-    if (!isAllowedEndpoint || isBlockedEndpoint) {
-      // Block the API call and return maintenance response
+    // During maintenance, ONLY allow auth endpoints - block everything else
+    const isAuthEndpoint = pathname.startsWith('/api/auth');
+    
+    if (!isAuthEndpoint) {
+      // Block ALL non-auth API calls during maintenance
+      console.log(`[Maintenance] Blocking API call to ${pathname}`); // Debug log
       return NextResponse.json(
         {
           error: 'Service Unavailable',
@@ -34,10 +28,13 @@ export function middleware(request: NextRequest) {
           status: 503,
           headers: {
             'Retry-After': '3600', // Suggest retry after 1 hour
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
           }
         }
       );
+    } else {
+      console.log(`[Maintenance] Allowing auth API call to ${pathname}`); // Debug log
     }
   }
 
