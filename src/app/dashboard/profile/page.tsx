@@ -340,7 +340,7 @@ export default function ProfilePage() {
                 <img 
                   width={100}
                   height={100}
-                  src={`https://api.dicebear.com/9.x/fun-emoji/svg?seed=${profile.walletAddress}`} 
+                  src={`https://api.dicebear.com/9.x/notionists-neutral/svg?seed=${profile.walletAddress}`} 
                   alt="User Avatar" 
                   className="avatar-image"
                 />

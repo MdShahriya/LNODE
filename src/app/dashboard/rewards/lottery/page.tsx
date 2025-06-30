@@ -262,7 +262,7 @@ export default function LotteryWinners() {
               <img 
                 width={120}
                 height={120}
-                src={`https://api.dicebear.com/9.x/fun-emoji/svg?seed=${todaysWinner.walletAddress}`} 
+                src={`https://api.dicebear.com/9.x/notionists-neutral/svg?seed=${todaysWinner.walletAddress}`} 
                 alt="Winner Avatar" 
                 className="winner-hero__avatar-image"
               />

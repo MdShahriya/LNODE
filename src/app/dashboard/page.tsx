@@ -720,7 +720,7 @@ export default function Dashboard() {
                     <img 
                       width={60}
                       height={60}
-                      src={`https://api.dicebear.com/9.x/fun-emoji/svg?seed=${todaysWinner.walletAddress}`} 
+                      src={`https://api.dicebear.com/9.x/notionists-neutral/svg?seed=${todaysWinner.walletAddress}`} 
                       alt="Winner Avatar" 
                       className="winner-avatar-image"
                     />

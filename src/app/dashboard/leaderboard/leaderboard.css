@@ -123,29 +123,29 @@
   justify-content: center;
 }
 
-.leaderboard__avatar .avatar-image {
+.leaderboard__avatar .leaderboard__avatar-image {
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.2);
   background-color: #FFFFFF;
   transition: all 0.2s ease;
 }
 
-.leaderboard__row:hover .leaderboard__avatar .avatar-image {
+.leaderboard__row:hover .leaderboard__avatar .leaderboard__avatar-image {
   border-color: #15CFF1;
   box-shadow: 0 0 15px rgba(21, 207, 241, 0.3);
 }
 /* Special styling for avatar containers in top 3 positions */
-.leaderboard__avatar.rank-1 .avatar-image {
+.leaderboard__avatar.rank-1 .leaderboard__avatar-image {
   border: 4px solid #FFD700;
   box-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
 }
 
-.leaderboard__avatar.rank-2 .avatar-image {
+.leaderboard__avatar.rank-2 .leaderboard__avatar-image {
   border: 4px solid #E0E0E0;
   box-shadow: 0 0 15px rgba(192, 192, 192, 0.8);
 }
 
-.leaderboard__avatar.rank-3 .avatar-image {
+.leaderboard__avatar.rank-3 .leaderboard__avatar-image {
   border: 4px solid #CD7F32;
   box-shadow: 0 0 15px rgba(205, 127, 50, 0.8);
 }
