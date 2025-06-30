@@ -142,7 +142,7 @@ export default function Dashboard() {
     if (!address) return;
     
     try {
-      // Get today's date in YYYY-MM-DD format
+      // Get today's date in YYYY-MM-DD format using UTC
       const today = new Date().toISOString().split('T')[0];
       
       // Fetch today's earnings from API
@@ -160,11 +160,14 @@ export default function Dashboard() {
     }
   }, [address]);
 
-  // Check if a date is today
+  // Check if a date is today using UTC
   const isToday = (dateString: string) => {
     const date = new Date(dateString)
     const today = new Date()
-    return date.toDateString() === today.toDateString()
+    // Compare dates in UTC to avoid timezone issues
+    const dateUTC = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+    const todayUTC = new Date(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+    return dateUTC.getTime() === todayUTC.getTime()
   }
 
   // Fetch today's lottery winner from API

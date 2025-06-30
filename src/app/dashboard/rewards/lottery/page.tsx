@@ -36,11 +36,14 @@ export default function LotteryWinners() {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [actionToConfirm, setActionToConfirm] = useState<(() => void) | null>(null)
 
-  // Check if a date is today
+  // Check if a date is today using UTC
   const isToday = (dateString: string) => {
     const date = new Date(dateString)
     const today = new Date()
-    return date.toDateString() === today.toDateString()
+    // Compare dates in UTC to avoid timezone issues
+    const dateUTC = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+    const todayUTC = new Date(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+    return dateUTC.getTime() === todayUTC.getTime()
   }
 
   // Handle confirmation
@@ -140,10 +143,11 @@ export default function LotteryWinners() {
 
 
 
-  // Get current date for display
+  // Get current date for display using UTC
   const getCurrentDate = () => {
     const today = new Date()
-    return today.toLocaleDateString('en-US', {
+    // Use UTC date for consistent display across timezones
+    return new Date(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()).toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
