@@ -165,7 +165,7 @@ export default function LotteryWinners() {
           transition={{ duration: 0.6 }}
         >
           <h1 className="lottery-winners__title">
-            Daily Lottery Winner
+            Daily Winner
           </h1>
           <p className="lottery-winners__date">
             {getCurrentDate()}
