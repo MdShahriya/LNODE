@@ -14,7 +14,8 @@ const LotteryWinnerSchema: Schema = new Schema(
     date: {
       type: Date,
       required: true,
-      default: Date.now
+      default: Date.now,
+      index: true // Add index for date queries
     },
     walletAddress: {
       type: String,
@@ -33,6 +34,12 @@ const LotteryWinnerSchema: Schema = new Schema(
   },
   { timestamps: true }
 )
+
+// Compound index for efficient date range queries with sorting
+LotteryWinnerSchema.index({ date: -1, _id: 1 })
+
+// Compound index for wallet address and date queries
+LotteryWinnerSchema.index({ walletAddress: 1, date: -1 })
 
 // Check if the model already exists to prevent overwriting during hot reloads
 export default mongoose.models.LotteryWinner || mongoose.model<ILotteryWinner>('LotteryWinner', LotteryWinnerSchema)

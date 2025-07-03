@@ -160,24 +160,14 @@ export default function Dashboard() {
     }
   }, [address]);
 
-  // Check if a date is today using UTC
-  const isToday = (dateString: string) => {
-    const date = new Date(dateString)
-    const today = new Date()
-    // Compare dates in UTC to avoid timezone issues
-    const dateUTC = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
-    const todayUTC = new Date(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
-    return dateUTC.getTime() === todayUTC.getTime()
-  }
-
   // Fetch today's lottery winner from API
   const fetchTodaysWinner = useCallback(async () => {
     try {
       setLotteryLoading(true)
       setLotteryError(null)
       
-      // Fetch all winners and filter for today on frontend
-      const response = await fetch('/api/lottery/winners?page=1&limit=100')
+      // Fetch only today's winners (API already filters by today's date)
+      const response = await fetch('/api/lottery/winners?page=1&limit=1')
       
       if (!response.ok) {
         throw new Error('Failed to fetch lottery winners')
@@ -185,9 +175,8 @@ export default function Dashboard() {
       
       const data: LotteryResponse = await response.json()
       
-      // Find today's winner (should be only one)
-      const todaysWinner = data.winners.find(winner => isToday(winner.date))
-      setTodaysWinner(todaysWinner || null)
+      // Set the first winner (should be today's winner)
+      setTodaysWinner(data.winners.length > 0 ? data.winners[0] : null)
     } catch (err) {
       console.error('Error fetching lottery winner:', err)
       setLotteryError('Failed to load today\'s lottery winner.')

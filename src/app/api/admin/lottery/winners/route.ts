@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/db'
-import LotteryWinner, { ILotteryWinner } from '@/models/LotteryWinner'
+import LotteryWinner from '@/models/LotteryWinner'
 
 // Helper function to check if user is admin
 async function isAdmin(_request: NextRequest) {
@@ -27,23 +27,36 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const skip = (page - 1) * limit
     
-    // Fetch winners from the database
-    const winners = await LotteryWinner.find({})
-      .sort({ date: -1 }) // Sort by date descending (newest first)
-      .skip(skip)
-      .limit(limit)
-      .lean() as unknown as ILotteryWinner[]
+    // Use aggregation pipeline for better performance with large datasets
+    const pipeline = [
+      { $sort: { date: -1 as -1, _id: 1 as const } }, // Use compound index for efficient sorting
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 1,
+          date: 1,
+          walletAddress: 1,
+          username: 1,
+          prize: 1
+        }
+      }
+    ]
+    
+    // Execute aggregation for winners
+    const winners = await LotteryWinner.aggregate(pipeline)
     
     // Transform the data for the frontend
     const transformedWinners = winners.map(winner => ({
       id: winner._id ? winner._id.toString() : '',
       date: winner.date ? winner.date.toISOString() : new Date().toISOString(),
       walletAddress: winner.walletAddress || '',
-      username: winner.username || null
+      username: winner.username || null,
+      prize: winner.prize || 40
     }))
     
-    // Get total count for pagination
-    const totalWinners = await LotteryWinner.countDocuments({})
+    // Use estimated count for better performance on large collections
+    const totalWinners = await LotteryWinner.estimatedDocumentCount()
     
     return NextResponse.json({ 
       winners: transformedWinners,

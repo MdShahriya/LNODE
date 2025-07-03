@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/db'
-import LotteryWinner, { ILotteryWinner } from '@/models/LotteryWinner'
-import { Document } from 'mongoose'
+import LotteryWinner from '@/models/LotteryWinner'
 
 export async function GET(request: Request) {
   try {
@@ -14,23 +13,37 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1')
     const skip = (page - 1) * limit
     
-    // Get today's date range (start and end of today)
+    // Get today's date range in UTC for consistency
     const today = new Date()
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+    const startOfDay = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
+    const endOfDay = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + 1))
     
-    // Fetch winners from the database for today only
-    const winners = await LotteryWinner.find({
-      date: {
-        $gte: startOfDay,
-        $lt: endOfDay
+    // Use aggregation pipeline for better performance
+    const pipeline = [
+      {
+        $match: {
+          date: {
+            $gte: startOfDay,
+            $lt: endOfDay
+          }
+        }
+      },
+      { $sort: { date: -1 as -1, _id: 1 as const } }, // Use compound index
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 1,
+          date: 1,
+          walletAddress: 1,
+          username: 1,
+          prize: 1
+        }
       }
-    })
-      .sort({ date: -1 }) // Sort by date descending (newest first)
-      .skip(skip)
-      .limit(limit)
-      .lean()
-      .exec() as unknown as (Omit<ILotteryWinner, keyof Document> & { _id: string })[]
+    ]
+    
+    // Execute aggregation for winners
+    const winners = await LotteryWinner.aggregate(pipeline)
     
     // No mock data seeding - use real data only
     
@@ -43,13 +56,21 @@ export async function GET(request: Request) {
       prize: winner.prize || 40
     }))
     
-    // Get total count for pagination (today's winners only)
-    const totalWinners = await LotteryWinner.countDocuments({
-      date: {
-        $gte: startOfDay,
-        $lt: endOfDay
-      }
-    })
+    // Get total count for pagination (today's winners only) using aggregation for consistency
+    const countPipeline = [
+      {
+        $match: {
+          date: {
+            $gte: startOfDay,
+            $lt: endOfDay
+          }
+        }
+      },
+      { $count: "total" }
+    ]
+    
+    const countResult = await LotteryWinner.aggregate(countPipeline)
+    const totalWinners = countResult.length > 0 ? countResult[0].total : 0
     
     return NextResponse.json({ 
       winners: transformedWinners,
