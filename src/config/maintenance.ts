@@ -1,7 +1,7 @@
 // Maintenance mode configuration
 // This file centralizes maintenance mode settings
 
-export const MAINTENANCE_MODE = true;
+export const MAINTENANCE_MODE = false;
 
 // Maintenance configuration
 export const MAINTENANCE_CONFIG = {

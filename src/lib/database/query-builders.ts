@@ -368,13 +368,47 @@ export function getTodaysWinnersPipeline(page: number = 1, limit: number = 10): 
 }
 
 /**
- * Pre-built query for user leaderboard
+ * Pre-built query for user leaderboard - optimized for compound indexes
  */
 export function getLeaderboardPipeline(page: number = 1, limit: number = 10): AggregationPipeline {
   return new UsersQueryBuilder()
-    .filterByNodeStatus('active')
-    .sortByPoints('desc')
+    .match({ nodeStatus: true, isActive: true }) // Use compound index
+    .sort({ points: -1, _id: 1 }) // Efficient pagination
     .paginate(page, limit)
     .projectLeaderboardFields()
+    .build();
+}
+
+/**
+ * Optimized query for active users with points filtering
+ */
+export function getActiveUsersWithMinPointsPipeline(
+  minPoints: number, 
+  page: number = 1, 
+  limit: number = 10
+): AggregationPipeline {
+  return new UsersQueryBuilder()
+    .match({ 
+      isActive: true, 
+      points: { $gte: minPoints }
+    })
+    .sort({ points: -1, _id: 1 })
+    .paginate(page, limit)
+    .projectLeaderboardFields()
+    .build();
+}
+
+/**
+ * Optimized query for user analytics with date range
+ */
+export function getUserAnalyticsPipeline(
+  startDate: Date,
+  endDate: Date
+): AggregationPipeline {
+  return new UsersQueryBuilder()
+    .match({
+      createdAt: { $gte: startDate, $lte: endDate }
+    })
+    .sort({ createdAt: -1, _id: 1 })
     .build();
 }

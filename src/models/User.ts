@@ -307,13 +307,30 @@ const UserSchema: Schema = new Schema(
 );
 
 // Create compound indexes for better query performance
-// Removed duplicate single-field indexes that are already defined with index: true
-UserSchema.index({ nodeStatus: 1, isActive: 1 });
-UserSchema.index({ points: -1, totalEarnings: -1 });
-UserSchema.index({ lastCheckIn: -1, currentStreak: -1 });
-UserSchema.index({ createdAt: -1 });
-UserSchema.index({ totalSessions: -1, activeSessions: -1 });
+// Optimized indexes to reduce scan ratio and improve query performance
+
+// Primary leaderboard and user listing queries
+UserSchema.index({ points: -1, _id: 1 }); // For efficient pagination with sorting
+UserSchema.index({ nodeStatus: 1, points: -1 }); // For active user leaderboards
+UserSchema.index({ isActive: 1, points: -1 }); // For active user filtering
+UserSchema.index({ nodeStatus: 1, isActive: 1, points: -1 }); // Combined filter + sort
+
+// Analytics and reporting queries
+UserSchema.index({ createdAt: -1, _id: 1 }); // For user growth analytics
+UserSchema.index({ lastActiveTime: -1, nodeStatus: 1 }); // For activity tracking
+UserSchema.index({ lastCheckIn: -1, currentStreak: -1 }); // For check-in analytics
+
+// Search and filtering queries
+UserSchema.index({ walletAddress: 1, nodeStatus: 1 }); // For wallet-based filtering
+UserSchema.index({ verification: 1, points: -1 }); // For verified user queries
+UserSchema.index({ totalSessions: -1, points: -1 }); // For session-based analytics
+
+// Performance monitoring indexes
 UserSchema.index({ dailyEarnings: -1, weeklyEarnings: -1, monthlyEarnings: -1 });
+UserSchema.index({ uptime: -1, totalConnectionTime: -1 }); // For uptime analytics
+
+// Text search index for username and email (if search functionality is needed)
+// UserSchema.index({ username: 'text', email: 'text' }); // Uncomment if text search is needed
 
 // Check if the model already exists to prevent overwriting during hot reloads
 const User = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

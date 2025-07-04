@@ -31,14 +31,27 @@ export async function GET(request: NextRequest) {
         startDate.setDate(endDate.getDate() - 7); // Default to week
     }
     
-    // Get total users
-    const totalUsers = await User.countDocuments();
+    // Get total users - use estimatedDocumentCount for better performance on large collections
+    const totalUsers = await User.estimatedDocumentCount();
     
-    // Get active users (users with node activity in the period)
-    const activeUsers = await NodeSession.distinct('walletAddress', {
-      startTime: { $gte: startDate, $lte: endDate },
-      status: 'active'
-    }).then(addresses => addresses.length);
+    // Get active users (users with node activity in the period) - optimized aggregation
+    const activeUsersResult = await NodeSession.aggregate([
+      { 
+        $match: { 
+          startTime: { $gte: startDate, $lte: endDate },
+          status: 'active'
+        } 
+      },
+      {
+        $group: {
+          _id: '$walletAddress'
+        }
+      },
+      {
+        $count: 'activeUsers'
+      }
+    ]);
+    const activeUsers = activeUsersResult[0]?.activeUsers || 0;
     
     // Get total earnings in the period from PointsHistory
     const earningsResult = await PointsHistory.aggregate([
@@ -127,8 +140,13 @@ export async function GET(request: NextRequest) {
       { $sort: { date: 1 } }
     ]);
     
-    // Get user growth over time
+    // Get user growth over time - optimized with date range filter
     const userGrowth = await User.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate, $lte: endDate }
+        }
+      },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -138,11 +156,12 @@ export async function GET(request: NextRequest) {
       { $sort: { _id: 1 } }
     ]);
     
-    // Get top users by points
-    const topUsers = await User.find()
-      .sort({ points: -1 })
+    // Get top users by points - optimized with compound index
+    const topUsers = await User.find({ isActive: true })
+      .sort({ points: -1, _id: 1 })
       .limit(10)
-      .select('walletAddress points uptime totalSessions');
+      .select('walletAddress points uptime totalSessions nodeStatus')
+      .lean(); // Use lean() for better performance when not modifying documents
     
     // Format earnings data
     const earnings: Record<string, { totalPoints: number; count: number }> = {};
