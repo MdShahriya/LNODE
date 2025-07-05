@@ -289,8 +289,8 @@ export default function VerifyPage() {
 
     try {
       setIsApproving(true);
-      // Fixed amount for 1 NFT based on countdown status
-      const amount = parseEther(isCountdownEnded ? '25' : '5');
+      // Fixed amount for 1 NFT - permanent 50% discount price
+      const amount = parseEther('12');
       
       writeContract({
         address: PAYMENT_TOKEN_ADDRESS,
@@ -316,8 +316,8 @@ export default function VerifyPage() {
       return;
     }
 
-    // Fixed amount for 1 NFT based on countdown status
-    const amount = parseEther(isCountdownEnded ? '25' : '5');
+    // Fixed amount for 1 NFT - permanent 50% discount price
+    const amount = parseEther('12');
     if (paymentTokenStatus.balance < amount) {
       toast.error('Insufficient token balance');
       return;
@@ -484,17 +484,11 @@ export default function VerifyPage() {
           <div className="info-item">
             <span className="info-label">Minting Cost:</span>
             <div className="price-display">
-              {!isCountdownEnded ? (
-                <>
-                  <div className="price-details">
-                    <span className="original-price">25 USDT</span>
-                    <span className="discount-badge">80% OFF</span>
-                  </div>
-                  <div className="current-price">5 USDT</div>
-                </>
-              ) : (
-                <div className="current-price normal-price">25 USDT</div>
-              )}
+              <div className="price-details">
+                <span className="original-price">24 USDT</span>
+                <span className="discount-badge">50% OFF</span>
+              </div>
+              <div className="current-price">12 USDT</div>
             </div>
           </div>
           
@@ -535,24 +529,24 @@ export default function VerifyPage() {
         </div>
 
         <div className="mint-buttons">
-          {!verificationStatus.hasMinted && paymentTokenStatus.allowance < parseEther(isCountdownEnded ? '25' : '5') && (
+          {!verificationStatus.hasMinted && paymentTokenStatus.allowance < parseEther('12') && (
             <button 
               onClick={handleApproveToken}
               className="approve-btn"
               disabled={isApproving || isPending || isConfirming}
             >
               {isApproving || isPending ? 'Approving...' : 
-               isConfirming ? 'Confirming...' : `Approve ${isCountdownEnded ? '25' : '5'} USDT`}
+               isConfirming ? 'Confirming...' : 'Approve 12 USDT'}
             </button>
           )}
           
-          {(!verificationStatus.hasMinted && paymentTokenStatus.allowance >= parseEther(isCountdownEnded ? '25' : '5')) || verificationStatus.hasMinted ? (
+          {(!verificationStatus.hasMinted && paymentTokenStatus.allowance >= parseEther('12')) || verificationStatus.hasMinted ? (
             <button 
               onClick={handleMintNFT}
               className="mint-btn"
               disabled={isMinting || isPending || isConfirming || verificationStatus.hasMinted || 
-                       paymentTokenStatus.allowance < parseEther(isCountdownEnded ? '25' : '5') || 
-                       paymentTokenStatus.balance < parseEther(isCountdownEnded ? '25' : '5')}
+                       paymentTokenStatus.allowance < parseEther('12') || 
+                       paymentTokenStatus.balance < parseEther('12')}
             >
               {isMinting || isPending ? 'Minting...' : 
                isConfirming ? 'Confirming...' : 
