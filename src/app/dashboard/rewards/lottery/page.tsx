@@ -36,16 +36,6 @@ export default function LotteryWinners() {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [actionToConfirm, setActionToConfirm] = useState<(() => void) | null>(null)
 
-  // Check if a date is today using UTC
-  const isToday = (dateString: string) => {
-    const date = new Date(dateString)
-    const today = new Date()
-    // Compare dates in UTC to avoid timezone issues
-    const dateUTC = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
-    const todayUTC = new Date(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
-    return dateUTC.getTime() === todayUTC.getTime()
-  }
-
   // Handle confirmation
   const handleConfirm = () => {
     if (actionToConfirm) {
@@ -67,8 +57,8 @@ export default function LotteryWinners() {
       setLoading(true)
       setError(null)
       
-      // Fetch all winners and filter for today on frontend
-      const response = await fetch('/api/lottery/winners?page=1&limit=100')
+      // Fetch today's winners from API
+      const response = await fetch('/api/lottery/winners?page=1&limit=10')
       
       if (!response.ok) {
         throw new Error('Failed to fetch lottery winners')
@@ -76,9 +66,11 @@ export default function LotteryWinners() {
       
       const data: LotteryResponse = await response.json()
       
-      // Find today's winner (should be only one)
-      const todaysWinner = data.winners.find(winner => isToday(winner.date))
-      setTodaysWinner(todaysWinner || null)
+      console.log('Lottery winners data:', data) // Debug log
+      
+      // Get today's winner (should be only one)
+      const todaysWinner = data.winners.length > 0 ? data.winners[0] : null
+      setTodaysWinner(todaysWinner)
     } catch (err) {
       console.error('Error fetching lottery winner:', err)
       setError('Failed to load today\'s lottery winner. Please try again later.')

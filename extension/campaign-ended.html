@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TOPAY Node - Campaign Ended</title>
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    .campaign-ended-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 50%, #0f1419 100%);
+      padding: 40px;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .campaign-icon {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .campaign-icon i {
+      font-size: 64px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    p {
+      font-size: 16px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 24px;
+      max-width: 280px;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .social-link {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .social-link:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-3px);
+    }
+
+    .social-link i {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Background Elements -->
+    <div class="bg-elements">
+      <div class="bg-circle bg-circle-1"></div>
+      <div class="bg-circle bg-circle-2"></div>
+      <div class="bg-circle bg-circle-3"></div>
+    </div>
+    
+    <!-- Campaign Ended Message -->
+    <div class="campaign-ended-container">
+      <div class="campaign-icon">
+        <i class="fas fa-info-circle"></i>
+      </div>
+      <h2>Early NODE Campaign Ended</h2>
+      <p>Thank you for your interest in the TOPAY NODE program. The early campaign has concluded.</p>
+      <p>Stay updated through our social media channels for future opportunities and announcements.</p>
+      
+      <div class="social-links">
+        <a href="https://twitter.com/topayfoundation" target="_blank" class="social-link">
+          <i class="fab fa-twitter"></i>
+        </a>
+        <a href="https://t.me/topayfoundation" target="_blank" class="social-link">
+          <i class="fab fa-telegram-plane"></i>
+        </a>
+        <a href="https://discord.gg/topayfoundation" target="_blank" class="social-link">
+          <i class="fab fa-discord"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      From <span class="footer-text">TOPAY LABS</span> with <span class="heart">♥</span>
+    </div>
+  </div>
+</body>
+</html>

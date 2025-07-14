@@ -49,18 +49,25 @@ export async function GET(request: NextRequest) {
       query.verification = verification;
     }
     
-    // Count total matching documents for pagination
-    const total = await User.countDocuments(query);
+    // Use estimatedDocumentCount for better performance on large collections when no filters
+    const total = Object.keys(query).length === 0 
+      ? await User.estimatedDocumentCount()
+      : await User.countDocuments(query);
     
-    // Build sort object with proper typing
+    // Build sort object with proper typing - ensure compound index usage
     const sort: SortObject = {};
     sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    // Add _id to sort for consistent pagination with compound indexes
+    if (sortBy !== '_id') {
+      sort._id = 1;
+    }
     
-    // Fetch users with pagination and sorting
+    // Fetch users with pagination and sorting - optimized with lean()
     const users = await User.find(query)
       .sort(sort)
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean(); // Use lean() for better performance when not modifying documents
     
     // Format users for response
     const formattedUsers = users.map(user => ({

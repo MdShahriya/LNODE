@@ -6,10 +6,11 @@ export async function GET() {
   try {
     await connectDB();
     
-    // Get top users sorted by points
-    const users = await User.find({}, 'walletAddress points tasksCompleted uptime')
-      .sort({ points: -1 }) // Sort by points in descending order
-      .limit(50); // Limit to top 50 users
+    // Get top users sorted by points - optimized with compound index and lean()
+    const users = await User.find({ isActive: true }, 'walletAddress points tasksCompleted uptime')
+      .sort({ points: -1, _id: 1 }) // Use compound index for efficient pagination
+      .limit(50) // Limit to top 50 users
+      .lean(); // Use lean() for better performance when not modifying documents
     
     // Format the data for the leaderboard
     const leaderboardData = users.map((user, index) => ({
